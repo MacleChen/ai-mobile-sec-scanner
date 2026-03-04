@@ -22,19 +22,24 @@ _LABELS = {
         "generated":    "生成于",
         "app_info":     "应用基本信息",
         "app_name":     "应用名称",
-        "package":      "包名",
+        "package":      "包名 / Bundle ID",
         "version":      "版本号",
+        "build":        "Build 号",
         "size":         "文件大小",
+        "platform":     "平台",
         "risk":         "风险概览",
         "critical":     "严重",
         "high":         "高危",
         "warning":      "中危",
         "trackers":     "追踪器",
-        "perms":        "危险权限",
+        "perms":        "权限列表",
+        "perms_android":"危险权限",
         "perm_name":    "权限名称",
         "perm_desc":    "说明",
-        "no_perms":     "无危险权限",
-        "issues":       "清单文件安全问题",
+        "no_perms":     "无权限",
+        "issues":       "安全问题",
+        "issues_android":"清单文件安全问题",
+        "issues_ios":   "二进制安全分析",
         "sev":          "级别",
         "issue":        "问题",
         "detail":       "描述",
@@ -49,19 +54,24 @@ _LABELS = {
         "generated":    "Generated at",
         "app_info":     "App Information",
         "app_name":     "App Name",
-        "package":      "Package Name",
+        "package":      "Package / Bundle ID",
         "version":      "Version",
+        "build":        "Build",
         "size":         "File Size",
+        "platform":     "Platform",
         "risk":         "Risk Overview",
         "critical":     "Critical",
         "high":         "High",
         "warning":      "Medium",
         "trackers":     "Trackers",
-        "perms":        "Dangerous Permissions",
+        "perms":        "Permissions",
+        "perms_android":"Dangerous Permissions",
         "perm_name":    "Permission",
         "perm_desc":    "Description",
-        "no_perms":     "No dangerous permissions found",
-        "issues":       "Manifest Security Issues",
+        "no_perms":     "No permissions found",
+        "issues":       "Security Issues",
+        "issues_android":"Manifest Security Issues",
+        "issues_ios":   "Binary Security Analysis",
         "sev":          "Severity",
         "issue":        "Issue",
         "detail":       "Details",
@@ -83,6 +93,14 @@ async def index():
     html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     with open(html_path, encoding="utf-8") as f:
         return f.read()
+
+
+def _first(*vals) -> str:
+    """Return the first non-empty string value from args."""
+    for v in vals:
+        if v is not None and str(v).strip():
+            return str(v).strip()
+    return ""
 
 
 @app.post("/scan")
@@ -119,12 +137,14 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
                 _tasks[task_id].update({"status": "error", "error": str(upload_data)})
                 return
             scan_id = upload_data["hash"]
+            scan_type = upload_data.get("scan_type", "apk")
+            _tasks[task_id]["scan_type"] = scan_type
 
             # 2. Trigger scan
             _tasks[task_id]["status"] = "scanning"
             resp = await client.post(
                 f"{mobsf_url}/api/v1/scan",
-                data={"hash": scan_id, "scan_type": upload_data.get("scan_type", "apk")},
+                data={"hash": scan_id, "scan_type": scan_type},
                 headers=headers,
             )
             scan_result = resp.json()
@@ -153,18 +173,22 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
 
         # 4. Gemini AI summary (bilingual prompt)
         _tasks[task_id]["status"] = "summarizing"
+        is_ios = scan_type == "ipa"
+        platform_name = "iOS" if is_ios else "Android"
+        plist = report.get("info_plist") or {}
         ai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         summary_input = {
-            "app_name": report.get("app_name", ""),
-            "package_name": report.get("package_name", ""),
-            "version_name": report.get("version_name", ""),
-            "permissions": list(report.get("permissions", {}).keys())[:20],
+            "platform":     platform_name,
+            "app_name":     _first(report.get("app_name"), plist.get("CFBundleDisplayName"), plist.get("CFBundleName")),
+            "package_name": _first(report.get("package_name"), report.get("identifier"), plist.get("CFBundleIdentifier")),
+            "version_name": _first(report.get("version_name"), plist.get("CFBundleShortVersionString")),
+            "permissions":  list(report.get("permissions", {}).keys())[:20],
             "security_score": report.get("security_score") or "N/A",
-            "trackers": report.get("trackers", {}).get("detected_trackers", []),
+            "trackers":     report.get("trackers", {}).get("detected_trackers", []),
         }
         if lang == "zh":
             prompt = (
-                "你是一名专业的移动安全研究员，请用中文分析以下 Android 应用安全扫描摘要，提供：\n"
+                f"你是一名专业的移动安全研究员，请用中文分析以下 {platform_name} 应用安全扫描摘要，提供：\n"
                 "1. 应用安全状况的专业摘要\n"
                 "2. 基于权限和追踪器的主要安全风险\n"
                 "3. 针对开发者的安全改进建议\n\n"
@@ -172,8 +196,8 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
             )
         else:
             prompt = (
-                "You are a mobile security researcher. Analyze this Android app security scan "
-                "summary and provide:\n"
+                f"You are a mobile security researcher. Analyze this {platform_name} app security "
+                "scan summary and provide:\n"
                 "1. A professional summary of the app's security posture\n"
                 "2. The top security risks based on permissions and trackers\n"
                 "3. Recommended security improvements for the developer\n\n"
@@ -202,73 +226,123 @@ async def get_status(task_id: str):
     }
 
 
+def _count_sev(sev: str, risk: dict):
+    sev = sev.lower()
+    if "critical" in sev:
+        risk["critical"] += 1
+    elif sev in ("high", "danger"):
+        risk["high"] += 1
+    elif "warn" in sev or "medium" in sev:
+        risk["warning"] += 1
+    else:
+        risk["info"] += 1
+
+
 def _extract_summary(task: dict) -> dict:
     report = task["report"]
-    perms = report.get("permissions", {})
+    is_ios = task.get("scan_type", "apk") == "ipa"
 
+    # ── Multi-key field extraction (iOS uses different names) ──
+    plist = report.get("info_plist") or {}
+    app_name     = _first(report.get("app_name"),
+                          plist.get("CFBundleDisplayName"),
+                          plist.get("CFBundleName"))
+    package_name = _first(report.get("package_name"),
+                          report.get("identifier"),
+                          plist.get("CFBundleIdentifier"))
+    version_name = _first(report.get("version_name"),
+                          plist.get("CFBundleShortVersionString"))
+    # iOS build number (CFBundleVersion); Android version_code
+    build_version = _first(report.get("build_version"),
+                           report.get("version_code"),
+                           report.get("build"),
+                           plist.get("CFBundleVersion")) if is_ios else ""
+
+    # ── Risk counting ──────────────────────────────────────────
     risk = {"critical": 0, "high": 0, "warning": 0, "info": 0}
-    manifest = report.get("manifest_analysis", [])
-    if isinstance(manifest, list):
-        for item in manifest:
-            if not isinstance(item, dict):
-                continue
-            sev = (item.get("severity") or item.get("level") or "").lower()
-            if "critical" in sev:
-                risk["critical"] += 1
-            elif sev in ("high", "danger"):
-                risk["high"] += 1
-            elif "warn" in sev or "medium" in sev:
-                risk["warning"] += 1
-            else:
-                risk["info"] += 1
 
-    code = report.get("code_analysis", {})
-    if isinstance(code, dict):
-        for _, fdata in (code.get("findings") or {}).items():
-            if not isinstance(fdata, dict):
-                continue
-            sev = (fdata.get("metadata", {}).get("severity") or "").lower()
-            if "critical" in sev:
-                risk["critical"] += 1
-            elif sev in ("high",):
-                risk["high"] += 1
-            elif "warn" in sev or "medium" in sev:
-                risk["warning"] += 1
-            else:
-                risk["info"] += 1
-
-    dangerous_perms = [
-        {"name": k, "info": v.get("info", ""), "description": v.get("description", "")}
-        for k, v in perms.items()
-        if isinstance(v, dict) and v.get("status") == "dangerous"
-    ]
-
-    manifest_issues = []
-    if isinstance(manifest, list):
-        for item in manifest:
+    if is_ios:
+        # iOS: binary_analysis + ats_findings
+        for item in (report.get("binary_analysis") or []):
             if isinstance(item, dict):
-                manifest_issues.append({
+                _count_sev(item.get("severity", "info"), risk)
+        for item in (report.get("ats_findings") or []):
+            if isinstance(item, dict):
+                _count_sev(item.get("severity", "warning"), risk)
+    else:
+        # Android: manifest_analysis + code_analysis
+        for item in (report.get("manifest_analysis") or []):
+            if isinstance(item, dict):
+                _count_sev(item.get("severity") or item.get("level", "info"), risk)
+        code = report.get("code_analysis") or {}
+        if isinstance(code, dict):
+            for _, fdata in (code.get("findings") or {}).items():
+                if isinstance(fdata, dict):
+                    _count_sev(fdata.get("metadata", {}).get("severity", "info"), risk)
+
+    # ── Permissions ────────────────────────────────────────────
+    perms = report.get("permissions") or {}
+    if is_ios:
+        # iOS: all declared permissions (no "dangerous" filter)
+        perm_list = []
+        for k, v in perms.items():
+            if isinstance(v, dict):
+                info = _first(v.get("description"), v.get("info"), v.get("status"))
+            else:
+                info = str(v)
+            perm_list.append({"name": k, "info": info})
+    else:
+        perm_list = [
+            {"name": k, "info": v.get("info", ""), "description": v.get("description", "")}
+            for k, v in perms.items()
+            if isinstance(v, dict) and v.get("status") == "dangerous"
+        ]
+
+    # ── Security issues ────────────────────────────────────────
+    sec_issues = []
+    if is_ios:
+        for item in (report.get("binary_analysis") or []):
+            if isinstance(item, dict):
+                sec_issues.append({
+                    "title":       _first(item.get("issue"), item.get("name"), item.get("title")),
+                    "severity":    item.get("severity", "warning"),
+                    "description": item.get("description", ""),
+                })
+        for item in (report.get("ats_findings") or []):
+            if isinstance(item, dict):
+                sec_issues.append({
+                    "title":       _first(item.get("issue"), item.get("name"), item.get("title")),
+                    "severity":    item.get("severity", "warning"),
+                    "description": item.get("description", ""),
+                })
+    else:
+        for item in (report.get("manifest_analysis") or []):
+            if isinstance(item, dict):
+                sec_issues.append({
                     "title":       item.get("title") or item.get("rule", ""),
                     "severity":    item.get("severity") or item.get("level", ""),
                     "description": item.get("description", ""),
                 })
 
-    trackers_data = report.get("trackers", {})
+    trackers_data = report.get("trackers") or {}
     tracker_count = trackers_data.get("detected_trackers", 0)
     if isinstance(tracker_count, list):
         tracker_count = len(tracker_count)
 
     return {
-        "app_name":            report.get("app_name", "Unknown"),
-        "package_name":        report.get("package_name", ""),
-        "version_name":        report.get("version_name", ""),
+        "platform":            "iOS" if is_ios else "Android",
+        "app_name":            app_name or "Unknown",
+        "package_name":        package_name,
+        "version_name":        version_name,
+        "build_version":       build_version,
         "size":                report.get("size", ""),
         "md5":                 report.get("md5", ""),
         "security_score":      report.get("security_score") or "N/A",
         "risk_counts":         risk,
-        "dangerous_permissions": dangerous_perms[:15],
+        "dangerous_permissions": perm_list[:20],
         "tracker_count":       tracker_count,
-        "manifest_issues":     manifest_issues[:20],
+        "manifest_issues":     sec_issues[:25],
+        "is_ios":              is_ios,
         "ai_summary":          task["ai_summary"],
         "finished_at":         task.get("finished_at", ""),
     }
@@ -333,11 +407,14 @@ def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
     def e(v):
         return html_lib.escape(str(v or ""))
 
+    is_ios  = s.get("is_ios", False)
     rc      = s.get("risk_counts", {})
     perms   = s.get("dangerous_permissions", [])
     issues  = s.get("manifest_issues", [])
     now     = datetime.now().strftime("%Y-%m-%d %H:%M")
     ai_html = _md_to_html(s.get("ai_summary", ""))
+    issues_label = L["issues_ios"] if is_ios else L["issues_android"]
+    perms_label  = L["perms"] if is_ios else L["perms_android"]
 
     SEV_BG    = {"critical": "#fef2f2", "high": "#fff7ed", "warning": "#fffbeb", "info": "#eff6ff"}
     SEV_COLOR = {"critical": "#dc2626", "high": "#ea580c", "warning": "#d97706", "info": "#2563eb"}
@@ -386,10 +463,13 @@ def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
             f"</tr>"
         )
 
+    build_row = meta_row(L["build"], s.get("build_version", "")) if s.get("build_version") else ""
     meta_rows = (
         meta_row(L["app_name"],  s.get("app_name", ""))
         + meta_row(L["package"], s.get("package_name", ""))
         + meta_row(L["version"], s.get("version_name", ""))
+        + build_row
+        + meta_row(L["platform"], s.get("platform", ""))
         + meta_row(L["size"],    s.get("size", ""))
         + meta_row("MD5",        s.get("md5", ""), mono=True)
         + meta_row(L["generated"], now)
@@ -653,11 +733,11 @@ def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
     </div>
   </div>
 
-  <!-- § 3 Dangerous Permissions -->
+  <!-- § 3 Permissions -->
   <div class="section">
     <div class="section-head">
       <div class="section-num">3</div>
-      <div class="section-title">{L['perms']} ({len(perms)})</div>
+      <div class="section-title">{perms_label} ({len(perms)})</div>
     </div>
     <table class="data">
       <thead>
@@ -670,11 +750,11 @@ def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
     </table>
   </div>
 
-  <!-- § 4 Manifest Issues -->
+  <!-- § 4 Security Issues -->
   <div class="section">
     <div class="section-head">
       <div class="section-num">4</div>
-      <div class="section-title">{L['issues']} ({len(issues)})</div>
+      <div class="section-title">{issues_label} ({len(issues)})</div>
     </div>
     <table class="data">
       <thead>
