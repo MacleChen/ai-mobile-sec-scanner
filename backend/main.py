@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, BackgroundTasks
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 import httpx
 import asyncio
 import os
@@ -9,6 +9,7 @@ import html as html_lib
 from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
+from weasyprint import HTML as WeasyHTML
 
 load_dotenv()
 app = FastAPI(title="AI Mobile Sec Scanner")
@@ -282,17 +283,26 @@ async def get_summary(task_id: str):
     return _extract_summary(task)
 
 
-@app.get("/scan/report/{task_id}/download", response_class=HTMLResponse)
+@app.get("/scan/report/{task_id}/download")
 async def download_report(task_id: str, lang: str = "zh"):
     task = _tasks.get(task_id)
     if not task or task.get("status") != "done":
-        return HTMLResponse("<h1>Report not ready</h1>", status_code=404)
+        return Response(content="Report not ready", status_code=404)
     summary = _extract_summary(task)
-    html = _build_report_html(summary, task.get("filename", "unknown.apk"), lang)
-    return HTMLResponse(
-        content=html,
+    filename = task.get("filename", "unknown.apk")
+    app_name = summary.get("app_name", task_id[:8])
+    safe_name = "".join(c for c in app_name if c.isalnum() or c in "-_") or task_id[:8]
+
+    html_content = _build_report_html(summary, filename, lang)
+    loop = asyncio.get_event_loop()
+    pdf_bytes = await loop.run_in_executor(
+        None, lambda: WeasyHTML(string=html_content).write_pdf()
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="security-report-{task_id[:8]}.html"'
+            "Content-Disposition": f'attachment; filename="security-report-{safe_name}.pdf"'
         },
     )
 
