@@ -13,16 +13,64 @@ from google import genai
 load_dotenv()
 app = FastAPI(title="AI Mobile Sec Scanner")
 
-# In-memory task store: {task_id: {...}}
 _tasks: dict = {}
 
-STATUS_MESSAGES = {
-    "uploading":   "正在上传 APK 到分析引擎...",
-    "scanning":    "MobSF 静态分析中，请耐心等待...",
-    "analyzing":   "等待分析报告生成...",
-    "summarizing": "AI 正在生成安全摘要...",
-    "done":        "扫描完成 ✅",
-    "error":       "扫描出错 ❌",
+# ── Report HTML labels (zh / en) ──────────────────────────────
+_LABELS = {
+    "zh": {
+        "report_title": "📱 移动应用安全分析报告",
+        "generated":    "生成于",
+        "app_info":     "应用基本信息",
+        "app_name":     "应用名称",
+        "package":      "包名",
+        "version":      "版本号",
+        "size":         "文件大小",
+        "risk":         "风险概览",
+        "critical":     "严重",
+        "high":         "高危",
+        "warning":      "中危",
+        "trackers":     "追踪器",
+        "perms":        "危险权限",
+        "perm_name":    "权限名称",
+        "perm_desc":    "说明",
+        "no_perms":     "无危险权限",
+        "issues":       "清单文件安全问题",
+        "sev":          "级别",
+        "issue":        "问题",
+        "detail":       "描述",
+        "no_issues":    "无问题",
+        "ai_title":     "AI 安全分析摘要",
+        "footer":       "AI Mobile Security Scanner · MobSF v4.4.5 + Gemini 2.5 Flash · 仅供安全研究参考",
+        "sev_map":      {"critical": "严重", "high": "高危", "warning": "中危", "info": "信息"},
+        "html_lang":    "zh-CN",
+    },
+    "en": {
+        "report_title": "📱 Mobile App Security Analysis Report",
+        "generated":    "Generated at",
+        "app_info":     "App Information",
+        "app_name":     "App Name",
+        "package":      "Package Name",
+        "version":      "Version",
+        "size":         "File Size",
+        "risk":         "Risk Overview",
+        "critical":     "Critical",
+        "high":         "High",
+        "warning":      "Medium",
+        "trackers":     "Trackers",
+        "perms":        "Dangerous Permissions",
+        "perm_name":    "Permission",
+        "perm_desc":    "Description",
+        "no_perms":     "No dangerous permissions found",
+        "issues":       "Manifest Security Issues",
+        "sev":          "Severity",
+        "issue":        "Issue",
+        "detail":       "Details",
+        "no_issues":    "No issues found",
+        "ai_title":     "AI Security Analysis",
+        "footer":       "AI Mobile Security Scanner · MobSF v4.4.5 + Gemini 2.5 Flash · For security research only",
+        "sev_map":      {"critical": "CRITICAL", "high": "HIGH", "warning": "MEDIUM", "info": "INFO"},
+        "html_lang":    "en",
+    },
 }
 
 
@@ -38,20 +86,21 @@ async def index():
 
 
 @app.post("/scan")
-async def scan_app(file: UploadFile, background_tasks: BackgroundTasks):
+async def scan_app(file: UploadFile, background_tasks: BackgroundTasks, lang: str = "zh"):
     """Submit APK for scanning. Returns task_id immediately."""
     task_id = str(uuid.uuid4())
     file_data = await file.read()
     _tasks[task_id] = {
         "status": "uploading",
         "filename": file.filename,
+        "lang": lang,
         "started_at": datetime.now().isoformat(),
     }
-    background_tasks.add_task(_run_scan, task_id, file.filename, file_data)
+    background_tasks.add_task(_run_scan, task_id, file.filename, file_data, lang)
     return {"task_id": task_id}
 
 
-async def _run_scan(task_id: str, filename: str, file_data: bytes):
+async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "zh"):
     mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
     headers = _mobsf_headers()
     try:
@@ -67,7 +116,7 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes):
             )
             upload_data = resp.json()
             if "hash" not in upload_data:
-                _tasks[task_id].update({"status": "error", "error": f"上传失败: {upload_data}"})
+                _tasks[task_id].update({"status": "error", "error": str(upload_data)})
                 return
             scan_id = upload_data["hash"]
 
@@ -80,7 +129,7 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes):
             )
             scan_result = resp.json()
             if "error" in scan_result:
-                _tasks[task_id].update({"status": "error", "error": f"扫描失败: {scan_result['error']}"})
+                _tasks[task_id].update({"status": "error", "error": str(scan_result["error"])})
                 return
 
             # 3. Poll for report (max 300s)
@@ -99,10 +148,10 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes):
                     break
 
         if report is None:
-            _tasks[task_id].update({"status": "error", "error": "扫描超时（300s），请重试"})
+            _tasks[task_id].update({"status": "error", "error": "Scan timed out (300s)"})
             return
 
-        # 4. Gemini AI summary
+        # 4. Gemini AI summary (bilingual prompt)
         _tasks[task_id]["status"] = "summarizing"
         ai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         summary_input = {
@@ -113,17 +162,24 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes):
             "security_score": report.get("security_score") or "N/A",
             "trackers": report.get("trackers", {}).get("detected_trackers", []),
         }
-        ai_resp = ai_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=(
+        if lang == "zh":
+            prompt = (
+                "你是一名专业的移动安全研究员，请用中文分析以下 Android 应用安全扫描摘要，提供：\n"
+                "1. 应用安全状况的专业摘要\n"
+                "2. 基于权限和追踪器的主要安全风险\n"
+                "3. 针对开发者的安全改进建议\n\n"
+                f"扫描摘要：\n{summary_input}"
+            )
+        else:
+            prompt = (
                 "You are a mobile security researcher. Analyze this Android app security scan "
                 "summary and provide:\n"
                 "1. A professional summary of the app's security posture\n"
                 "2. The top security risks based on permissions and trackers\n"
                 "3. Recommended security improvements for the developer\n\n"
                 f"Scan summary:\n{summary_input}"
-            ),
-        )
+            )
+        ai_resp = ai_client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         _tasks[task_id].update({
             "status": "done",
             "report": report,
@@ -140,11 +196,9 @@ async def get_status(task_id: str):
     task = _tasks.get(task_id)
     if not task:
         return {"status": "not_found"}
-    status = task.get("status", "unknown")
     return {
-        "status": status,
-        "message": STATUS_MESSAGES.get(status, status),
-        "error": task.get("error"),
+        "status": task.get("status", "unknown"),
+        "error":  task.get("error"),
     }
 
 
@@ -152,7 +206,6 @@ def _extract_summary(task: dict) -> dict:
     report = task["report"]
     perms = report.get("permissions", {})
 
-    # Count findings by severity
     risk = {"critical": 0, "high": 0, "warning": 0, "info": 0}
     manifest = report.get("manifest_analysis", [])
     if isinstance(manifest, list):
@@ -195,8 +248,8 @@ def _extract_summary(task: dict) -> dict:
         for item in manifest:
             if isinstance(item, dict):
                 manifest_issues.append({
-                    "title": item.get("title") or item.get("rule", ""),
-                    "severity": item.get("severity") or item.get("level", ""),
+                    "title":       item.get("title") or item.get("rule", ""),
+                    "severity":    item.get("severity") or item.get("level", ""),
                     "description": item.get("description", ""),
                 })
 
@@ -206,18 +259,18 @@ def _extract_summary(task: dict) -> dict:
         tracker_count = len(tracker_count)
 
     return {
-        "app_name": report.get("app_name", "Unknown"),
-        "package_name": report.get("package_name", ""),
-        "version_name": report.get("version_name", ""),
-        "size": report.get("size", ""),
-        "md5": report.get("md5", ""),
-        "security_score": report.get("security_score") or "N/A",
-        "risk_counts": risk,
+        "app_name":            report.get("app_name", "Unknown"),
+        "package_name":        report.get("package_name", ""),
+        "version_name":        report.get("version_name", ""),
+        "size":                report.get("size", ""),
+        "md5":                 report.get("md5", ""),
+        "security_score":      report.get("security_score") or "N/A",
+        "risk_counts":         risk,
         "dangerous_permissions": dangerous_perms[:15],
-        "tracker_count": tracker_count,
-        "manifest_issues": manifest_issues[:20],
-        "ai_summary": task["ai_summary"],
-        "finished_at": task.get("finished_at", ""),
+        "tracker_count":       tracker_count,
+        "manifest_issues":     manifest_issues[:20],
+        "ai_summary":          task["ai_summary"],
+        "finished_at":         task.get("finished_at", ""),
     }
 
 
@@ -225,17 +278,17 @@ def _extract_summary(task: dict) -> dict:
 async def get_summary(task_id: str):
     task = _tasks.get(task_id)
     if not task or task.get("status") != "done":
-        return {"error": "报告未就绪"}
+        return {"error": "Report not ready"}
     return _extract_summary(task)
 
 
 @app.get("/scan/report/{task_id}/download", response_class=HTMLResponse)
-async def download_report(task_id: str):
+async def download_report(task_id: str, lang: str = "zh"):
     task = _tasks.get(task_id)
     if not task or task.get("status") != "done":
-        return HTMLResponse("<h1>报告未就绪</h1>", status_code=404)
+        return HTMLResponse("<h1>Report not ready</h1>", status_code=404)
     summary = _extract_summary(task)
-    html = _build_report_html(summary, task.get("filename", "unknown.apk"))
+    html = _build_report_html(summary, task.get("filename", "unknown.apk"), lang)
     return HTMLResponse(
         content=html,
         headers={
@@ -244,8 +297,8 @@ async def download_report(task_id: str):
     )
 
 
-def _build_report_html(s: dict, filename: str) -> str:
-    """Generate a standalone downloadable HTML security report."""
+def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
+    L = _LABELS.get(lang, _LABELS["zh"])
 
     def e(v):
         return html_lib.escape(str(v or ""))
@@ -255,46 +308,54 @@ def _build_report_html(s: dict, filename: str) -> str:
     ai_html = e(ai_md)
     ai_html = re.sub(r"###\s+(.+)", r"<h3>\1</h3>", ai_html)
     ai_html = re.sub(r"##\s+(.+)", r"<h2 style='color:#1e40af;margin:18px 0 8px'>\1</h2>", ai_html)
-    ai_html = re.sub(r"#\s+(.+)", r"<h1 style='color:#1e40af'>\1</h1>", ai_html)
+    ai_html = re.sub(r"#\s+(.+)",  r"<h1 style='color:#1e40af'>\1</h1>", ai_html)
     ai_html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", ai_html)
-    ai_html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", ai_html)
+    ai_html = re.sub(r"\*(.+?)\*",     r"<em>\1</em>", ai_html)
     ai_html = re.sub(r"^\s*[\*\-]\s+(.+)$", r"<li>\1</li>", ai_html, flags=re.MULTILINE)
-    ai_html = re.sub(r"(<li>.*?</li>(\n|$))+", lambda m: f"<ul>{m.group(0)}</ul>", ai_html, flags=re.DOTALL)
+    ai_html = re.sub(
+        r"(<li>.*?</li>(\n|$))+",
+        lambda m: f"<ul>{m.group(0)}</ul>",
+        ai_html, flags=re.DOTALL
+    )
     ai_html = ai_html.replace("\n\n", "</p><p>").replace("\n", "<br>")
     ai_html = f"<p>{ai_html}</p>"
 
     SEV_COLOR = {"critical": "#dc2626", "high": "#ea580c", "warning": "#d97706", "info": "#2563eb"}
+    sev_map = L["sev_map"]
 
+    perm_count = len(s.get("dangerous_permissions", []))
     perm_rows = "".join(
         f"<tr><td><code>{e(p['name'])}</code></td><td>{e(p['info'])}</td></tr>"
         for p in s.get("dangerous_permissions", [])
-    ) or '<tr><td colspan="2" class="empty">无危险权限</td></tr>'
+    ) or f'<tr><td colspan="2" class="empty">{L["no_perms"]}</td></tr>'
 
+    issue_count = len(s.get("manifest_issues", []))
     issue_rows = ""
     for item in s.get("manifest_issues", []):
         sev = str(item.get("severity", "info")).lower()
         color = SEV_COLOR.get(sev, "#6b7280")
-        label = {"critical": "严重", "high": "高危", "warning": "中危", "info": "信息"}.get(sev, sev.upper())
+        label = sev_map.get(sev, sev.upper())
         desc = str(item.get("description", ""))
         issue_rows += (
             f"<tr>"
-            f"<td><span style='color:{color};font-weight:700;background:{color}18;padding:2px 8px;border-radius:4px'>{label}</span></td>"
+            f"<td><span style='color:{color};font-weight:700;background:{color}18;"
+            f"padding:2px 8px;border-radius:4px'>{label}</span></td>"
             f"<td>{e(item.get('title', ''))}</td>"
-            f"<td class='desc'>{e(desc[:180])}{'...' if len(desc) > 180 else ''}</td>"
+            f"<td class='desc'>{e(desc[:180])}{'…' if len(desc) > 180 else ''}</td>"
             f"</tr>\n"
         )
     if not issue_rows:
-        issue_rows = '<tr><td colspan="3" class="empty">无问题</td></tr>'
+        issue_rows = f'<tr><td colspan="3" class="empty">{L["no_issues"]}</td></tr>'
 
     rc = s.get("risk_counts", {})
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     return f"""<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{L['html_lang']}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>安全报告 - {e(s.get('app_name', ''))}</title>
+<title>{e(s.get('app_name',''))} - Security Report</title>
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f5f9;color:#1e293b;padding:24px}}
@@ -302,7 +363,7 @@ def _build_report_html(s: dict, filename: str) -> str:
   .header{{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:36px 40px;border-radius:16px 16px 0 0}}
   .header h1{{font-size:1.7em;font-weight:800}}
   .header .sub{{opacity:.8;margin-top:6px;font-size:.9em}}
-  .section{{background:white;border-radius:0;padding:32px 40px;border-bottom:1px solid #f1f5f9}}
+  .section{{background:white;padding:32px 40px;border-bottom:1px solid #f1f5f9}}
   .section:last-child{{border-radius:0 0 16px 16px;border-bottom:none}}
   h2{{font-size:1.05em;font-weight:700;color:#374151;padding-bottom:10px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}}
   .info-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
@@ -329,61 +390,59 @@ def _build_report_html(s: dict, filename: str) -> str:
   .ai-box li{{margin:4px 0}}
   .ai-box p{{margin:8px 0}}
   .footer{{text-align:center;color:#94a3b8;font-size:.82em;padding:20px;background:white;border-radius:0 0 16px 16px;border-top:1px solid #e2e8f0}}
-  @media print{{body{{padding:0;background:white}}.wrap .section{{box-shadow:none}}}}
+  @media print{{body{{padding:0;background:white}}}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="header">
-    <h1>📱 移动应用安全分析报告</h1>
-    <div class="sub">{e(filename)} &nbsp;·&nbsp; 生成于 {now}</div>
+    <h1>{L['report_title']}</h1>
+    <div class="sub">{e(filename)} &nbsp;·&nbsp; {L['generated']} {now}</div>
   </div>
 
   <div class="section">
-    <h2>应用基本信息</h2>
+    <h2>{L['app_info']}</h2>
     <div class="info-grid">
-      <div class="info-item"><label>应用名称</label><p>{e(s.get('app_name',''))}</p></div>
-      <div class="info-item"><label>包名</label><p>{e(s.get('package_name',''))}</p></div>
-      <div class="info-item"><label>版本号</label><p>{e(s.get('version_name',''))}</p></div>
-      <div class="info-item"><label>文件大小</label><p>{e(s.get('size',''))}</p></div>
+      <div class="info-item"><label>{L['app_name']}</label><p>{e(s.get('app_name',''))}</p></div>
+      <div class="info-item"><label>{L['package']}</label><p>{e(s.get('package_name',''))}</p></div>
+      <div class="info-item"><label>{L['version']}</label><p>{e(s.get('version_name',''))}</p></div>
+      <div class="info-item"><label>{L['size']}</label><p>{e(s.get('size',''))}</p></div>
       <div class="info-item wide"><label>MD5</label><p><code>{e(s.get('md5',''))}</code></p></div>
     </div>
   </div>
 
   <div class="section">
-    <h2>风险概览</h2>
+    <h2>{L['risk']}</h2>
     <div class="risk-grid">
-      <div class="risk-box rc"><div class="num">{rc.get('critical',0)}</div><div class="lbl">严重</div></div>
-      <div class="risk-box rh"><div class="num">{rc.get('high',0)}</div><div class="lbl">高危</div></div>
-      <div class="risk-box rw"><div class="num">{rc.get('warning',0)}</div><div class="lbl">中危</div></div>
-      <div class="risk-box rt"><div class="num">{s.get('tracker_count',0)}</div><div class="lbl">追踪器</div></div>
+      <div class="risk-box rc"><div class="num">{rc.get('critical',0)}</div><div class="lbl">{L['critical']}</div></div>
+      <div class="risk-box rh"><div class="num">{rc.get('high',0)}</div><div class="lbl">{L['high']}</div></div>
+      <div class="risk-box rw"><div class="num">{rc.get('warning',0)}</div><div class="lbl">{L['warning']}</div></div>
+      <div class="risk-box rt"><div class="num">{s.get('tracker_count',0)}</div><div class="lbl">{L['trackers']}</div></div>
     </div>
   </div>
 
   <div class="section">
-    <h2>危险权限（{len(s.get('dangerous_permissions',[]))} 项）</h2>
+    <h2>{L['perms']} ({perm_count})</h2>
     <table>
-      <tr><th>权限名称</th><th>说明</th></tr>
+      <tr><th>{L['perm_name']}</th><th>{L['perm_desc']}</th></tr>
       {perm_rows}
     </table>
   </div>
 
   <div class="section">
-    <h2>清单文件安全问题（{len(s.get('manifest_issues',[]))} 项）</h2>
+    <h2>{L['issues']} ({issue_count})</h2>
     <table>
-      <tr><th>级别</th><th>问题</th><th>描述</th></tr>
+      <tr><th>{L['sev']}</th><th>{L['issue']}</th><th>{L['detail']}</th></tr>
       {issue_rows}
     </table>
   </div>
 
   <div class="section">
-    <h2>AI 安全分析摘要</h2>
+    <h2>{L['ai_title']}</h2>
     <div class="ai-box">{ai_html}</div>
   </div>
 
-  <div class="footer">
-    AI Mobile Security Scanner &nbsp;·&nbsp; MobSF v4.4.5 + Gemini 2.5 Flash &nbsp;·&nbsp; 仅供安全研究参考
-  </div>
+  <div class="footer">{L['footer']}</div>
 </div>
 </body>
 </html>"""

@@ -15,20 +15,38 @@
       margin: 0;
     }
 
-    /* ── Header ─────────────────────────────── */
+    /* ── Header ─────────────────── */
     .header {
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
       color: white;
       text-align: center;
       padding: 48px 24px 40px;
+      position: relative;
     }
     .header h1 { font-size: 2em; font-weight: 800; margin-bottom: 8px; letter-spacing: -.5px; }
     .header p { opacity: .85; font-size: 1em; }
 
-    /* ── Page ─────────────────────────────── */
+    /* Language toggle */
+    .lang-btn {
+      position: absolute;
+      top: 18px; right: 20px;
+      background: rgba(255,255,255,.18);
+      color: white;
+      border: 1px solid rgba(255,255,255,.4);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: .85em;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .03em;
+      transition: background .2s;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,.3); }
+
+    /* ── Page ─────────────────── */
     .page { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
 
-    /* ── Cards ─────────────────────────────── */
+    /* ── Cards ─────────────────── */
     .card {
       background: white;
       border-radius: 16px;
@@ -37,7 +55,7 @@
       margin-bottom: 20px;
     }
 
-    /* ── Upload ─────────────────────────────── */
+    /* ── Upload ─────────────────── */
     .upload-zone {
       border: 2px dashed #cbd5e0;
       border-radius: 12px;
@@ -48,90 +66,62 @@
       background: #f7fafc;
       user-select: none;
     }
-    .upload-zone:hover, .upload-zone.drag-over {
-      border-color: #3b82f6;
-      background: #eff6ff;
-    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: #3b82f6; background: #eff6ff; }
     .upload-zone .icon { font-size: 3.5em; margin-bottom: 14px; }
     .upload-zone h3 { font-size: 1.2em; font-weight: 700; margin-bottom: 8px; color: #2d3748; }
     .upload-zone p { color: #718096; font-size: .9em; }
     .upload-btn {
       display: inline-block;
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 12px 32px;
-      border-radius: 8px;
-      font-size: 1em;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      transition: background .2s;
+      background: #2563eb; color: white; border: none;
+      padding: 12px 32px; border-radius: 8px;
+      font-size: 1em; font-weight: 600; cursor: pointer;
+      margin-top: 20px; transition: background .2s;
     }
     .upload-btn:hover { background: #1d4ed8; }
     #file-input { display: none; }
     .error-box {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #dc2626;
-      padding: 14px 18px;
-      border-radius: 10px;
-      margin-top: 16px;
-      font-size: .9em;
+      background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+      padding: 14px 18px; border-radius: 10px; margin-top: 16px; font-size: .9em;
     }
 
-    /* ── Progress ─────────────────────────────── */
-    .steps {
-      display: flex;
-      align-items: center;
-      margin: 8px 0 24px;
-    }
+    /* ── Progress ─────────────────── */
+    .steps { display: flex; align-items: center; margin: 8px 0 24px; }
     .step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
     .step-circle {
-      width: 38px; height: 38px;
-      border-radius: 50%;
-      background: #e2e8f0;
-      color: #94a3b8;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #e2e8f0; color: #94a3b8;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: .9em;
-      position: relative; z-index: 1;
-      transition: all .3s;
+      position: relative; z-index: 1; transition: all .3s;
     }
     .step.active .step-circle { background: #2563eb; color: white; box-shadow: 0 0 0 4px #bfdbfe; }
-    .step.done .step-circle { background: #16a34a; color: white; }
+    .step.done   .step-circle { background: #16a34a; color: white; }
     .step-label { font-size: .75em; color: #94a3b8; text-align: center; }
     .step.active .step-label { color: #2563eb; font-weight: 600; }
-    .step.done .step-label { color: #16a34a; font-weight: 600; }
+    .step.done   .step-label { color: #16a34a; font-weight: 600; }
     .step-line { flex: 1; height: 2px; background: #e2e8f0; margin-bottom: 24px; transition: background .3s; }
     .step-line.done { background: #16a34a; }
     .progress-msg {
       display: flex; align-items: center; justify-content: center; gap: 10px;
-      background: #eff6ff; border-radius: 10px;
-      padding: 16px 20px;
+      background: #eff6ff; border-radius: 10px; padding: 16px 20px;
       color: #1d4ed8; font-weight: 600;
     }
     .spinner {
       width: 20px; height: 20px;
-      border: 2.5px solid #93c5fd;
-      border-top-color: #2563eb;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      flex-shrink: 0;
+      border: 2.5px solid #93c5fd; border-top-color: #2563eb;
+      border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Section titles ─────────────────────────────── */
+    /* ── Section titles ─────────────────── */
     h2.st {
       font-size: 1.05em; font-weight: 700; color: #374151;
       padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 18px;
     }
 
-    /* ── Info grid ─────────────────────────────── */
+    /* ── Info grid ─────────────────── */
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .info-item {
-      background: #f8fafc; border: 1px solid #e2e8f0;
-      border-radius: 10px; padding: 14px 16px;
-    }
+    .info-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; }
     .info-item label {
       color: #94a3b8; font-size: .72em; font-weight: 700;
       text-transform: uppercase; letter-spacing: .06em;
@@ -140,7 +130,7 @@
     .info-item.wide { grid-column: 1/-1; }
     .mono { font-family: monospace; font-size: .88em; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; }
 
-    /* ── Risk grid ─────────────────────────────── */
+    /* ── Risk grid ─────────────────── */
     .risk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
     .risk-box { border-radius: 12px; padding: 20px 12px; text-align: center; }
     .risk-box .num { font-size: 2.4em; font-weight: 800; line-height: 1; }
@@ -150,7 +140,7 @@
     .rw { background: #fffbeb; color: #d97706; }
     .rt { background: #eff6ff; color: #2563eb; }
 
-    /* ── Tables ─────────────────────────────── */
+    /* ── Tables ─────────────────── */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: .88em; }
     th {
@@ -162,35 +152,29 @@
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f8fafc; }
     td code { font-family: monospace; font-size: .85em; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
-    td.desc { color: #64748b; font-size: .85em; }
+    td.desc  { color: #64748b; font-size: .85em; }
     td.empty { text-align: center; color: #94a3b8; padding: 20px; }
-    .sev {
-      display: inline-block; padding: 2px 10px;
-      border-radius: 20px; font-size: .8em; font-weight: 700;
-    }
+    .sev { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .8em; font-weight: 700; }
     .sev-critical { background: #fef2f2; color: #dc2626; }
     .sev-high     { background: #fff7ed; color: #ea580c; }
     .sev-warning  { background: #fffbeb; color: #d97706; }
     .sev-info     { background: #eff6ff; color: #2563eb; }
     .sev-default  { background: #f1f5f9; color: #6b7280; }
 
-    /* ── AI box ─────────────────────────────── */
+    /* ── AI box ─────────────────── */
     .ai-box {
-      background: #f0f9ff;
-      border-left: 4px solid #0ea5e9;
-      padding: 24px 28px;
-      border-radius: 0 12px 12px 0;
-      line-height: 1.8;
+      background: #f0f9ff; border-left: 4px solid #0ea5e9;
+      padding: 24px 28px; border-radius: 0 12px 12px 0; line-height: 1.8;
     }
     .ai-box h1, .ai-box h2, .ai-box h3 { color: #1e40af; margin: 18px 0 8px; }
     .ai-box h3 { font-size: 1em; }
     .ai-box ul, .ai-box ol { padding-left: 22px; margin: 8px 0; }
     .ai-box li { margin: 4px 0; }
-    .ai-box p { margin: 8px 0; }
+    .ai-box p  { margin: 8px 0; }
     .ai-box hr { border: none; border-top: 1px solid #bae6fd; margin: 16px 0; }
     .ai-box strong { color: #1e293b; }
 
-    /* ── Action buttons ─────────────────────────────── */
+    /* ── Actions ─────────────────── */
     .actions { text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
     .btn-download {
       display: inline-flex; align-items: center; gap: 8px;
@@ -202,18 +186,14 @@
     .btn-download:hover { background: #15803d; }
     .btn-rescan {
       display: inline-flex; align-items: center; gap: 8px;
-      background: #f1f5f9; color: #374151;
-      border: 1px solid #e2e8f0;
+      background: #f1f5f9; color: #374151; border: 1px solid #e2e8f0;
       padding: 14px 28px; border-radius: 10px;
-      font-size: 1em; font-weight: 600; cursor: pointer;
-      transition: all .2s;
+      font-size: 1em; font-weight: 600; cursor: pointer; transition: all .2s;
     }
     .btn-rescan:hover { background: #e2e8f0; }
 
-    /* ── Utilities ─────────────────────────────── */
     .hidden { display: none !important; }
 
-    /* ── Responsive ─────────────────────────────── */
     @media (max-width: 640px) {
       .info-grid { grid-template-columns: 1fr; }
       .risk-grid { grid-template-columns: 1fr 1fr; }
@@ -221,6 +201,7 @@
       .header h1 { font-size: 1.5em; }
       .card { padding: 20px 16px; }
       .ai-box { padding: 16px; }
+      .lang-btn { top: 12px; right: 12px; }
     }
   </style>
 </head>
@@ -228,19 +209,21 @@
 
 <!-- Header -->
 <div class="header">
-  <h1>🔍 AI 移动安全扫描器</h1>
-  <p>上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
+  <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
+  <h1 id="hdr-title">🔍 AI 移动安全扫描器</h1>
+  <p id="hdr-subtitle">上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
 </div>
 
 <div class="page">
 
-  <!-- ① Upload card -->
+  <!-- ① Upload -->
   <div id="upload-card" class="card">
     <div class="upload-zone" id="upload-zone">
       <div class="icon">📦</div>
-      <h3>拖拽 APK 文件到这里</h3>
-      <p>支持 Android APK 和 iOS IPA 文件</p>
-      <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+      <h3 id="uz-title">拖拽 APK 文件到这里</h3>
+      <p  id="uz-subtitle">支持 Android APK 和 iOS IPA 文件</p>
+      <button class="upload-btn" id="uz-btn"
+              onclick="document.getElementById('file-input').click()">
         选择文件上传
       </button>
     </div>
@@ -248,38 +231,35 @@
     <div id="upload-error" class="error-box hidden"></div>
   </div>
 
-  <!-- ② Processing card -->
+  <!-- ② Processing -->
   <div id="processing-card" class="card hidden">
-    <h2 class="st">📊 正在分析中</h2>
-
-    <!-- Steps -->
+    <h2 class="st" id="proc-title">📊 正在分析中</h2>
     <div class="steps">
       <div class="step" id="step-0">
         <div class="step-circle">1</div>
-        <div class="step-label">上传</div>
+        <div class="step-label" id="sl-0">上传</div>
       </div>
       <div class="step-line" id="line-0"></div>
       <div class="step" id="step-1">
         <div class="step-circle">2</div>
-        <div class="step-label">静态分析</div>
+        <div class="step-label" id="sl-1">静态分析</div>
       </div>
       <div class="step-line" id="line-1"></div>
       <div class="step" id="step-2">
         <div class="step-circle">3</div>
-        <div class="step-label">报告提取</div>
+        <div class="step-label" id="sl-2">报告提取</div>
       </div>
       <div class="step-line" id="line-2"></div>
       <div class="step" id="step-3">
         <div class="step-circle">4</div>
-        <div class="step-label">AI 摘要</div>
+        <div class="step-label" id="sl-3">AI 摘要</div>
       </div>
       <div class="step-line" id="line-3"></div>
       <div class="step" id="step-4">
         <div class="step-circle">✓</div>
-        <div class="step-label">完成</div>
+        <div class="step-label" id="sl-4">完成</div>
       </div>
     </div>
-
     <div class="progress-msg">
       <div class="spinner"></div>
       <span id="progress-text">正在准备...</span>
@@ -289,262 +269,433 @@
   <!-- ③ Results -->
   <div id="results" class="hidden">
 
-    <!-- App info -->
     <div class="card">
-      <h2 class="st">📱 应用信息</h2>
+      <h2 class="st" id="sec-appinfo">📱 应用信息</h2>
       <div class="info-grid">
-        <div class="info-item"><label>应用名称</label><p id="r-app-name">-</p></div>
-        <div class="info-item"><label>包名</label><p id="r-package">-</p></div>
-        <div class="info-item"><label>版本号</label><p id="r-version">-</p></div>
-        <div class="info-item"><label>文件大小</label><p id="r-size">-</p></div>
-        <div class="info-item wide"><label>MD5 哈希</label><p><span class="mono" id="r-md5">-</span></p></div>
+        <div class="info-item"><label id="lbl-appname">应用名称</label><p id="r-app-name">-</p></div>
+        <div class="info-item"><label id="lbl-package">包名</label><p id="r-package">-</p></div>
+        <div class="info-item"><label id="lbl-version">版本号</label><p id="r-version">-</p></div>
+        <div class="info-item"><label id="lbl-size">文件大小</label><p id="r-size">-</p></div>
+        <div class="info-item wide">
+          <label id="lbl-md5">MD5 哈希</label>
+          <p><span class="mono" id="r-md5">-</span></p>
+        </div>
       </div>
     </div>
 
-    <!-- Risk overview -->
     <div class="card">
-      <h2 class="st">⚠️ 风险概览</h2>
+      <h2 class="st" id="sec-risk">⚠️ 风险概览</h2>
       <div class="risk-grid">
-        <div class="risk-box rc"><div class="num" id="r-critical">0</div><div class="lbl">严重</div></div>
-        <div class="risk-box rh"><div class="num" id="r-high">0</div><div class="lbl">高危</div></div>
-        <div class="risk-box rw"><div class="num" id="r-warning">0</div><div class="lbl">中危</div></div>
-        <div class="risk-box rt"><div class="num" id="r-trackers">0</div><div class="lbl">追踪器</div></div>
+        <div class="risk-box rc"><div class="num" id="r-critical">0</div><div class="lbl" id="lbl-critical">严重</div></div>
+        <div class="risk-box rh"><div class="num" id="r-high">0</div><div class="lbl" id="lbl-high">高危</div></div>
+        <div class="risk-box rw"><div class="num" id="r-warning">0</div><div class="lbl" id="lbl-warning">中危</div></div>
+        <div class="risk-box rt"><div class="num" id="r-trackers">0</div><div class="lbl" id="lbl-trackers">追踪器</div></div>
       </div>
     </div>
 
-    <!-- Dangerous permissions -->
     <div class="card">
       <h2 class="st" id="r-perm-title">🔐 危险权限</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>权限名称</th><th>说明</th></tr></thead>
+          <thead>
+            <tr>
+              <th id="th-perm-name">权限名称</th>
+              <th id="th-perm-desc">说明</th>
+            </tr>
+          </thead>
           <tbody id="r-perm-body"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- Manifest issues -->
     <div class="card">
       <h2 class="st" id="r-issue-title">🛡️ 清单文件安全问题</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>级别</th><th>问题</th><th>描述</th></tr></thead>
+          <thead>
+            <tr>
+              <th id="th-issue-sev">级别</th>
+              <th id="th-issue-title">问题</th>
+              <th id="th-issue-desc">描述</th>
+            </tr>
+          </thead>
           <tbody id="r-issue-body"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- AI summary -->
     <div class="card">
-      <h2 class="st">🤖 AI 安全分析</h2>
+      <h2 class="st" id="sec-ai">🤖 AI 安全分析</h2>
       <div class="ai-box" id="r-ai">加载中...</div>
     </div>
 
-    <!-- Actions -->
     <div class="card">
       <div class="actions">
         <a id="btn-download" href="#" class="btn-download" target="_blank">
           📄 下载完整 HTML 报告
         </a>
-        <button class="btn-rescan" onclick="resetToUpload()">
+        <button class="btn-rescan" id="btn-rescan" onclick="resetToUpload()">
           🔄 扫描新文件
         </button>
       </div>
     </div>
 
-  </div><!-- end #results -->
-
-</div><!-- end .page -->
+  </div><!-- #results -->
+</div><!-- .page -->
 
 <script>
-  // ── State ──────────────────────────────────────────────────
-  let taskId   = null;
-  let pollTimer = null;
+// ── i18n ────────────────────────────────────────────────────
+const LANG = {
+  zh: {
+    pageTitle:    'AI 移动安全扫描器',
+    pageSubtitle: '上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告',
+    langBtn:      'EN',
+    uzTitle:      '拖拽 APK 文件到这里',
+    uzSubtitle:   '支持 Android APK 和 iOS IPA 文件',
+    uzBtn:        '选择文件上传',
+    errFormat:    '请上传 .apk 或 .ipa 格式的文件',
+    errUpload:    '上传失败: ',
+    errScan:      '扫描失败: ',
+    errReport:    '报告加载失败: ',
+    procTitle:    '📊 正在分析中',
+    sl: ['上传', '静态分析', '报告提取', 'AI 摘要', '完成'],
+    status: {
+      uploading:   '正在上传 APK 到分析引擎...',
+      scanning:    'MobSF 静态分析中，请耐心等待...',
+      analyzing:   '等待分析报告生成...',
+      summarizing: 'AI 正在生成安全摘要...',
+      done:        '扫描完成 ✅',
+      loading:     '正在加载报告...',
+    },
+    secAppInfo:   '📱 应用信息',
+    secRisk:      '⚠️ 风险概览',
+    secAI:        '🤖 AI 安全分析',
+    lblAppName:   '应用名称',
+    lblPackage:   '包名',
+    lblVersion:   '版本号',
+    lblSize:      '文件大小',
+    lblMD5:       'MD5 哈希',
+    lblCritical:  '严重',
+    lblHigh:      '高危',
+    lblWarning:   '中危',
+    lblTrackers:  '追踪器',
+    thPermName:   '权限名称',
+    thPermDesc:   '说明',
+    thIssueSev:   '级别',
+    thIssueTitle: '问题',
+    thIssueDesc:  '描述',
+    sevLabels:    { critical:'严重', high:'高危', warning:'中危', info:'信息' },
+    noPerms:      '无危险权限',
+    noIssues:     '无问题',
+    btnDownload:  '📄 下载完整 HTML 报告',
+    btnRescan:    '🔄 扫描新文件',
+    permTitle:    n => `🔐 危险权限（${n} 项）`,
+    issueTitle:   n => `🛡️ 清单文件安全问题（${n} 项）`,
+    htmlLang:     'zh-CN',
+  },
+  en: {
+    pageTitle:    'AI Mobile Security Scanner',
+    pageSubtitle: 'Upload an APK for automated static security analysis and AI report',
+    langBtn:      '中文',
+    uzTitle:      'Drop your APK file here',
+    uzSubtitle:   'Supports Android APK and iOS IPA files',
+    uzBtn:        'Choose File',
+    errFormat:    'Please upload a .apk or .ipa file',
+    errUpload:    'Upload failed: ',
+    errScan:      'Scan failed: ',
+    errReport:    'Failed to load report: ',
+    procTitle:    '📊 Analyzing...',
+    sl: ['Upload', 'Static Analysis', 'Report', 'AI Summary', 'Done'],
+    status: {
+      uploading:   'Uploading APK to analysis engine...',
+      scanning:    'MobSF static analysis in progress...',
+      analyzing:   'Waiting for analysis report...',
+      summarizing: 'AI generating security summary...',
+      done:        'Scan complete ✅',
+      loading:     'Loading report...',
+    },
+    secAppInfo:   '📱 App Information',
+    secRisk:      '⚠️ Risk Overview',
+    secAI:        '🤖 AI Security Analysis',
+    lblAppName:   'App Name',
+    lblPackage:   'Package',
+    lblVersion:   'Version',
+    lblSize:      'File Size',
+    lblMD5:       'MD5 Hash',
+    lblCritical:  'Critical',
+    lblHigh:      'High',
+    lblWarning:   'Medium',
+    lblTrackers:  'Trackers',
+    thPermName:   'Permission',
+    thPermDesc:   'Description',
+    thIssueSev:   'Severity',
+    thIssueTitle: 'Issue',
+    thIssueDesc:  'Details',
+    sevLabels:    { critical:'CRITICAL', high:'HIGH', warning:'MEDIUM', info:'INFO' },
+    noPerms:      'No dangerous permissions found',
+    noIssues:     'No issues found',
+    btnDownload:  '📄 Download Full HTML Report',
+    btnRescan:    '🔄 Scan New File',
+    permTitle:    n => `🔐 Dangerous Permissions (${n})`,
+    issueTitle:   n => `🛡️ Manifest Security Issues (${n})`,
+    htmlLang:     'en',
+  },
+};
 
-  const STATUS_STEP = {
-    uploading:   0,
-    scanning:    1,
-    analyzing:   2,
-    summarizing: 3,
-    done:        4,
-  };
+// ── State ───────────────────────────────────────────────────
+let lang      = localStorage.getItem('lang') || 'zh';
+let taskId    = null;
+let pollTimer = null;
+let lastReport = null;   // cache for re-render on lang switch
 
-  // ── UI Helpers ─────────────────────────────────────────────
-  function show(id)   { document.getElementById(id).classList.remove('hidden'); }
-  function hide(id)   { document.getElementById(id).classList.add('hidden'); }
-  function setText(id, v) { document.getElementById(id).textContent = v ?? ''; }
+const STATUS_STEP = { uploading:0, scanning:1, analyzing:2, summarizing:3, done:4 };
 
-  function showUpload()     { show('upload-card'); hide('processing-card'); hide('results'); }
-  function showProcessing() { hide('upload-card'); show('processing-card'); hide('results'); }
-  function showResults()    { hide('upload-card'); hide('processing-card'); show('results'); }
+function L() { return LANG[lang]; }
 
-  function setStep(idx, message) {
-    for (let i = 0; i <= 4; i++) {
-      const el = document.getElementById(`step-${i}`);
-      el.classList.remove('active', 'done');
-      if (i < idx)      el.classList.add('done');
-      else if (i === idx) el.classList.add('active');
-    }
-    for (let i = 0; i <= 3; i++) {
-      document.getElementById(`line-${i}`).classList.toggle('done', i < idx);
-    }
-    if (message) document.getElementById('progress-text').textContent = message;
+// ── i18n Apply ─────────────────────────────────────────────
+function applyI18n() {
+  const l = L();
+  document.title = l.pageTitle;
+  document.documentElement.lang = l.htmlLang;
+
+  setText('hdr-title',    '🔍 ' + l.pageTitle);
+  setText('hdr-subtitle', l.pageSubtitle);
+  setText('lang-btn',     l.langBtn);
+  setText('uz-title',     l.uzTitle);
+  setText('uz-subtitle',  l.uzSubtitle);
+  setText('uz-btn',       l.uzBtn);
+  setText('proc-title',   l.procTitle);
+
+  l.sl.forEach((s, i) => setText(`sl-${i}`, s));
+
+  setText('sec-appinfo',    l.secAppInfo);
+  setText('sec-risk',       l.secRisk);
+  setText('sec-ai',         l.secAI);
+  setText('lbl-appname',    l.lblAppName);
+  setText('lbl-package',    l.lblPackage);
+  setText('lbl-version',    l.lblVersion);
+  setText('lbl-size',       l.lblSize);
+  setText('lbl-md5',        l.lblMD5);
+  setText('lbl-critical',   l.lblCritical);
+  setText('lbl-high',       l.lblHigh);
+  setText('lbl-warning',    l.lblWarning);
+  setText('lbl-trackers',   l.lblTrackers);
+  setText('th-perm-name',   l.thPermName);
+  setText('th-perm-desc',   l.thPermDesc);
+  setText('th-issue-sev',   l.thIssueSev);
+  setText('th-issue-title', l.thIssueTitle);
+  setText('th-issue-desc',  l.thIssueDesc);
+  setText('btn-download',   l.btnDownload);
+  setText('btn-rescan',     l.btnRescan);
+
+  // Update download URL lang param
+  const dlBtn = document.getElementById('btn-download');
+  if (taskId) dlBtn.href = `/scan/report/${taskId}/download?lang=${lang}`;
+
+  // Re-render tables if report already loaded (only labels change)
+  if (lastReport) renderTables(lastReport);
+}
+
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', lang);
+  applyI18n();
+}
+
+// ── UI Helpers ─────────────────────────────────────────────
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function setText(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = v ?? '';
+}
+
+function showUpload()     { show('upload-card'); hide('processing-card'); hide('results'); }
+function showProcessing() { hide('upload-card'); show('processing-card'); hide('results'); }
+function showResults()    { hide('upload-card'); hide('processing-card'); show('results'); }
+
+function setStep(idx, message) {
+  for (let i = 0; i <= 4; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.classList.remove('active', 'done');
+    if (i < idx)       el.classList.add('done');
+    else if (i === idx) el.classList.add('active');
+  }
+  for (let i = 0; i <= 3; i++) {
+    document.getElementById(`line-${i}`).classList.toggle('done', i < idx);
+  }
+  if (message) setText('progress-text', message);
+}
+
+function showUploadError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Upload ─────────────────────────────────────────────────
+const zone      = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+
+async function handleFile(file) {
+  document.getElementById('upload-error').classList.add('hidden');
+  const l = L();
+
+  if (!file.name.match(/\.(apk|ipa)$/i)) {
+    showUploadError(l.errFormat);
+    return;
   }
 
-  function showUploadError(msg) {
-    const el = document.getElementById('upload-error');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+  showProcessing();
+  setStep(0, `${l.status.uploading}`);
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const resp = await fetch(`/scan?lang=${lang}`, { method: 'POST', body: fd });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const { task_id } = await resp.json();
+    taskId = task_id;
+    pollTimer = setInterval(pollStatus, 2500);
+  } catch (err) {
+    resetToUpload();
+    showUploadError(l.errUpload + err.message);
   }
+}
 
-  function esc(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+// ── Polling ────────────────────────────────────────────────
+async function pollStatus() {
+  if (!taskId) return;
+  try {
+    const resp = await fetch(`/scan/status/${taskId}`);
+    const data = await resp.json();
+    const l = L();
 
-  // ── Upload ─────────────────────────────────────────────────
-  const zone      = document.getElementById('upload-zone');
-  const fileInput = document.getElementById('file-input');
+    const idx = STATUS_STEP[data.status] ?? 0;
+    const msg = l.status[data.status] || data.status;
+    setStep(idx, msg);
 
-  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  });
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) handleFile(fileInput.files[0]);
-  });
-
-  async function handleFile(file) {
-    document.getElementById('upload-error').classList.add('hidden');
-
-    if (!file.name.match(/\.(apk|ipa)$/i)) {
-      showUploadError('请上传 .apk 或 .ipa 格式的文件');
-      return;
-    }
-
-    showProcessing();
-    setStep(0, `正在上传 ${file.name} ...`);
-
-    const fd = new FormData();
-    fd.append('file', file);
-
-    try {
-      const resp = await fetch('/scan', { method: 'POST', body: fd });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const { task_id } = await resp.json();
-      taskId = task_id;
-      pollTimer = setInterval(pollStatus, 2500);
-    } catch (err) {
+    if (data.status === 'done') {
+      clearInterval(pollTimer);
+      setStep(4, l.status.loading);
+      await loadReport();
+    } else if (data.status === 'error') {
+      clearInterval(pollTimer);
       resetToUpload();
-      showUploadError('上传失败: ' + err.message);
+      showUploadError(l.errScan + (data.error || ''));
     }
+  } catch (_) { /* network hiccup */ }
+}
+
+// ── Report ─────────────────────────────────────────────────
+async function loadReport() {
+  try {
+    const resp = await fetch(`/scan/summary/${taskId}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    lastReport = data;
+    renderReport(data);
+    showResults();
+  } catch (err) {
+    resetToUpload();
+    showUploadError(L().errReport + err.message);
+  }
+}
+
+function renderReport(d) {
+  const l = L();
+
+  // App info
+  setText('r-app-name', d.app_name);
+  setText('r-package',  d.package_name);
+  setText('r-version',  d.version_name || 'N/A');
+  setText('r-size',     d.size || 'N/A');
+  setText('r-md5',      d.md5 || 'N/A');
+
+  // Risk counts
+  const rc = d.risk_counts || {};
+  setText('r-critical', rc.critical || 0);
+  setText('r-high',     rc.high     || 0);
+  setText('r-warning',  rc.warning  || 0);
+  setText('r-trackers', d.tracker_count || 0);
+
+  renderTables(d);
+
+  // AI summary (markdown)
+  try {
+    document.getElementById('r-ai').innerHTML = marked.parse(d.ai_summary || '');
+  } catch (_) {
+    document.getElementById('r-ai').textContent = d.ai_summary || '';
   }
 
-  // ── Polling ─────────────────────────────────────────────────
-  async function pollStatus() {
-    if (!taskId) return;
-    try {
-      const resp = await fetch(`/scan/status/${taskId}`);
-      const data = await resp.json();
+  // Download button
+  document.getElementById('btn-download').href = `/scan/report/${taskId}/download?lang=${lang}`;
+}
 
-      const idx = STATUS_STEP[data.status] ?? 0;
-      setStep(idx, data.message || data.status);
+function renderTables(d) {
+  const l = L();
 
-      if (data.status === 'done') {
-        clearInterval(pollTimer);
-        setStep(4, '正在加载报告...');
-        await loadReport();
-      } else if (data.status === 'error') {
-        clearInterval(pollTimer);
-        resetToUpload();
-        showUploadError('扫描失败: ' + (data.error || '未知错误'));
-      }
-    } catch (_) { /* network hiccup, keep polling */ }
-  }
+  // Permissions
+  const perms = d.dangerous_permissions || [];
+  setText('r-perm-title', l.permTitle(perms.length));
+  document.getElementById('r-perm-body').innerHTML = perms.length
+    ? perms.map(p => `
+        <tr>
+          <td><code>${esc(p.name)}</code></td>
+          <td>${esc(p.info)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="2" class="empty">${l.noPerms}</td></tr>`;
 
-  // ── Report ─────────────────────────────────────────────────
-  async function loadReport() {
-    try {
-      const resp = await fetch(`/scan/summary/${taskId}`);
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error);
-      renderReport(data);
-      showResults();
-    } catch (err) {
-      resetToUpload();
-      showUploadError('报告加载失败: ' + err.message);
-    }
-  }
-
-  function renderReport(d) {
-    // App info
-    setText('r-app-name', d.app_name);
-    setText('r-package',  d.package_name);
-    setText('r-version',  d.version_name || 'N/A');
-    setText('r-size',     d.size || 'N/A');
-    setText('r-md5',      d.md5 || 'N/A');
-
-    // Risk counts
-    const rc = d.risk_counts || {};
-    setText('r-critical', rc.critical || 0);
-    setText('r-high',     rc.high     || 0);
-    setText('r-warning',  rc.warning  || 0);
-    setText('r-trackers', d.tracker_count || 0);
-
-    // Dangerous permissions
-    const perms = d.dangerous_permissions || [];
-    setText('r-perm-title', `🔐 危险权限（${perms.length} 项）`);
-    document.getElementById('r-perm-body').innerHTML = perms.length
-      ? perms.map(p => `
+  // Manifest issues
+  const issues = d.manifest_issues || [];
+  setText('r-issue-title', l.issueTitle(issues.length));
+  const SEV_CLS = { critical:'sev-critical', high:'sev-high', warning:'sev-warning', info:'sev-info' };
+  document.getElementById('r-issue-body').innerHTML = issues.length
+    ? issues.map(item => {
+        const sev = (item.severity || 'info').toLowerCase();
+        const cls = SEV_CLS[sev] || 'sev-default';
+        const lbl = l.sevLabels[sev] || sev.toUpperCase();
+        const desc = item.description || '';
+        return `
           <tr>
-            <td><code>${esc(p.name)}</code></td>
-            <td>${esc(p.info)}</td>
-          </tr>`).join('')
-      : '<tr><td colspan="2" class="empty">无危险权限</td></tr>';
+            <td><span class="sev ${cls}">${lbl}</span></td>
+            <td>${esc(item.title)}</td>
+            <td class="desc">${esc(desc.substring(0, 160))}${desc.length > 160 ? '…' : ''}</td>
+          </tr>`;
+      }).join('')
+    : `<tr><td colspan="3" class="empty">${l.noIssues}</td></tr>`;
+}
 
-    // Manifest issues
-    const issues = d.manifest_issues || [];
-    setText('r-issue-title', `🛡️ 清单文件安全问题（${issues.length} 项）`);
-    const SEV_CLS   = { critical:'sev-critical', high:'sev-high', warning:'sev-warning', info:'sev-info' };
-    const SEV_LABEL = { critical:'严重', high:'高危', warning:'中危', info:'信息' };
-    document.getElementById('r-issue-body').innerHTML = issues.length
-      ? issues.map(item => {
-          const sev = (item.severity || 'info').toLowerCase();
-          const cls = SEV_CLS[sev] || 'sev-default';
-          const lbl = SEV_LABEL[sev] || sev.toUpperCase();
-          const desc = item.description || '';
-          return `
-            <tr>
-              <td><span class="sev ${cls}">${lbl}</span></td>
-              <td>${esc(item.title)}</td>
-              <td class="desc">${esc(desc.substring(0, 160))}${desc.length > 160 ? '…' : ''}</td>
-            </tr>`;
-        }).join('')
-      : '<tr><td colspan="3" class="empty">无问题</td></tr>';
+// ── Reset ──────────────────────────────────────────────────
+function resetToUpload() {
+  if (pollTimer) clearInterval(pollTimer);
+  taskId = null;
+  lastReport = null;
+  fileInput.value = '';
+  showUpload();
+}
 
-    // AI summary (markdown)
-    try {
-      document.getElementById('r-ai').innerHTML = marked.parse(d.ai_summary || '');
-    } catch (_) {
-      document.getElementById('r-ai').textContent = d.ai_summary || '';
-    }
-
-    // Download link
-    document.getElementById('btn-download').href = `/scan/report/${taskId}/download`;
-  }
-
-  // ── Reset ───────────────────────────────────────────────────
-  function resetToUpload() {
-    if (pollTimer) clearInterval(pollTimer);
-    taskId = null;
-    fileInput.value = '';
-    showUpload();
-  }
+// ── Init ───────────────────────────────────────────────────
+applyI18n();
 </script>
 </body>
 </html>
