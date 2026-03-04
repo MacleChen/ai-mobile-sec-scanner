@@ -307,152 +307,376 @@ async def download_report(task_id: str, lang: str = "zh"):
     )
 
 
+def _md_to_html(text: str) -> str:
+    """Convert basic markdown to HTML for PDF rendering."""
+    t = html_lib.escape(text)
+    t = re.sub(r"^#{3}\s+(.+)$",  r"<h3>\1</h3>",  t, flags=re.MULTILINE)
+    t = re.sub(r"^#{2}\s+(.+)$",  r"<h2>\1</h2>",  t, flags=re.MULTILINE)
+    t = re.sub(r"^#{1}\s+(.+)$",  r"<h1>\1</h1>",  t, flags=re.MULTILINE)
+    t = re.sub(r"\*\*(.+?)\*\*",  r"<strong>\1</strong>", t)
+    t = re.sub(r"\*(.+?)\*",      r"<em>\1</em>",         t)
+    t = re.sub(r"`(.+?)`",        r"<code>\1</code>",      t)
+    # List items → wrap consecutive <li> in <ul>
+    t = re.sub(r"^\s*[\*\-]\s+(.+)$", r"<li>\1</li>", t, flags=re.MULTILINE)
+    t = re.sub(r"((?:<li>.*?</li>\n?)+)", r"<ul>\1</ul>", t, flags=re.DOTALL)
+    # Paragraphs
+    blocks = re.split(r"\n{2,}", t)
+    out = []
+    for b in blocks:
+        b = b.strip()
+        if not b:
+            continue
+        if re.match(r"^<(h[1-3]|ul|ol|li)", b):
+            out.append(b)
+        else:
+            out.append(f"<p>{b.replace(chr(10), '<br>')}</p>")
+    return "\n".join(out)
+
+
 def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
+    """Generate PDF-optimised HTML (A4, cover page, proper pagination)."""
     L = _LABELS.get(lang, _LABELS["zh"])
 
     def e(v):
         return html_lib.escape(str(v or ""))
 
-    # Render AI markdown (basic subset)
-    ai_md = s.get("ai_summary", "")
-    ai_html = e(ai_md)
-    ai_html = re.sub(r"###\s+(.+)", r"<h3>\1</h3>", ai_html)
-    ai_html = re.sub(r"##\s+(.+)", r"<h2 style='color:#1e40af;margin:18px 0 8px'>\1</h2>", ai_html)
-    ai_html = re.sub(r"#\s+(.+)",  r"<h1 style='color:#1e40af'>\1</h1>", ai_html)
-    ai_html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", ai_html)
-    ai_html = re.sub(r"\*(.+?)\*",     r"<em>\1</em>", ai_html)
-    ai_html = re.sub(r"^\s*[\*\-]\s+(.+)$", r"<li>\1</li>", ai_html, flags=re.MULTILINE)
-    ai_html = re.sub(
-        r"(<li>.*?</li>(\n|$))+",
-        lambda m: f"<ul>{m.group(0)}</ul>",
-        ai_html, flags=re.DOTALL
-    )
-    ai_html = ai_html.replace("\n\n", "</p><p>").replace("\n", "<br>")
-    ai_html = f"<p>{ai_html}</p>"
+    rc       = s.get("risk_counts", {})
+    perms    = s.get("dangerous_permissions", [])
+    issues   = s.get("manifest_issues", [])
+    now      = datetime.now().strftime("%Y-%m-%d %H:%M")
+    ai_html  = _md_to_html(s.get("ai_summary", ""))
 
+    SEV_BG    = {"critical": "#fef2f2", "high": "#fff7ed", "warning": "#fffbeb", "info": "#eff6ff"}
     SEV_COLOR = {"critical": "#dc2626", "high": "#ea580c", "warning": "#d97706", "info": "#2563eb"}
-    sev_map = L["sev_map"]
+    sev_map   = L["sev_map"]
 
-    perm_count = len(s.get("dangerous_permissions", []))
-    perm_rows = "".join(
-        f"<tr><td><code>{e(p['name'])}</code></td><td>{e(p['info'])}</td></tr>"
-        for p in s.get("dangerous_permissions", [])
-    ) or f'<tr><td colspan="2" class="empty">{L["no_perms"]}</td></tr>'
+    # ── Permission rows ──────────────────────────────────────
+    perm_rows = ""
+    for i, p in enumerate(perms):
+        bg = "#f8fafc" if i % 2 == 0 else "#ffffff"
+        perm_rows += (
+            f"<tr style='background:{bg}'>"
+            f"<td style='font-family:monospace;font-size:8.5pt;color:#1e3a8a;"
+            f"word-break:break-all;width:52%'>{e(p['name'])}</td>"
+            f"<td style='font-size:9pt;color:#374151'>{e(p['info'])}</td>"
+            f"</tr>\n"
+        )
+    if not perm_rows:
+        perm_rows = f'<tr><td colspan="2" class="empty">{L["no_perms"]}</td></tr>'
 
-    issue_count = len(s.get("manifest_issues", []))
+    # ── Issue rows ───────────────────────────────────────────
     issue_rows = ""
-    for item in s.get("manifest_issues", []):
+    for i, item in enumerate(issues):
+        bg  = "#f8fafc" if i % 2 == 0 else "#ffffff"
         sev = str(item.get("severity", "info")).lower()
-        color = SEV_COLOR.get(sev, "#6b7280")
-        label = sev_map.get(sev, sev.upper())
+        lbl = sev_map.get(sev, sev.upper())
+        fg  = SEV_COLOR.get(sev, "#6b7280")
+        ibg = SEV_BG.get(sev, "#f1f5f9")
         desc = str(item.get("description", ""))
         issue_rows += (
-            f"<tr>"
-            f"<td><span style='color:{color};font-weight:700;background:{color}18;"
-            f"padding:2px 8px;border-radius:4px'>{label}</span></td>"
-            f"<td>{e(item.get('title', ''))}</td>"
-            f"<td class='desc'>{e(desc[:180])}{'…' if len(desc) > 180 else ''}</td>"
+            f"<tr style='background:{bg}'>"
+            f"<td style='width:10%;white-space:nowrap'>"
+            f"<span style='background:{ibg};color:{fg};font-weight:700;"
+            f"font-size:8pt;padding:2px 7px;border-radius:3px'>{lbl}</span></td>"
+            f"<td style='width:35%;font-size:9pt;font-weight:600'>{e(item.get('title',''))}</td>"
+            f"<td style='font-size:8.5pt;color:#4b5563'>"
+            f"{e(desc[:220])}{'…' if len(desc)>220 else ''}</td>"
             f"</tr>\n"
         )
     if not issue_rows:
         issue_rows = f'<tr><td colspan="3" class="empty">{L["no_issues"]}</td></tr>'
 
-    rc = s.get("risk_counts", {})
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    # ── App info rows (2-column table) ───────────────────────
+    def meta_row(label, value, mono=False):
+        val = f"<span style='font-family:monospace;font-size:8.5pt'>{e(value)}</span>" if mono else e(value)
+        return (
+            f"<tr>"
+            f"<td style='width:30%;color:#6b7280;font-size:8.5pt;font-weight:700;"
+            f"text-transform:uppercase;letter-spacing:.04em;padding:9pt 12pt;"
+            f"background:#f8fafc;border-bottom:1px solid #e2e8f0'>{label}</td>"
+            f"<td style='font-size:10pt;font-weight:600;padding:9pt 12pt;"
+            f"border-bottom:1px solid #e2e8f0;word-break:break-all'>{val}</td>"
+            f"</tr>"
+        )
+
+    meta_rows = (
+        meta_row(L["app_name"], s.get("app_name", ""))
+        + meta_row(L["package"],  s.get("package_name", ""))
+        + meta_row(L["version"],  s.get("version_name", ""))
+        + meta_row(L["size"],     s.get("size", ""))
+        + meta_row("MD5",         s.get("md5", ""), mono=True)
+        + meta_row(L["generated"], now)
+    )
+
+    # ── Risk boxes (HTML table, 4 cols) ─────────────────────
+    def risk_box(num, label, bg, fg):
+        return (
+            f"<td style='width:25%;padding:6pt'>"
+            f"<div style='background:{bg};border-radius:8pt;padding:18pt 10pt;text-align:center'>"
+            f"<div style='font-size:32pt;font-weight:900;color:{fg};line-height:1'>{num}</div>"
+            f"<div style='font-size:9pt;font-weight:700;color:{fg};margin-top:5pt'>{label}</div>"
+            f"</div></td>"
+        )
+
+    risk_boxes = (
+        risk_box(rc.get("critical", 0), L["critical"], "#fef2f2", "#dc2626")
+        + risk_box(rc.get("high", 0),   L["high"],     "#fff7ed", "#ea580c")
+        + risk_box(rc.get("warning", 0),L["warning"],  "#fffbeb", "#d97706")
+        + risk_box(s.get("tracker_count", 0), L["trackers"], "#eff6ff", "#2563eb")
+    )
 
     return f"""<!DOCTYPE html>
 <html lang="{L['html_lang']}">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{e(s.get('app_name',''))} - Security Report</title>
+<title>{e(s.get('app_name',''))} — Security Report</title>
 <style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f5f9;color:#1e293b;padding:24px}}
-  .wrap{{max-width:960px;margin:0 auto}}
-  .header{{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:36px 40px;border-radius:16px 16px 0 0}}
-  .header h1{{font-size:1.7em;font-weight:800}}
-  .header .sub{{opacity:.8;margin-top:6px;font-size:.9em}}
-  .section{{background:white;padding:32px 40px;border-bottom:1px solid #f1f5f9}}
-  .section:last-child{{border-radius:0 0 16px 16px;border-bottom:none}}
-  h2{{font-size:1.05em;font-weight:700;color:#374151;padding-bottom:10px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}}
-  .info-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
-  .info-item{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}}
-  .info-item label{{color:#94a3b8;font-size:.72em;font-weight:700;text-transform:uppercase;letter-spacing:.06em}}
-  .info-item p{{font-weight:600;margin-top:4px;font-size:.95em;word-break:break-all}}
-  .info-item.wide{{grid-column:1/-1}}
-  .risk-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}
-  .risk-box{{border-radius:12px;padding:20px 12px;text-align:center}}
-  .risk-box .num{{font-size:2.4em;font-weight:800;line-height:1}}
-  .risk-box .lbl{{font-size:.8em;font-weight:700;margin-top:6px}}
-  .rc{{background:#fef2f2;color:#dc2626}}.rh{{background:#fff7ed;color:#ea580c}}
-  .rw{{background:#fffbeb;color:#d97706}}.rt{{background:#eff6ff;color:#2563eb}}
-  table{{width:100%;border-collapse:collapse;font-size:.88em}}
-  th{{background:#f8fafc;padding:10px 14px;text-align:left;font-weight:700;color:#6b7280;font-size:.78em;text-transform:uppercase;letter-spacing:.05em}}
-  td{{padding:10px 14px;border-bottom:1px solid #f1f5f9;vertical-align:top}}
-  tr:hover td{{background:#f8fafc}}
-  td.desc{{color:#64748b;font-size:.85em}}
-  td.empty{{color:#94a3b8;text-align:center;padding:20px}}
-  code{{font-family:monospace;font-size:.85em;background:#f1f5f9;padding:2px 8px;border-radius:4px;word-break:break-all}}
-  .ai-box{{background:#f0f9ff;border-left:4px solid #0ea5e9;padding:24px 28px;border-radius:0 10px 10px 0;line-height:1.8}}
-  .ai-box h3{{color:#1e40af;margin:16px 0 8px}}
-  .ai-box ul{{padding-left:20px;margin:8px 0}}
-  .ai-box li{{margin:4px 0}}
-  .ai-box p{{margin:8px 0}}
-  .footer{{text-align:center;color:#94a3b8;font-size:.82em;padding:20px;background:white;border-radius:0 0 16px 16px;border-top:1px solid #e2e8f0}}
-  @media print{{body{{padding:0;background:white}}}}
+/* ── Page setup ──────────────────────────── */
+@page {{
+  size: A4;
+  margin: 2cm 2.2cm 2.5cm;
+  @bottom-left {{
+    content: "{e(s.get('app_name',''))} · {e(filename)}";
+    font-size: 7.5pt;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 5pt;
+  }}
+  @bottom-right {{
+    content: counter(page) " / " counter(pages);
+    font-size: 7.5pt;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 5pt;
+  }}
+}}
+@page :first {{
+  margin: 0;
+  @bottom-left  {{ content: none; border: none; }}
+  @bottom-right {{ content: none; border: none; }}
+}}
+
+/* ── Base ────────────────────────────────── */
+* {{ box-sizing: border-box; margin: 0; padding: 0; }}
+body {{
+  font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei',
+               'Noto Sans CJK SC', sans-serif;
+  font-size: 10pt;
+  color: #1e293b;
+  line-height: 1.6;
+  background: white;
+}}
+
+/* ── Cover page ──────────────────────────── */
+.cover {{
+  page-break-after: always;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}}
+.cover-top {{
+  background: #1e3a8a;
+  color: white;
+  padding: 3cm 2.5cm 2cm;
+  flex-shrink: 0;
+}}
+.cover-top .label {{
+  font-size: 9pt;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .7;
+  margin-bottom: 12pt;
+}}
+.cover-top h1 {{
+  font-size: 26pt;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 8pt;
+}}
+.cover-top .subtitle {{
+  font-size: 11pt;
+  opacity: .75;
+  margin-bottom: 2cm;
+}}
+.cover-meta {{
+  padding: 0 2.5cm;
+  margin-top: 1cm;
+}}
+.cover-risk {{
+  padding: 0 2.5cm;
+  margin-top: 1cm;
+}}
+.cover-bottom {{
+  margin-top: auto;
+  padding: 1.5cm 2.5cm;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8.5pt;
+  color: #94a3b8;
+}}
+
+/* ── Section headings ────────────────────── */
+.section {{
+  page-break-inside: avoid;
+  margin-bottom: 1.2cm;
+}}
+.section-title {{
+  font-size: 11pt;
+  font-weight: 800;
+  color: #1e3a8a;
+  border-bottom: 2.5pt solid #1e3a8a;
+  padding-bottom: 5pt;
+  margin-bottom: 12pt;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}}
+.section-break {{
+  page-break-before: always;
+}}
+
+/* ── Tables ──────────────────────────────── */
+table.data {{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  page-break-inside: auto;
+}}
+table.data thead tr {{
+  background: #1e3a8a;
+  color: white;
+}}
+table.data thead th {{
+  padding: 8pt 12pt;
+  text-align: left;
+  font-weight: 700;
+  font-size: 8.5pt;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}}
+table.data tbody tr {{
+  page-break-inside: avoid;
+}}
+table.data td {{
+  padding: 8pt 12pt;
+  vertical-align: top;
+  border-bottom: 1px solid #e2e8f0;
+}}
+td.empty {{
+  text-align: center;
+  color: #94a3b8;
+  padding: 14pt;
+  font-style: italic;
+}}
+
+/* ── AI section ──────────────────────────── */
+.ai-content {{
+  border-left: 3pt solid #1e3a8a;
+  padding-left: 14pt;
+  line-height: 1.75;
+}}
+.ai-content h1, .ai-content h2, .ai-content h3 {{
+  color: #1e3a8a;
+  margin: 14pt 0 6pt;
+  font-size: 10.5pt;
+}}
+.ai-content h1 {{ font-size: 12pt; }}
+.ai-content p  {{ margin: 6pt 0; font-size: 9.5pt; }}
+.ai-content ul, .ai-content ol {{ padding-left: 18pt; margin: 6pt 0; }}
+.ai-content li {{ margin: 3pt 0; font-size: 9.5pt; }}
+.ai-content strong {{ color: #1e293b; }}
+.ai-content code {{
+  font-family: monospace;
+  font-size: 8.5pt;
+  background: #f1f5f9;
+  padding: 1pt 4pt;
+  border-radius: 2pt;
+}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="header">
+
+<!-- ══ COVER PAGE ══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="label">Mobile Application Security Report</div>
     <h1>{L['report_title']}</h1>
-    <div class="sub">{e(filename)} &nbsp;·&nbsp; {L['generated']} {now}</div>
+    <div class="subtitle">Static Analysis · AI Security Assessment</div>
   </div>
 
-  <div class="section">
-    <h2>{L['app_info']}</h2>
-    <div class="info-grid">
-      <div class="info-item"><label>{L['app_name']}</label><p>{e(s.get('app_name',''))}</p></div>
-      <div class="info-item"><label>{L['package']}</label><p>{e(s.get('package_name',''))}</p></div>
-      <div class="info-item"><label>{L['version']}</label><p>{e(s.get('version_name',''))}</p></div>
-      <div class="info-item"><label>{L['size']}</label><p>{e(s.get('size',''))}</p></div>
-      <div class="info-item wide"><label>MD5</label><p><code>{e(s.get('md5',''))}</code></p></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>{L['risk']}</h2>
-    <div class="risk-grid">
-      <div class="risk-box rc"><div class="num">{rc.get('critical',0)}</div><div class="lbl">{L['critical']}</div></div>
-      <div class="risk-box rh"><div class="num">{rc.get('high',0)}</div><div class="lbl">{L['high']}</div></div>
-      <div class="risk-box rw"><div class="num">{rc.get('warning',0)}</div><div class="lbl">{L['warning']}</div></div>
-      <div class="risk-box rt"><div class="num">{s.get('tracker_count',0)}</div><div class="lbl">{L['trackers']}</div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>{L['perms']} ({perm_count})</h2>
-    <table>
-      <tr><th>{L['perm_name']}</th><th>{L['perm_desc']}</th></tr>
-      {perm_rows}
+  <div class="cover-meta">
+    <table style="width:100%;border-collapse:collapse;margin-top:6pt">
+      {meta_rows}
     </table>
   </div>
 
-  <div class="section">
-    <h2>{L['issues']} ({issue_count})</h2>
-    <table>
-      <tr><th>{L['sev']}</th><th>{L['issue']}</th><th>{L['detail']}</th></tr>
-      {issue_rows}
+  <div class="cover-risk">
+    <div style="font-size:8.5pt;font-weight:700;color:#6b7280;text-transform:uppercase;
+                letter-spacing:.06em;margin:16pt 0 8pt">{L['risk']}</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr>{risk_boxes}</tr>
     </table>
   </div>
 
-  <div class="section">
-    <h2>{L['ai_title']}</h2>
-    <div class="ai-box">{ai_html}</div>
+  <div class="cover-bottom">
+    <span>AI Mobile Security Scanner · MobSF v4.4.5 + Gemini 2.5 Flash</span>
+    <span>{L['generated']}: {now}</span>
   </div>
-
-  <div class="footer">{L['footer']}</div>
 </div>
+
+<!-- ══ CONTENT PAGES ═══════════════════════════════════════ -->
+
+<!-- § 1 App Info -->
+<div class="section">
+  <div class="section-title">1. {L['app_info']}</div>
+  <table style="width:100%;border-collapse:collapse">
+    {meta_rows}
+  </table>
+</div>
+
+<!-- § 2 Risk Overview -->
+<div class="section">
+  <div class="section-title">2. {L['risk']}</div>
+  <table style="width:100%;border-collapse:collapse">
+    <tr>{risk_boxes}</tr>
+  </table>
+</div>
+
+<!-- § 3 Dangerous Permissions -->
+<div class="section">
+  <div class="section-title">3. {L['perms']} ({len(perms)})</div>
+  <table class="data">
+    <thead>
+      <tr>
+        <th style="width:52%">{L['perm_name']}</th>
+        <th>{L['perm_desc']}</th>
+      </tr>
+    </thead>
+    <tbody>{perm_rows}</tbody>
+  </table>
+</div>
+
+<!-- § 4 Manifest Issues -->
+<div class="section section-break">
+  <div class="section-title">4. {L['issues']} ({len(issues)})</div>
+  <table class="data">
+    <thead>
+      <tr>
+        <th style="width:10%">{L['sev']}</th>
+        <th style="width:35%">{L['issue']}</th>
+        <th>{L['detail']}</th>
+      </tr>
+    </thead>
+    <tbody>{issue_rows}</tbody>
+  </table>
+</div>
+
+<!-- § 5 AI Analysis -->
+<div class="section section-break">
+  <div class="section-title">5. {L['ai_title']}</div>
+  <div class="ai-content">{ai_html}</div>
+</div>
+
 </body>
 </html>"""
