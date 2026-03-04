@@ -9,7 +9,6 @@ import html as html_lib
 from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
-from weasyprint import HTML as WeasyHTML
 
 load_dotenv()
 app = FastAPI(title="AI Mobile Sec Scanner")
@@ -294,21 +293,17 @@ async def download_report(task_id: str, lang: str = "zh"):
     safe_name = "".join(c for c in app_name if c.isalnum() or c in "-_") or task_id[:8]
 
     html_content = _build_report_html(summary, filename, lang)
-    loop = asyncio.get_event_loop()
-    pdf_bytes = await loop.run_in_executor(
-        None, lambda: WeasyHTML(string=html_content).write_pdf()
-    )
     return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
+        content=html_content.encode("utf-8"),
+        media_type="text/html; charset=utf-8",
         headers={
-            "Content-Disposition": f'attachment; filename="security-report-{safe_name}.pdf"'
+            "Content-Disposition": f'attachment; filename="security-report-{safe_name}.html"'
         },
     )
 
 
 def _md_to_html(text: str) -> str:
-    """Convert basic markdown to HTML for PDF rendering."""
+    """Convert basic markdown to HTML."""
     t = html_lib.escape(text)
     t = re.sub(r"^#{3}\s+(.+)$",  r"<h3>\1</h3>",  t, flags=re.MULTILINE)
     t = re.sub(r"^#{2}\s+(.+)$",  r"<h2>\1</h2>",  t, flags=re.MULTILINE)
@@ -316,10 +311,8 @@ def _md_to_html(text: str) -> str:
     t = re.sub(r"\*\*(.+?)\*\*",  r"<strong>\1</strong>", t)
     t = re.sub(r"\*(.+?)\*",      r"<em>\1</em>",         t)
     t = re.sub(r"`(.+?)`",        r"<code>\1</code>",      t)
-    # List items → wrap consecutive <li> in <ul>
     t = re.sub(r"^\s*[\*\-]\s+(.+)$", r"<li>\1</li>", t, flags=re.MULTILINE)
     t = re.sub(r"((?:<li>.*?</li>\n?)+)", r"<ul>\1</ul>", t, flags=re.DOTALL)
-    # Paragraphs
     blocks = re.split(r"\n{2,}", t)
     out = []
     for b in blocks:
@@ -334,37 +327,36 @@ def _md_to_html(text: str) -> str:
 
 
 def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
-    """Generate PDF-optimised HTML (A4, cover page, proper pagination)."""
+    """Generate a self-contained HTML report for download."""
     L = _LABELS.get(lang, _LABELS["zh"])
 
     def e(v):
         return html_lib.escape(str(v or ""))
 
-    rc       = s.get("risk_counts", {})
-    perms    = s.get("dangerous_permissions", [])
-    issues   = s.get("manifest_issues", [])
-    now      = datetime.now().strftime("%Y-%m-%d %H:%M")
-    ai_html  = _md_to_html(s.get("ai_summary", ""))
+    rc      = s.get("risk_counts", {})
+    perms   = s.get("dangerous_permissions", [])
+    issues  = s.get("manifest_issues", [])
+    now     = datetime.now().strftime("%Y-%m-%d %H:%M")
+    ai_html = _md_to_html(s.get("ai_summary", ""))
 
     SEV_BG    = {"critical": "#fef2f2", "high": "#fff7ed", "warning": "#fffbeb", "info": "#eff6ff"}
     SEV_COLOR = {"critical": "#dc2626", "high": "#ea580c", "warning": "#d97706", "info": "#2563eb"}
     sev_map   = L["sev_map"]
 
-    # ── Permission rows ──────────────────────────────────────
+    # ── Permission rows ───────────────────────────────────────
     perm_rows = ""
     for i, p in enumerate(perms):
         bg = "#f8fafc" if i % 2 == 0 else "#ffffff"
         perm_rows += (
             f"<tr style='background:{bg}'>"
-            f"<td style='font-family:monospace;font-size:8.5pt;color:#1e3a8a;"
-            f"word-break:break-all;width:52%'>{e(p['name'])}</td>"
-            f"<td style='font-size:9pt;color:#374151'>{e(p['info'])}</td>"
+            f"<td class='mono' style='width:50%'>{e(p['name'])}</td>"
+            f"<td>{e(p['info'])}</td>"
             f"</tr>\n"
         )
     if not perm_rows:
         perm_rows = f'<tr><td colspan="2" class="empty">{L["no_perms"]}</td></tr>'
 
-    # ── Issue rows ───────────────────────────────────────────
+    # ── Issue rows ────────────────────────────────────────────
     issue_rows = ""
     for i, item in enumerate(issues):
         bg  = "#f8fafc" if i % 2 == 0 else "#ffffff"
@@ -375,308 +367,341 @@ def _build_report_html(s: dict, filename: str, lang: str = "zh") -> str:
         desc = str(item.get("description", ""))
         issue_rows += (
             f"<tr style='background:{bg}'>"
-            f"<td style='width:10%;white-space:nowrap'>"
-            f"<span style='background:{ibg};color:{fg};font-weight:700;"
-            f"font-size:8pt;padding:2px 7px;border-radius:3px'>{lbl}</span></td>"
-            f"<td style='width:35%;font-size:9pt;font-weight:600'>{e(item.get('title',''))}</td>"
-            f"<td style='font-size:8.5pt;color:#4b5563'>"
-            f"{e(desc[:220])}{'…' if len(desc)>220 else ''}</td>"
+            f"<td style='width:9%;white-space:nowrap'>"
+            f"<span class='badge' style='background:{ibg};color:{fg}'>{lbl}</span></td>"
+            f"<td style='width:32%;font-weight:600'>{e(item.get('title',''))}</td>"
+            f"<td class='muted'>{e(desc)}</td>"
             f"</tr>\n"
         )
     if not issue_rows:
         issue_rows = f'<tr><td colspan="3" class="empty">{L["no_issues"]}</td></tr>'
 
-    # ── App info rows (2-column table) ───────────────────────
+    # ── Meta rows ─────────────────────────────────────────────
     def meta_row(label, value, mono=False):
-        val = f"<span style='font-family:monospace;font-size:8.5pt'>{e(value)}</span>" if mono else e(value)
+        val = f"<span class='mono'>{e(value)}</span>" if mono else e(value)
         return (
             f"<tr>"
-            f"<td style='width:30%;color:#6b7280;font-size:8.5pt;font-weight:700;"
-            f"text-transform:uppercase;letter-spacing:.04em;padding:9pt 12pt;"
-            f"background:#f8fafc;border-bottom:1px solid #e2e8f0'>{label}</td>"
-            f"<td style='font-size:10pt;font-weight:600;padding:9pt 12pt;"
-            f"border-bottom:1px solid #e2e8f0;word-break:break-all'>{val}</td>"
+            f"<td class='meta-label'>{label}</td>"
+            f"<td class='meta-value'>{val}</td>"
             f"</tr>"
         )
 
     meta_rows = (
-        meta_row(L["app_name"], s.get("app_name", ""))
-        + meta_row(L["package"],  s.get("package_name", ""))
-        + meta_row(L["version"],  s.get("version_name", ""))
-        + meta_row(L["size"],     s.get("size", ""))
-        + meta_row("MD5",         s.get("md5", ""), mono=True)
+        meta_row(L["app_name"],  s.get("app_name", ""))
+        + meta_row(L["package"], s.get("package_name", ""))
+        + meta_row(L["version"], s.get("version_name", ""))
+        + meta_row(L["size"],    s.get("size", ""))
+        + meta_row("MD5",        s.get("md5", ""), mono=True)
         + meta_row(L["generated"], now)
     )
 
-    # ── Risk boxes (HTML table, 4 cols) ─────────────────────
-    def risk_box(num, label, bg, fg):
+    # ── Risk cards ────────────────────────────────────────────
+    def risk_card(num, label, bg, fg):
         return (
-            f"<td style='width:25%;padding:6pt'>"
-            f"<div style='background:{bg};border-radius:8pt;padding:18pt 10pt;text-align:center'>"
-            f"<div style='font-size:32pt;font-weight:900;color:{fg};line-height:1'>{num}</div>"
-            f"<div style='font-size:9pt;font-weight:700;color:{fg};margin-top:5pt'>{label}</div>"
-            f"</div></td>"
+            f"<div class='risk-card' style='background:{bg}'>"
+            f"<div class='risk-num' style='color:{fg}'>{num}</div>"
+            f"<div class='risk-label' style='color:{fg}'>{label}</div>"
+            f"</div>"
         )
 
-    risk_boxes = (
-        risk_box(rc.get("critical", 0), L["critical"], "#fef2f2", "#dc2626")
-        + risk_box(rc.get("high", 0),   L["high"],     "#fff7ed", "#ea580c")
-        + risk_box(rc.get("warning", 0),L["warning"],  "#fffbeb", "#d97706")
-        + risk_box(s.get("tracker_count", 0), L["trackers"], "#eff6ff", "#2563eb")
+    risk_cards = (
+        risk_card(rc.get("critical", 0), L["critical"], "#fef2f2", "#dc2626")
+        + risk_card(rc.get("high", 0),   L["high"],     "#fff7ed", "#ea580c")
+        + risk_card(rc.get("warning", 0),L["warning"],  "#fffbeb", "#d97706")
+        + risk_card(s.get("tracker_count", 0), L["trackers"], "#eff6ff", "#2563eb")
     )
 
     return f"""<!DOCTYPE html>
 <html lang="{L['html_lang']}">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(s.get('app_name',''))} — Security Report</title>
 <style>
-/* ── Page setup ──────────────────────────── */
-@page {{
-  size: A4;
-  margin: 2cm 2.2cm 2.5cm;
-  @bottom-left {{
-    content: "{e(s.get('app_name',''))} · {e(filename)}";
-    font-size: 7.5pt;
-    color: #94a3b8;
-    border-top: 1px solid #e2e8f0;
-    padding-top: 5pt;
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Microsoft YaHei', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1e293b;
+    background: #f1f5f9;
   }}
-  @bottom-right {{
-    content: counter(page) " / " counter(pages);
-    font-size: 7.5pt;
-    color: #94a3b8;
-    border-top: 1px solid #e2e8f0;
-    padding-top: 5pt;
+  a {{ color: #2563eb; text-decoration: none; }}
+
+  /* Header */
+  .header {{
+    background: #1e3a8a;
+    color: white;
+    padding: 32px 40px 28px;
   }}
-}}
-@page :first {{
-  margin: 0;
-  @bottom-left  {{ content: none; border: none; }}
-  @bottom-right {{ content: none; border: none; }}
-}}
+  .header-badge {{
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    opacity: .65;
+    margin-bottom: 8px;
+  }}
+  .header h1 {{
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }}
+  .header-sub {{
+    font-size: 13px;
+    opacity: .7;
+  }}
 
-/* ── Base ────────────────────────────────── */
-* {{ box-sizing: border-box; margin: 0; padding: 0; }}
-body {{
-  font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei',
-               'Noto Sans CJK SC', sans-serif;
-  font-size: 10pt;
-  color: #1e293b;
-  line-height: 1.6;
-  background: white;
-}}
+  /* Layout */
+  .content {{
+    max-width: 960px;
+    margin: 32px auto;
+    padding: 0 24px 64px;
+  }}
 
-/* ── Cover page ──────────────────────────── */
-.cover {{
-  page-break-after: always;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}}
-.cover-top {{
-  background: #1e3a8a;
-  color: white;
-  padding: 3cm 2.5cm 2cm;
-  flex-shrink: 0;
-}}
-.cover-top .label {{
-  font-size: 9pt;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  opacity: .7;
-  margin-bottom: 12pt;
-}}
-.cover-top h1 {{
-  font-size: 26pt;
-  font-weight: 900;
-  line-height: 1.2;
-  margin-bottom: 8pt;
-}}
-.cover-top .subtitle {{
-  font-size: 11pt;
-  opacity: .75;
-  margin-bottom: 2cm;
-}}
-.cover-meta {{
-  padding: 0 2.5cm;
-  margin-top: 1cm;
-}}
-.cover-risk {{
-  padding: 0 2.5cm;
-  margin-top: 1cm;
-}}
-.cover-bottom {{
-  margin-top: auto;
-  padding: 1.5cm 2.5cm;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 8.5pt;
-  color: #94a3b8;
-}}
+  /* Section */
+  .section {{
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }}
+  .section-head {{
+    padding: 16px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }}
+  .section-num {{
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1e3a8a;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }}
+  .section-title {{
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+  }}
 
-/* ── Section headings ────────────────────── */
-.section {{
-  page-break-inside: avoid;
-  margin-bottom: 1.2cm;
-}}
-.section-title {{
-  font-size: 11pt;
-  font-weight: 800;
-  color: #1e3a8a;
-  border-bottom: 2.5pt solid #1e3a8a;
-  padding-bottom: 5pt;
-  margin-bottom: 12pt;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}}
-.section-break {{
-  page-break-before: always;
-}}
+  /* Risk cards */
+  .risk-grid {{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px 24px;
+  }}
+  .risk-card {{
+    border-radius: 8px;
+    padding: 20px 12px;
+    text-align: center;
+  }}
+  .risk-num {{
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+  }}
+  .risk-label {{
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 6px;
+  }}
 
-/* ── Tables ──────────────────────────────── */
-table.data {{
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 9.5pt;
-  page-break-inside: auto;
-}}
-table.data thead tr {{
-  background: #1e3a8a;
-  color: white;
-}}
-table.data thead th {{
-  padding: 8pt 12pt;
-  text-align: left;
-  font-weight: 700;
-  font-size: 8.5pt;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}}
-table.data tbody tr {{
-  page-break-inside: avoid;
-}}
-table.data td {{
-  padding: 8pt 12pt;
-  vertical-align: top;
-  border-bottom: 1px solid #e2e8f0;
-}}
-td.empty {{
-  text-align: center;
-  color: #94a3b8;
-  padding: 14pt;
-  font-style: italic;
-}}
+  /* Meta table */
+  table.meta {{
+    width: 100%;
+    border-collapse: collapse;
+  }}
+  .meta-label {{
+    width: 28%;
+    padding: 11px 24px;
+    background: #f8fafc;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }}
+  .meta-value {{
+    padding: 11px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 1px solid #e2e8f0;
+    word-break: break-all;
+  }}
 
-/* ── AI section ──────────────────────────── */
-.ai-content {{
-  border-left: 3pt solid #1e3a8a;
-  padding-left: 14pt;
-  line-height: 1.75;
-}}
-.ai-content h1, .ai-content h2, .ai-content h3 {{
-  color: #1e3a8a;
-  margin: 14pt 0 6pt;
-  font-size: 10.5pt;
-}}
-.ai-content h1 {{ font-size: 12pt; }}
-.ai-content p  {{ margin: 6pt 0; font-size: 9.5pt; }}
-.ai-content ul, .ai-content ol {{ padding-left: 18pt; margin: 6pt 0; }}
-.ai-content li {{ margin: 3pt 0; font-size: 9.5pt; }}
-.ai-content strong {{ color: #1e293b; }}
-.ai-content code {{
-  font-family: monospace;
-  font-size: 8.5pt;
-  background: #f1f5f9;
-  padding: 1pt 4pt;
-  border-radius: 2pt;
-}}
+  /* Data table */
+  table.data {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }}
+  table.data thead th {{
+    background: #1e3a8a;
+    color: white;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }}
+  table.data td {{
+    padding: 10px 16px;
+    vertical-align: top;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 13px;
+  }}
+  .badge {{
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }}
+  .mono {{
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12px;
+    color: #1e3a8a;
+    word-break: break-all;
+  }}
+  .muted {{ color: #4b5563; }}
+  .empty {{
+    text-align: center;
+    color: #94a3b8;
+    padding: 20px;
+    font-style: italic;
+  }}
+
+  /* AI section */
+  .ai-body {{
+    padding: 20px 24px;
+    border-left: 4px solid #1e3a8a;
+    margin: 20px 24px;
+    background: #f8fafc;
+    border-radius: 0 8px 8px 0;
+    line-height: 1.75;
+  }}
+  .ai-body h1, .ai-body h2, .ai-body h3 {{
+    color: #1e3a8a;
+    margin: 16px 0 6px;
+  }}
+  .ai-body h1 {{ font-size: 18px; }}
+  .ai-body h2 {{ font-size: 16px; }}
+  .ai-body h3 {{ font-size: 14px; }}
+  .ai-body p  {{ margin: 8px 0; }}
+  .ai-body ul, .ai-body ol {{ padding-left: 22px; margin: 8px 0; }}
+  .ai-body li {{ margin: 4px 0; }}
+  .ai-body code {{
+    font-family: monospace;
+    font-size: 12px;
+    background: #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }}
+  .ai-body strong {{ color: #0f172a; }}
+
+  /* Footer */
+  .footer {{
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    padding: 20px 0 0;
+  }}
 </style>
 </head>
 <body>
 
-<!-- ══ COVER PAGE ══════════════════════════════════════════ -->
-<div class="cover">
-  <div class="cover-top">
-    <div class="label">Mobile Application Security Report</div>
-    <h1>{L['report_title']}</h1>
-    <div class="subtitle">Static Analysis · AI Security Assessment</div>
-  </div>
+<div class="header">
+  <div class="header-badge">Mobile Application Security Report</div>
+  <h1>{L['report_title']}</h1>
+  <div class="header-sub">Static Analysis · AI Security Assessment &nbsp;·&nbsp; {now}</div>
+</div>
 
-  <div class="cover-meta">
-    <table style="width:100%;border-collapse:collapse;margin-top:6pt">
+<div class="content">
+
+  <!-- § 1 App Info -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">1</div>
+      <div class="section-title">{L['app_info']}</div>
+    </div>
+    <table class="meta">
       {meta_rows}
     </table>
   </div>
 
-  <div class="cover-risk">
-    <div style="font-size:8.5pt;font-weight:700;color:#6b7280;text-transform:uppercase;
-                letter-spacing:.06em;margin:16pt 0 8pt">{L['risk']}</div>
-    <table style="width:100%;border-collapse:collapse">
-      <tr>{risk_boxes}</tr>
+  <!-- § 2 Risk Overview -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">2</div>
+      <div class="section-title">{L['risk']}</div>
+    </div>
+    <div class="risk-grid">
+      {risk_cards}
+    </div>
+  </div>
+
+  <!-- § 3 Dangerous Permissions -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">3</div>
+      <div class="section-title">{L['perms']} ({len(perms)})</div>
+    </div>
+    <table class="data">
+      <thead>
+        <tr>
+          <th style="width:50%">{L['perm_name']}</th>
+          <th>{L['perm_desc']}</th>
+        </tr>
+      </thead>
+      <tbody>{perm_rows}</tbody>
     </table>
   </div>
 
-  <div class="cover-bottom">
-    <span>AI Mobile Security Scanner · MobSF v4.4.5 + Gemini 2.5 Flash</span>
-    <span>{L['generated']}: {now}</span>
+  <!-- § 4 Manifest Issues -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">4</div>
+      <div class="section-title">{L['issues']} ({len(issues)})</div>
+    </div>
+    <table class="data">
+      <thead>
+        <tr>
+          <th style="width:9%">{L['sev']}</th>
+          <th style="width:32%">{L['issue']}</th>
+          <th>{L['detail']}</th>
+        </tr>
+      </thead>
+      <tbody>{issue_rows}</tbody>
+    </table>
   </div>
+
+  <!-- § 5 AI Analysis -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">5</div>
+      <div class="section-title">{L['ai_title']}</div>
+    </div>
+    <div class="ai-body">{ai_html}</div>
+  </div>
+
+  <div class="footer">
+    AI Mobile Security Scanner &nbsp;·&nbsp; MobSF v4.4.5 + Gemini 2.5 Flash
+    &nbsp;·&nbsp; {e(filename)}
+  </div>
+
 </div>
-
-<!-- ══ CONTENT PAGES ═══════════════════════════════════════ -->
-
-<!-- § 1 App Info -->
-<div class="section">
-  <div class="section-title">1. {L['app_info']}</div>
-  <table style="width:100%;border-collapse:collapse">
-    {meta_rows}
-  </table>
-</div>
-
-<!-- § 2 Risk Overview -->
-<div class="section">
-  <div class="section-title">2. {L['risk']}</div>
-  <table style="width:100%;border-collapse:collapse">
-    <tr>{risk_boxes}</tr>
-  </table>
-</div>
-
-<!-- § 3 Dangerous Permissions -->
-<div class="section">
-  <div class="section-title">3. {L['perms']} ({len(perms)})</div>
-  <table class="data">
-    <thead>
-      <tr>
-        <th style="width:52%">{L['perm_name']}</th>
-        <th>{L['perm_desc']}</th>
-      </tr>
-    </thead>
-    <tbody>{perm_rows}</tbody>
-  </table>
-</div>
-
-<!-- § 4 Manifest Issues -->
-<div class="section section-break">
-  <div class="section-title">4. {L['issues']} ({len(issues)})</div>
-  <table class="data">
-    <thead>
-      <tr>
-        <th style="width:10%">{L['sev']}</th>
-        <th style="width:35%">{L['issue']}</th>
-        <th>{L['detail']}</th>
-      </tr>
-    </thead>
-    <tbody>{issue_rows}</tbody>
-  </table>
-</div>
-
-<!-- § 5 AI Analysis -->
-<div class="section section-break">
-  <div class="section-title">5. {L['ai_title']}</div>
-  <div class="ai-content">{ai_html}</div>
-</div>
-
 </body>
 </html>"""
