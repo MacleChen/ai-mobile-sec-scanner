@@ -16,7 +16,7 @@ async def scan_app(file: UploadFile):
     mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
     headers = mobsf_headers()
 
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=30, read=300, write=120, pool=30)) as client:
         # 1. 上传到MobSF
         file_data = await file.read()
         files = {'file': (file.filename, file_data, 'application/octet-stream')}
@@ -27,11 +27,14 @@ async def scan_app(file: UploadFile):
         scan_id = upload_data['hash']
 
         # 2. 触发扫描
-        await client.post(
+        scan_resp = await client.post(
             f"{mobsf_url}/api/v1/scan",
             data={"hash": scan_id, "scan_type": upload_data.get("scan_type", "apk")},
             headers=headers,
         )
+        scan_result = scan_resp.json()
+        if "error" in scan_result:
+            return {"error": "MobSF scan failed", "detail": scan_result["error"]}
 
         # 3. 轮询等待扫描完成，最多等 300 秒
         report = None
