@@ -88,6 +88,20 @@ def _mobsf_headers():
     return {"Authorization": os.getenv("MOBSF_API_KEY")}
 
 
+@app.get("/health")
+async def health():
+    """Check MobSF connectivity."""
+    mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(f"{mobsf_url}/api/v1/api_docs",
+                                    headers=_mobsf_headers())
+            ok = resp.status_code < 500
+    except Exception:
+        ok = False
+    return {"mobsf": "ok" if ok else "unreachable", "mobsf_url": mobsf_url}
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
@@ -216,6 +230,21 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
             "finished_at": datetime.now().isoformat(),
         })
 
+    except httpx.ConnectError:
+        mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
+        _tasks[task_id].update({
+            "status": "error",
+            "error": f"无法连接 MobSF ({mobsf_url})，请确认 MobSF 服务已启动。",
+            "error_en": f"Cannot connect to MobSF ({mobsf_url}). Please make sure MobSF is running.",
+            "error_code": "mobsf_unreachable",
+        })
+    except httpx.TimeoutException:
+        _tasks[task_id].update({
+            "status": "error",
+            "error": "MobSF 响应超时，文件可能过大或服务繁忙，请稍后重试。",
+            "error_en": "MobSF timed out. The file may be too large or the service is busy.",
+            "error_code": "timeout",
+        })
     except Exception as e:
         _tasks[task_id].update({"status": "error", "error": str(e)})
 

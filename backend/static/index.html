@@ -194,6 +194,26 @@
 
     .hidden { display: none !important; }
 
+    /* ── MobSF status banner ──────── */
+    .mobsf-banner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 24px; font-size: .9em; font-weight: 500;
+    }
+    .mobsf-banner.warn {
+      background: #fef3c7; color: #92400e;
+      border-bottom: 1px solid #fde68a;
+    }
+    .mobsf-banner.ok {
+      background: #f0fdf4; color: #166534;
+      border-bottom: 1px solid #bbf7d0;
+    }
+    .mobsf-banner .dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .mobsf-banner.warn .dot { background: #f59e0b; }
+    .mobsf-banner.ok   .dot { background: #22c55e; }
+    .mobsf-banner a { color: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
     @media (max-width: 640px) {
       .info-grid { grid-template-columns: 1fr; }
       .risk-grid { grid-template-columns: 1fr 1fr; }
@@ -212,6 +232,12 @@
   <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
   <h1 id="hdr-title">🔍 AI 移动安全扫描器</h1>
   <p id="hdr-subtitle">上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
+</div>
+
+<!-- MobSF status banner (hidden until health check) -->
+<div id="mobsf-banner" class="mobsf-banner hidden">
+  <div class="dot"></div>
+  <span id="mobsf-banner-text"></span>
 </div>
 
 <div class="page">
@@ -392,6 +418,11 @@ const LANG = {
     permTitle:    n => `🔐 危险权限（${n} 项）`,
     issueTitle:   n => `🛡️ 清单文件安全问题（${n} 项）`,
     htmlLang:     'zh-CN',
+    mobsfOk:      'MobSF 已连接，可以开始扫描',
+    mobsfDown:    'MobSF 未启动，扫描功能暂不可用。请运行：',
+    mobsfCmd:     'docker compose up -d mobsf',
+    errMobsfDown: 'MobSF 服务未启动，请先启动 MobSF 后重试。',
+    errTimeout:   'MobSF 响应超时，请稍后重试。',
   },
   en: {
     pageTitle:    'AI Mobile Security Scanner',
@@ -439,6 +470,11 @@ const LANG = {
     permTitle:    n => `🔐 Dangerous Permissions (${n})`,
     issueTitle:   n => `🛡️ Manifest Security Issues (${n})`,
     htmlLang:     'en',
+    mobsfOk:      'MobSF connected — ready to scan',
+    mobsfDown:    'MobSF is not running. Scanning is unavailable. To start:',
+    mobsfCmd:     'docker compose up -d mobsf',
+    errMobsfDown: 'MobSF is not running. Please start MobSF and try again.',
+    errTimeout:   'MobSF timed out. Please try again later.',
   },
 };
 
@@ -601,7 +637,18 @@ async function pollStatus() {
     } else if (data.status === 'error') {
       clearInterval(pollTimer);
       resetToUpload();
-      showUploadError(l.errScan + (data.error || ''));
+      // Use friendly messages for known error codes
+      let errMsg;
+      if (data.error_code === 'mobsf_unreachable') {
+        errMsg = l.errMobsfDown;
+        checkMobSF();   // refresh the banner
+      } else if (data.error_code === 'timeout') {
+        errMsg = l.errTimeout;
+      } else {
+        // Fall back: prefer localised field, then raw error
+        errMsg = l.errScan + (lang === 'en' ? (data.error_en || data.error) : data.error || '');
+      }
+      showUploadError(errMsg);
     }
   } catch (_) { /* network hiccup */ }
 }
@@ -694,8 +741,33 @@ function resetToUpload() {
   showUpload();
 }
 
+// ── MobSF Health Check ──────────────────────────────────────
+async function checkMobSF() {
+  const banner = document.getElementById('mobsf-banner');
+  const text   = document.getElementById('mobsf-banner-text');
+  const l = L();
+  try {
+    const resp = await fetch('/health');
+    const data = await resp.json();
+    if (data.mobsf === 'ok') {
+      banner.className = 'mobsf-banner ok';
+      text.textContent = l.mobsfOk;
+      banner.classList.remove('hidden');
+      // Auto-hide the OK banner after 4s
+      setTimeout(() => banner.classList.add('hidden'), 4000);
+    } else {
+      banner.className = 'mobsf-banner warn';
+      text.innerHTML = `${l.mobsfDown} <a onclick="navigator.clipboard.writeText('${l.mobsfCmd}').then(()=>this.textContent='✅ copied!')" title="Click to copy"><code>${l.mobsfCmd}</code></a>`;
+      banner.classList.remove('hidden');
+    }
+  } catch (_) {
+    // Backend not reachable — don't show banner
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────
 applyI18n();
+checkMobSF();
 </script>
 </body>
 </html>
