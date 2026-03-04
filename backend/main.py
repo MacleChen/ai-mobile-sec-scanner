@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile
 import requests
 import os
+import time
 from dotenv import load_dotenv
 from google import genai
 
@@ -27,9 +28,17 @@ async def scan_app(file: UploadFile):
     # 2. 触发扫描
     requests.post(f"{mobsf_url}/api/v1/scan", data={"hash": scan_id, "scan_type": upload_data.get("scan_type", "apk")}, headers=headers)
 
-    # 3. 获取MobSF报告
-    report_resp = requests.post(f"{mobsf_url}/api/v1/report_json", data={"hash": scan_id}, headers=headers)
-    report = report_resp.json()
+    # 3. 轮询等待扫描完成，最多等 300 秒
+    report = None
+    for _ in range(60):
+        time.sleep(5)
+        resp = requests.post(f"{mobsf_url}/api/v1/report_json", data={"hash": scan_id}, headers=headers)
+        data = resp.json()
+        if "report" not in data:   # 有真实报告字段时退出
+            report = data
+            break
+    if report is None:
+        return {"error": "MobSF scan timed out", "hash": scan_id}
 
     # 4. Gemini AI 生成安全摘要
     summary_data = {
