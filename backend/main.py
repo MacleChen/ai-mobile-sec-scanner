@@ -175,16 +175,21 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
         _tasks[task_id]["status"] = "summarizing"
         is_ios = scan_type == "ipa"
         platform_name = "iOS" if is_ios else "Android"
-        plist = report.get("info_plist") or {}
+        raw_plist = report.get("info_plist")
+        plist = raw_plist if isinstance(raw_plist, dict) else {}
+        raw_perms = report.get("permissions")
+        perms_keys = list(raw_perms.keys())[:20] if isinstance(raw_perms, dict) else []
+        raw_trackers = report.get("trackers")
+        trackers_val = raw_trackers.get("detected_trackers", []) if isinstance(raw_trackers, dict) else []
         ai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         summary_input = {
             "platform":     platform_name,
             "app_name":     _first(report.get("app_name"), plist.get("CFBundleDisplayName"), plist.get("CFBundleName")),
             "package_name": _first(report.get("package_name"), report.get("identifier"), plist.get("CFBundleIdentifier")),
             "version_name": _first(report.get("version_name"), plist.get("CFBundleShortVersionString")),
-            "permissions":  list(report.get("permissions", {}).keys())[:20],
+            "permissions":  perms_keys,
             "security_score": report.get("security_score") or "N/A",
-            "trackers":     report.get("trackers", {}).get("detected_trackers", []),
+            "trackers":     trackers_val,
         }
         if lang == "zh":
             prompt = (
@@ -243,7 +248,8 @@ def _extract_summary(task: dict) -> dict:
     is_ios = task.get("scan_type", "apk") == "ipa"
 
     # ── Multi-key field extraction (iOS uses different names) ──
-    plist = report.get("info_plist") or {}
+    raw_plist = report.get("info_plist")
+    plist = raw_plist if isinstance(raw_plist, dict) else {}
     app_name     = _first(report.get("app_name"),
                           plist.get("CFBundleDisplayName"),
                           plist.get("CFBundleName"))
@@ -263,10 +269,17 @@ def _extract_summary(task: dict) -> dict:
 
     if is_ios:
         # iOS: binary_analysis + ats_findings
-        for item in (report.get("binary_analysis") or []):
+        # binary_analysis may be a list OR a dict depending on MobSF version
+        bin_analysis = report.get("binary_analysis") or []
+        if isinstance(bin_analysis, dict):
+            bin_analysis = list(bin_analysis.values())
+        for item in bin_analysis:
             if isinstance(item, dict):
                 _count_sev(item.get("severity", "info"), risk)
-        for item in (report.get("ats_findings") or []):
+        ats = report.get("ats_findings") or []
+        if isinstance(ats, dict):
+            ats = list(ats.values())
+        for item in ats:
             if isinstance(item, dict):
                 _count_sev(item.get("severity", "warning"), risk)
     else:
@@ -274,14 +287,17 @@ def _extract_summary(task: dict) -> dict:
         for item in (report.get("manifest_analysis") or []):
             if isinstance(item, dict):
                 _count_sev(item.get("severity") or item.get("level", "info"), risk)
-        code = report.get("code_analysis") or {}
+        code = report.get("code_analysis")
         if isinstance(code, dict):
             for _, fdata in (code.get("findings") or {}).items():
                 if isinstance(fdata, dict):
-                    _count_sev(fdata.get("metadata", {}).get("severity", "info"), risk)
+                    meta = fdata.get("metadata")
+                    sev = meta.get("severity", "info") if isinstance(meta, dict) else "info"
+                    _count_sev(sev, risk)
 
     # ── Permissions ────────────────────────────────────────────
-    perms = report.get("permissions") or {}
+    raw_perms = report.get("permissions")
+    perms = raw_perms if isinstance(raw_perms, dict) else {}
     if is_ios:
         # iOS: all declared permissions (no "dangerous" filter)
         perm_list = []
@@ -300,15 +316,26 @@ def _extract_summary(task: dict) -> dict:
 
     # ── Security issues ────────────────────────────────────────
     sec_issues = []
+
+    def _as_list(val):
+        """Normalise binary_analysis / ats_findings to a list of dicts."""
+        if not val:
+            return []
+        if isinstance(val, list):
+            return val
+        if isinstance(val, dict):
+            return list(val.values())
+        return []
+
     if is_ios:
-        for item in (report.get("binary_analysis") or []):
+        for item in _as_list(report.get("binary_analysis")):
             if isinstance(item, dict):
                 sec_issues.append({
                     "title":       _first(item.get("issue"), item.get("name"), item.get("title")),
                     "severity":    item.get("severity", "warning"),
                     "description": item.get("description", ""),
                 })
-        for item in (report.get("ats_findings") or []):
+        for item in _as_list(report.get("ats_findings")):
             if isinstance(item, dict):
                 sec_issues.append({
                     "title":       _first(item.get("issue"), item.get("name"), item.get("title")),
@@ -316,7 +343,7 @@ def _extract_summary(task: dict) -> dict:
                     "description": item.get("description", ""),
                 })
     else:
-        for item in (report.get("manifest_analysis") or []):
+        for item in _as_list(report.get("manifest_analysis")):
             if isinstance(item, dict):
                 sec_issues.append({
                     "title":       item.get("title") or item.get("rule", ""),
@@ -324,7 +351,8 @@ def _extract_summary(task: dict) -> dict:
                     "description": item.get("description", ""),
                 })
 
-    trackers_data = report.get("trackers") or {}
+    raw_trackers = report.get("trackers")
+    trackers_data = raw_trackers if isinstance(raw_trackers, dict) else {}
     tracker_count = trackers_data.get("detected_trackers", 0)
     if isinstance(tracker_count, list):
         tracker_count = len(tracker_count)
