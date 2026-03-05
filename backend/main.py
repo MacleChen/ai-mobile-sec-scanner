@@ -281,7 +281,11 @@ def _extract_summary(task: dict) -> dict:
     # ── Multi-key field extraction ────────────────────────────
     # iOS: bundle_id / app_version / build  (confirmed from MobSF v4.4.5)
     # Android: package_name / version_name / version_code
-    app_name     = _first(report.get("app_name"))
+    _ps = report.get("playstore_details") or {}
+    _ps_title = _ps.get("title", "") if isinstance(_ps, dict) else ""
+    _pkg = report.get("package_name", "") or ""
+    _pkg_derived = _pkg.split(".")[-1].capitalize() if _pkg else ""
+    app_name     = _first(report.get("app_name"), _ps_title, _pkg_derived)
     package_name = _first(
         report.get("bundle_id"),        # iOS
         report.get("package_name"),     # Android
@@ -290,6 +294,7 @@ def _extract_summary(task: dict) -> dict:
     version_name = _first(
         report.get("app_version"),      # iOS
         report.get("version_name"),     # Android
+        report.get("version_code"),     # fallback when version_name is empty
     )
     build_version = _first(report.get("build"), report.get("version_code")) if is_ios else ""
 
@@ -318,7 +323,10 @@ def _extract_summary(task: dict) -> dict:
                 _count_sev(item.get("severity", "warning"), risk)
     else:
         # Android: manifest_analysis + code_analysis
-        for item in (report.get("manifest_analysis") or []):
+        # manifest_analysis can be a list OR a dict {"manifest_findings": [...]}
+        _manifest_raw = report.get("manifest_analysis") or []
+        _manifest_list = _manifest_raw.get("manifest_findings", []) if isinstance(_manifest_raw, dict) else _manifest_raw
+        for item in (_manifest_list if isinstance(_manifest_list, list) else []):
             if isinstance(item, dict):
                 _count_sev(item.get("severity") or item.get("level", "info"), risk)
         code = report.get("code_analysis")
@@ -369,7 +377,8 @@ def _extract_summary(task: dict) -> dict:
                     "description": item.get("description", ""),
                 })
     else:
-        manifest = report.get("manifest_analysis") or []
+        _manifest_raw2 = report.get("manifest_analysis") or []
+        manifest = _manifest_raw2.get("manifest_findings", []) if isinstance(_manifest_raw2, dict) else _manifest_raw2
         for item in (manifest if isinstance(manifest, list) else []):
             if isinstance(item, dict):
                 sec_issues.append({
