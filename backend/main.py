@@ -282,7 +282,9 @@ def _extract_summary(task: dict) -> dict:
     # iOS: bundle_id / app_version / build  (confirmed from MobSF v4.4.5)
     # Android: package_name / version_name / version_code
     _ps = report.get("playstore_details") or {}
-    _ps_title = _ps.get("title", "") if isinstance(_ps, dict) else ""
+    _ps = _ps if isinstance(_ps, dict) else {}
+    _ps_title   = _ps.get("title", "")
+    _ps_version = _ps.get("version", "")
     _pkg = report.get("package_name", "") or ""
     _pkg_derived = _pkg.split(".")[-1].capitalize() if _pkg else ""
     app_name     = _first(report.get("app_name"), _ps_title, _pkg_derived)
@@ -294,7 +296,8 @@ def _extract_summary(task: dict) -> dict:
     version_name = _first(
         report.get("app_version"),      # iOS
         report.get("version_name"),     # Android
-        report.get("version_code"),     # fallback when version_name is empty
+        _ps_version,                    # Play Store version string (e.g. "5.8.8")
+        report.get("version_code"),     # last resort: internal build number
     )
     build_version = _first(report.get("build"), report.get("version_code")) if is_ios else ""
 
