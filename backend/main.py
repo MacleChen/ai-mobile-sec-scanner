@@ -6,6 +6,7 @@ import os
 import uuid
 import re
 import html as html_lib
+import urllib.parse
 from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
@@ -418,15 +419,20 @@ async def download_report(task_id: str, lang: str = "zh"):
     summary = _extract_summary(task)
     filename = task.get("filename", "unknown.apk")
     app_name = summary.get("app_name", task_id[:8])
-    safe_name = "".join(c for c in app_name if c.isalnum() or c in "-_") or task_id[:8]
-
+    # HTTP headers require latin-1; use ASCII-only fallback for filename param
+    ascii_name = "".join(c for c in app_name if c.isascii() and (c.isalnum() or c in "-_"))
+    safe_name = ascii_name or task_id[:8]
+    # RFC 5987 (filename*) lets modern browsers show the full Unicode name
+    encoded_name = urllib.parse.quote(f"security-report-{app_name}.html", safe="")
+    content_disposition = (
+        f'attachment; filename="security-report-{safe_name}.html"; '
+        f"filename*=UTF-8''{encoded_name}"
+    )
     html_content = _build_report_html(summary, filename, lang)
     return Response(
         content=html_content.encode("utf-8"),
         media_type="text/html; charset=utf-8",
-        headers={
-            "Content-Disposition": f'attachment; filename="security-report-{safe_name}.html"'
-        },
+        headers={"Content-Disposition": content_disposition},
     )
 
 
