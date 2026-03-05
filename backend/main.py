@@ -308,6 +308,18 @@ def _extract_summary(task: dict) -> dict:
     else:
         platform_display = "Android"
 
+    # ── Pre-compute shared Android manifest data ───────────────
+    _appsec = report.get("appsec") or {}
+    _appsec = _appsec if isinstance(_appsec, dict) else {}
+    _manifest_raw = report.get("manifest_analysis") or []
+    _manifest_findings = (
+        _manifest_raw.get("manifest_findings", []) if isinstance(_manifest_raw, dict)
+        else (_manifest_raw if isinstance(_manifest_raw, list) else [])
+    )
+    _manifest_summary = (
+        _manifest_raw.get("manifest_summary", {}) if isinstance(_manifest_raw, dict) else {}
+    )
+
     # ── Risk counting ──────────────────────────────────────────
     risk = {"critical": 0, "high": 0, "warning": 0, "info": 0}
 
@@ -325,13 +337,16 @@ def _extract_summary(task: dict) -> dict:
             if isinstance(item, dict):
                 _count_sev(item.get("severity", "warning"), risk)
     else:
-        # Android: manifest_analysis + code_analysis
-        # manifest_analysis can be a list OR a dict {"manifest_findings": [...]}
-        _manifest_raw = report.get("manifest_analysis") or []
-        _manifest_list = _manifest_raw.get("manifest_findings", []) if isinstance(_manifest_raw, dict) else _manifest_raw
-        for item in (_manifest_list if isinstance(_manifest_list, list) else []):
-            if isinstance(item, dict):
-                _count_sev(item.get("severity") or item.get("level", "info"), risk)
+        # Android: use manifest_summary totals directly (most reliable)
+        if isinstance(_manifest_summary, dict) and _manifest_summary:
+            for k in ("critical", "high", "warning", "info"):
+                risk[k] += int(_manifest_summary.get(k, 0) or 0)
+        else:
+            # fallback: count from manifest_findings list
+            for item in _manifest_findings:
+                if isinstance(item, dict):
+                    _count_sev(item.get("severity") or item.get("level", "info"), risk)
+        # code_analysis findings
         code = report.get("code_analysis")
         if isinstance(code, dict):
             for _, fdata in (code.get("findings") or {}).items():
@@ -380,9 +395,7 @@ def _extract_summary(task: dict) -> dict:
                     "description": item.get("description", ""),
                 })
     else:
-        _manifest_raw2 = report.get("manifest_analysis") or []
-        manifest = _manifest_raw2.get("manifest_findings", []) if isinstance(_manifest_raw2, dict) else _manifest_raw2
-        for item in (manifest if isinstance(manifest, list) else []):
+        for item in _manifest_findings:  # reuse pre-computed list
             if isinstance(item, dict):
                 sec_issues.append({
                     "title":       item.get("title") or item.get("rule", ""),
@@ -404,7 +417,7 @@ def _extract_summary(task: dict) -> dict:
         "build_version":       build_version,
         "size":                report.get("size", ""),
         "md5":                 report.get("md5", ""),
-        "security_score":      report.get("security_score") or "N/A",
+        "security_score":      str(report.get("security_score") or _appsec.get("security_score") or "N/A"),
         "risk_counts":         risk,
         "dangerous_permissions": perm_list[:20],
         "tracker_count":       tracker_count,
