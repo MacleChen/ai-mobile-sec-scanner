@@ -198,9 +198,10 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
         ai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         summary_input = {
             "platform":     platform_name,
-            "app_name":     _first(report.get("app_name"), plist.get("CFBundleDisplayName"), plist.get("CFBundleName")),
-            "package_name": _first(report.get("package_name"), report.get("identifier"), plist.get("CFBundleIdentifier")),
-            "version_name": _first(report.get("version_name"), plist.get("CFBundleShortVersionString")),
+            "app_name":     _first(report.get("app_name")),
+            "package_name": _first(report.get("bundle_id"), report.get("package_name"), report.get("identifier")),
+            "version_name": _first(report.get("app_version"), report.get("version_name")),
+            "build":        _first(report.get("build"), report.get("version_code")) if is_ios else "",
             "permissions":  perms_keys,
             "security_score": report.get("security_score") or "N/A",
             "trackers":     trackers_val,
@@ -276,39 +277,42 @@ def _extract_summary(task: dict) -> dict:
     report = task["report"]
     is_ios = task.get("scan_type", "apk") == "ipa"
 
-    # ── Multi-key field extraction (iOS uses different names) ──
-    raw_plist = report.get("info_plist")
-    plist = raw_plist if isinstance(raw_plist, dict) else {}
-    app_name     = _first(report.get("app_name"),
-                          plist.get("CFBundleDisplayName"),
-                          plist.get("CFBundleName"))
-    package_name = _first(report.get("package_name"),
-                          report.get("identifier"),
-                          plist.get("CFBundleIdentifier"))
-    version_name = _first(report.get("version_name"),
-                          plist.get("CFBundleShortVersionString"))
-    # iOS build number (CFBundleVersion); Android version_code
-    build_version = _first(report.get("build_version"),
-                           report.get("version_code"),
-                           report.get("build"),
-                           plist.get("CFBundleVersion")) if is_ios else ""
+    # ── Multi-key field extraction ────────────────────────────
+    # iOS: bundle_id / app_version / build  (confirmed from MobSF v4.4.5)
+    # Android: package_name / version_name / version_code
+    app_name     = _first(report.get("app_name"))
+    package_name = _first(
+        report.get("bundle_id"),        # iOS
+        report.get("package_name"),     # Android
+        report.get("identifier"),
+    )
+    version_name = _first(
+        report.get("app_version"),      # iOS
+        report.get("version_name"),     # Android
+    )
+    build_version = _first(report.get("build"), report.get("version_code")) if is_ios else ""
+
+    # iOS platform string: "18.2" → "iOS 18.2"
+    if is_ios:
+        _plat_raw = report.get("platform", "")
+        platform_display = f"iOS {_plat_raw}".strip() if _plat_raw else "iOS"
+    else:
+        platform_display = "Android"
 
     # ── Risk counting ──────────────────────────────────────────
     risk = {"critical": 0, "high": 0, "warning": 0, "info": 0}
 
     if is_ios:
-        # iOS: binary_analysis + ats_findings
-        # binary_analysis may be a list OR a dict depending on MobSF version
-        bin_analysis = report.get("binary_analysis") or []
-        if isinstance(bin_analysis, dict):
-            bin_analysis = list(bin_analysis.values())
-        for item in bin_analysis:
-            if isinstance(item, dict):
-                _count_sev(item.get("severity", "info"), risk)
-        ats = report.get("ats_findings") or []
-        if isinstance(ats, dict):
-            ats = list(ats.values())
-        for item in ats:
+        # binary_analysis: {"findings": {title: {severity, detailed_desc, ...}}}
+        ba = report.get("binary_analysis") or {}
+        ba_findings = ba.get("findings", {}) if isinstance(ba, dict) else {}
+        for detail in ba_findings.values():
+            if isinstance(detail, dict):
+                _count_sev(detail.get("severity", "info"), risk)
+        # ats_analysis: {"ats_findings": [...], "ats_summary": ...}
+        ats_data = report.get("ats_analysis") or {}
+        ats_list = ats_data.get("ats_findings", []) if isinstance(ats_data, dict) else []
+        for item in (ats_list if isinstance(ats_list, list) else []):
             if isinstance(item, dict):
                 _count_sev(item.get("severity", "warning"), risk)
     else:
@@ -327,15 +331,12 @@ def _extract_summary(task: dict) -> dict:
     # ── Permissions ────────────────────────────────────────────
     raw_perms = report.get("permissions")
     perms = raw_perms if isinstance(raw_perms, dict) else {}
+    # Both iOS and Android have status:"dangerous"; show all for iOS
     if is_ios:
-        # iOS: all declared permissions (no "dangerous" filter)
-        perm_list = []
-        for k, v in perms.items():
-            if isinstance(v, dict):
-                info = _first(v.get("description"), v.get("info"), v.get("status"))
-            else:
-                info = str(v)
-            perm_list.append({"name": k, "info": info})
+        perm_list = [
+            {"name": k, "info": _first(v.get("description"), v.get("info")) if isinstance(v, dict) else str(v)}
+            for k, v in perms.items()
+        ]
     else:
         perm_list = [
             {"name": k, "info": v.get("info", ""), "description": v.get("description", "")}
@@ -345,34 +346,30 @@ def _extract_summary(task: dict) -> dict:
 
     # ── Security issues ────────────────────────────────────────
     sec_issues = []
-
-    def _as_list(val):
-        """Normalise binary_analysis / ats_findings to a list of dicts."""
-        if not val:
-            return []
-        if isinstance(val, list):
-            return val
-        if isinstance(val, dict):
-            return list(val.values())
-        return []
-
     if is_ios:
-        for item in _as_list(report.get("binary_analysis")):
-            if isinstance(item, dict):
+        # binary_analysis.findings: {title: {severity, detailed_desc, cvss, cwe, ...}}
+        ba = report.get("binary_analysis") or {}
+        ba_findings = ba.get("findings", {}) if isinstance(ba, dict) else {}
+        for title, detail in ba_findings.items():
+            if isinstance(detail, dict):
                 sec_issues.append({
-                    "title":       _first(item.get("issue"), item.get("name"), item.get("title")),
-                    "severity":    item.get("severity", "warning"),
-                    "description": item.get("description", ""),
+                    "title":       title,
+                    "severity":    detail.get("severity", "warning"),
+                    "description": detail.get("detailed_desc", ""),
                 })
-        for item in _as_list(report.get("ats_findings")):
+        # ats_analysis.ats_findings: [{issue, severity, description}, ...]
+        ats_data = report.get("ats_analysis") or {}
+        ats_list = ats_data.get("ats_findings", []) if isinstance(ats_data, dict) else []
+        for item in (ats_list if isinstance(ats_list, list) else []):
             if isinstance(item, dict):
                 sec_issues.append({
-                    "title":       _first(item.get("issue"), item.get("name"), item.get("title")),
+                    "title":       item.get("issue", ""),
                     "severity":    item.get("severity", "warning"),
                     "description": item.get("description", ""),
                 })
     else:
-        for item in _as_list(report.get("manifest_analysis")):
+        manifest = report.get("manifest_analysis") or []
+        for item in (manifest if isinstance(manifest, list) else []):
             if isinstance(item, dict):
                 sec_issues.append({
                     "title":       item.get("title") or item.get("rule", ""),
@@ -387,7 +384,7 @@ def _extract_summary(task: dict) -> dict:
         tracker_count = len(tracker_count)
 
     return {
-        "platform":            "iOS" if is_ios else "Android",
+        "platform":            platform_display,
         "app_name":            app_name or "Unknown",
         "package_name":        package_name,
         "version_name":        version_name,
