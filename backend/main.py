@@ -224,11 +224,30 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
                 "3. Recommended security improvements for the developer\n\n"
                 f"Scan summary:\n{summary_input}"
             )
-        ai_resp = ai_client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        _GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+        ai_text = None
+        for _model in _GEMINI_MODELS:
+            try:
+                ai_resp = ai_client.models.generate_content(model=_model, contents=prompt)
+                ai_text = ai_resp.text
+                break
+            except Exception as _e:
+                _emsg = str(_e)
+                if "429" in _emsg or "RESOURCE_EXHAUSTED" in _emsg or "quota" in _emsg.lower():
+                    continue   # try next model
+                raise          # other errors bubble up
+        if ai_text is None:
+            ai_text = (
+                "⚠️ AI 分析暂时不可用（Gemini API 请求已达每日免费限额），"
+                "MobSF 静态分析结果已正常生成，请查看上方各项数据。"
+                if lang == "zh" else
+                "⚠️ AI analysis unavailable (Gemini API free tier daily quota exceeded). "
+                "MobSF static analysis results are complete — please review the data above."
+            )
         _tasks[task_id].update({
             "status": "done",
             "report": report,
-            "ai_summary": ai_resp.text,
+            "ai_summary": ai_text,
             "finished_at": datetime.now().isoformat(),
         })
 
