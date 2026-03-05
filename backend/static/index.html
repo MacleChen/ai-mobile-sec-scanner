@@ -43,6 +43,114 @@
     }
     .lang-btn:hover { background: rgba(255,255,255,.3); }
 
+    /* ── Credits bar ─────────────────── */
+    .credits-bar {
+      position: absolute;
+      top: 18px; left: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .credits-badge {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: .85em; font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+      cursor: default;
+    }
+    .credits-badge .num { font-size: 1.1em; }
+    .credits-badge.low { background: rgba(239,68,68,.35); border-color: rgba(239,68,68,.5); }
+    .buy-btn {
+      background: #f59e0b; color: #1a1a1a;
+      border: none; border-radius: 20px;
+      padding: 6px 14px; font-size: .82em; font-weight: 800;
+      cursor: pointer; transition: background .2s;
+    }
+    .buy-btn:hover { background: #fbbf24; }
+
+    /* ── Purchase modal ─────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal {
+      background: white; border-radius: 20px;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      overflow: hidden;
+    }
+    .modal-head {
+      background: linear-gradient(135deg,#1e3a8a,#2563eb);
+      color: white; padding: 24px 28px;
+    }
+    .modal-head h2 { font-size: 1.3em; font-weight: 800; margin-bottom: 4px; }
+    .modal-head p  { font-size: .88em; opacity: .8; }
+    .modal-body { padding: 24px 28px; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+    .pkg {
+      border: 2px solid #e2e8f0; border-radius: 12px;
+      padding: 14px 8px; text-align: center; cursor: pointer;
+      transition: all .15s;
+    }
+    .pkg:hover, .pkg.selected { border-color: #2563eb; background: #eff6ff; }
+    .pkg .scans { font-size: 1.6em; font-weight: 900; color: #1e3a8a; }
+    .pkg .price { font-size: .9em; font-weight: 700; color: #dc2626; margin-top: 2px; }
+    .pkg .unit  { font-size: .72em; color: #94a3b8; margin-top: 2px; }
+    .pay-section { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .pay-section h4 { font-size: .85em; font-weight: 700; color: #475569; margin-bottom: 10px; }
+    .pay-methods { display: flex; gap: 10px; }
+    .pay-method {
+      flex: 1; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 12px 8px; text-align: center; cursor: pointer;
+      font-size: .82em; font-weight: 600; transition: all .15s;
+    }
+    .pay-method:hover { border-color: #2563eb; background: #eff6ff; }
+    .pay-method .icon { font-size: 1.6em; display: block; margin-bottom: 4px; }
+    .redeem-row { display: flex; gap: 8px; }
+    .redeem-input {
+      flex: 1; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px; font-size: .9em; outline: none;
+      transition: border .15s; text-transform: uppercase;
+    }
+    .redeem-input:focus { border-color: #2563eb; }
+    .redeem-btn {
+      background: #2563eb; color: white; border: none;
+      border-radius: 8px; padding: 10px 18px;
+      font-weight: 700; cursor: pointer; transition: background .2s;
+    }
+    .redeem-btn:hover { background: #1d4ed8; }
+    .redeem-msg { font-size: .82em; margin-top: 6px; min-height: 18px; }
+    .redeem-msg.ok  { color: #16a34a; }
+    .redeem-msg.err { color: #dc2626; }
+    .modal-footer {
+      padding: 16px 28px; background: #f8fafc;
+      border-top: 1px solid #e2e8f0; text-align: center;
+      font-size: .78em; color: #94a3b8;
+    }
+    .modal-close {
+      float: right; background: none; border: none;
+      font-size: 1.4em; cursor: pointer; color: rgba(255,255,255,.7);
+      line-height: 1; padding: 0;
+    }
+    .modal-close:hover { color: white; }
+
+    /* ── No-credits gate ─────────────────── */
+    .gate-card {
+      text-align: center; padding: 48px 32px;
+    }
+    .gate-card .gate-icon { font-size: 3em; margin-bottom: 16px; }
+    .gate-card h3 { font-size: 1.2em; font-weight: 700; margin-bottom: 8px; }
+    .gate-card p  { color: #718096; margin-bottom: 20px; }
+    .gate-buy-btn {
+      background: #dc2626; color: white; border: none;
+      padding: 14px 32px; border-radius: 10px;
+      font-size: 1em; font-weight: 700; cursor: pointer;
+      transition: background .2s;
+    }
+    .gate-buy-btn:hover { background: #b91c1c; }
+
     /* ── Page ─────────────────── */
     .page { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
 
@@ -229,9 +337,78 @@
 
 <!-- Header -->
 <div class="header">
+  <!-- Credits badge (top-left) -->
+  <div class="credits-bar">
+    <div class="credits-badge" id="credits-badge" title="剩余扫描次数">
+      🔑 <span id="credits-num">…</span> 次
+    </div>
+    <button class="buy-btn" onclick="openBuyModal()" id="buy-btn">购买次数</button>
+  </div>
   <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
   <h1 id="hdr-title">🔍 AI 移动安全扫描器</h1>
   <p id="hdr-subtitle">上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
+</div>
+
+<!-- Purchase / Redeem Modal -->
+<div class="modal-overlay hidden" id="buy-modal" onclick="if(event.target===this)closeBuyModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-close" onclick="closeBuyModal()">✕</button>
+      <h2>💳 购买扫描次数</h2>
+      <p>一次购买，永久有效，不限使用时间</p>
+    </div>
+    <div class="modal-body">
+      <!-- Packages -->
+      <div class="pkg-grid" id="pkg-grid">
+        <div class="pkg selected" data-scans="10" data-price="9.9" onclick="selectPkg(this)">
+          <div class="scans">10</div>
+          <div class="price">¥ 9.9</div>
+          <div class="unit">¥0.99 / 次</div>
+        </div>
+        <div class="pkg" data-scans="50" data-price="39" onclick="selectPkg(this)">
+          <div class="scans">50</div>
+          <div class="price">¥ 39</div>
+          <div class="unit">¥0.78 / 次</div>
+        </div>
+        <div class="pkg" data-scans="200" data-price="99" onclick="selectPkg(this)">
+          <div class="scans">200</div>
+          <div class="price">¥ 99</div>
+          <div class="unit">¥0.50 / 次</div>
+        </div>
+      </div>
+
+      <!-- Payment methods -->
+      <div class="pay-section">
+        <h4>选择支付方式 → 付款后联系客服获取兑换码</h4>
+        <div class="pay-methods">
+          <div class="pay-method" onclick="showPayQR('wechat')">
+            <span class="icon">💚</span>微信支付
+          </div>
+          <div class="pay-method" onclick="showPayQR('alipay')">
+            <span class="icon">💙</span>支付宝
+          </div>
+        </div>
+        <div id="pay-qr-tip" style="margin-top:10px;font-size:.8em;color:#64748b;display:none">
+          请扫码支付，备注选择的套餐次数。支付后微信/邮件联系客服发兑换码：<br>
+          <strong id="contact-info">微信: your_wechat_id &nbsp;|&nbsp; 邮箱: your@email.com</strong>
+        </div>
+      </div>
+
+      <!-- Redeem code -->
+      <div>
+        <div style="font-size:.85em;font-weight:700;color:#475569;margin-bottom:8px">已有兑换码？立即兑换</div>
+        <div class="redeem-row">
+          <input class="redeem-input" id="redeem-input" placeholder="输入兑换码（如 A1B2C3D4E5F6）"
+                 maxlength="20" oninput="this.value=this.value.toUpperCase()">
+          <button class="redeem-btn" onclick="doRedeem()">兑换</button>
+        </div>
+        <div class="redeem-msg" id="redeem-msg"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      购买即同意服务条款 &nbsp;·&nbsp; 技术问题请联系客服 &nbsp;·&nbsp; Credits 不可退款
+    </div>
+  </div>
 </div>
 
 <!-- MobSF status banner (hidden until health check) -->
@@ -241,6 +418,14 @@
 </div>
 
 <div class="page">
+
+  <!-- ① No-credits gate -->
+  <div id="gate-card" class="card gate-card hidden">
+    <div class="gate-icon">🔒</div>
+    <h3 id="gate-title">扫描次数已用完</h3>
+    <p  id="gate-desc">请购买次数包继续使用，或兑换已有兑换码</p>
+    <button class="gate-buy-btn" onclick="openBuyModal()">立即购买次数包</button>
+  </div>
 
   <!-- ① Upload -->
   <div id="upload-card" class="card">
@@ -478,11 +663,20 @@ const LANG = {
   },
 };
 
+// ── Token (user identity) ───────────────────────────────────
+function getToken() {
+  let t = localStorage.getItem('scanner_token');
+  if (!t) { t = crypto.randomUUID(); localStorage.setItem('scanner_token', t); }
+  return t;
+}
+const USER_TOKEN = getToken();
+
 // ── State ───────────────────────────────────────────────────
 let lang      = localStorage.getItem('lang') || 'zh';
 let taskId    = null;
 let pollTimer = null;
 let lastReport = null;   // cache for re-render on lang switch
+let userCredits = 0;
 
 const STATUS_STEP = { uploading:0, scanning:1, analyzing:2, summarizing:3, done:4 };
 
@@ -576,6 +770,67 @@ function esc(str) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Credits ────────────────────────────────────────────────
+async function fetchCredits() {
+  try {
+    const d = await fetch(`/credits/${USER_TOKEN}`).then(r => r.json());
+    userCredits = d.credits ?? 0;
+    renderCredits();
+  } catch(_) {}
+}
+
+function renderCredits() {
+  const badge = document.getElementById('credits-badge');
+  document.getElementById('credits-num').textContent = userCredits;
+  badge.classList.toggle('low', userCredits === 0);
+  // Show gate or upload card
+  if (userCredits <= 0 && !taskId && !lastReport) {
+    document.getElementById('gate-card').classList.remove('hidden');
+    document.getElementById('upload-card').classList.add('hidden');
+  } else {
+    document.getElementById('gate-card').classList.add('hidden');
+    if (!taskId && !lastReport)
+      document.getElementById('upload-card').classList.remove('hidden');
+  }
+}
+
+// ── Buy modal ──────────────────────────────────────────────
+function openBuyModal() {
+  document.getElementById('buy-modal').classList.remove('hidden');
+  document.getElementById('redeem-msg').textContent = '';
+  document.getElementById('redeem-input').value = '';
+}
+function closeBuyModal() {
+  document.getElementById('buy-modal').classList.add('hidden');
+}
+function selectPkg(el) {
+  document.querySelectorAll('.pkg').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function showPayQR(method) {
+  document.getElementById('pay-qr-tip').style.display = 'block';
+}
+async function doRedeem() {
+  const code = document.getElementById('redeem-input').value.trim();
+  const msg  = document.getElementById('redeem-msg');
+  if (!code) { msg.className='redeem-msg err'; msg.textContent='请输入兑换码'; return; }
+  msg.className='redeem-msg'; msg.textContent='兑换中...';
+  try {
+    const r = await fetch(`/credits/redeem?token=${USER_TOKEN}&code=${encodeURIComponent(code)}`, {method:'POST'});
+    const d = await r.json();
+    if (d.ok) {
+      userCredits = d.credits;
+      renderCredits();
+      msg.className='redeem-msg ok';
+      msg.textContent = `✅ 兑换成功！已到账 ${d.added} 次，余额 ${d.credits} 次`;
+      document.getElementById('redeem-input').value = '';
+      setTimeout(closeBuyModal, 1800);
+    } else {
+      msg.className='redeem-msg err'; msg.textContent = d.error || '兑换失败';
+    }
+  } catch(_) { msg.className='redeem-msg err'; msg.textContent='网络错误，请重试'; }
+}
+
 // ── Upload ─────────────────────────────────────────────────
 const zone      = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
@@ -607,7 +862,12 @@ async function handleFile(file) {
   fd.append('file', file);
 
   try {
-    const resp = await fetch(`/scan?lang=${lang}`, { method: 'POST', body: fd });
+    const resp = await fetch(`/scan?lang=${lang}&token=${USER_TOKEN}`, { method: 'POST', body: fd });
+    if (resp.status === 402) {
+      resetToUpload();
+      openBuyModal();
+      return;
+    }
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const { task_id } = await resp.json();
     taskId = task_id;
@@ -633,6 +893,7 @@ async function pollStatus() {
     if (data.status === 'done') {
       clearInterval(pollTimer);
       setStep(4, l.status.loading);
+      await fetchCredits();   // refresh balance after scan consumed 1 credit
       await loadReport();
     } else if (data.status === 'error') {
       clearInterval(pollTimer);
@@ -739,6 +1000,7 @@ function resetToUpload() {
   lastReport = null;
   fileInput.value = '';
   showUpload();
+  renderCredits();   // show gate if credits = 0
 }
 
 // ── MobSF Health Check ──────────────────────────────────────
@@ -768,6 +1030,7 @@ async function checkMobSF() {
 // ── Init ───────────────────────────────────────────────────
 applyI18n();
 checkMobSF();
+fetchCredits();
 </script>
 </body>
 </html>

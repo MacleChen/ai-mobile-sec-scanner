@@ -1,5 +1,5 @@
-from fastapi import FastAPI, UploadFile, BackgroundTasks
-from fastapi.responses import HTMLResponse, Response
+from fastapi import FastAPI, UploadFile, BackgroundTasks, Header
+from fastapi.responses import HTMLResponse, Response, JSONResponse
 import httpx
 import asyncio
 import os
@@ -7,6 +7,8 @@ import uuid
 import re
 import html as html_lib
 import urllib.parse
+import sqlite3
+from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
@@ -15,6 +17,37 @@ load_dotenv()
 app = FastAPI(title="AI Mobile Sec Scanner")
 
 _tasks: dict = {}
+
+# ── SQLite database ────────────────────────────────────────────
+_DB_PATH = Path(os.getenv("DB_PATH", "/app/data/scanner.db"))
+
+def _db():
+    _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(_DB_PATH))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def _init_db():
+    with _db() as c:
+        c.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                token      TEXT PRIMARY KEY,
+                credits    INTEGER DEFAULT 0,
+                total_scans INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS codes (
+                code       TEXT PRIMARY KEY,
+                credits    INTEGER NOT NULL,
+                note       TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                used_by    TEXT,
+                used_at    TEXT
+            );
+        """)
+
+_init_db()
 
 # ── Report HTML labels (zh / en) ──────────────────────────────
 _LABELS = {
@@ -89,6 +122,82 @@ def _mobsf_headers():
     return {"Authorization": os.getenv("MOBSF_API_KEY")}
 
 
+# ── Credits API ───────────────────────────────────────────────
+
+@app.get("/credits/{token}")
+async def get_credits(token: str):
+    """Return credits balance for a token."""
+    with _db() as c:
+        row = c.execute("SELECT credits, total_scans FROM users WHERE token=?", (token,)).fetchone()
+    if row:
+        return {"credits": row["credits"], "total_scans": row["total_scans"]}
+    # New token: create with 0 credits
+    with _db() as c:
+        c.execute("INSERT OR IGNORE INTO users(token, credits) VALUES(?,0)", (token,))
+    return {"credits": 0, "total_scans": 0}
+
+
+@app.post("/credits/redeem")
+async def redeem_code(token: str, code: str):
+    """Redeem a one-time code to add credits."""
+    code = code.strip().upper()
+    with _db() as c:
+        row = c.execute(
+            "SELECT * FROM codes WHERE code=? AND used_by IS NULL", (code,)
+        ).fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "error": "兑换码无效或已使用"}, status_code=400)
+        c.execute(
+            "UPDATE codes SET used_by=?, used_at=datetime('now') WHERE code=?",
+            (token, code),
+        )
+        c.execute(
+            """INSERT INTO users(token, credits) VALUES(?,?)
+               ON CONFLICT(token) DO UPDATE SET
+                 credits=credits+excluded.credits,
+                 updated_at=datetime('now')""",
+            (token, row["credits"]),
+        )
+        new_bal = c.execute("SELECT credits FROM users WHERE token=?", (token,)).fetchone()["credits"]
+    return {"ok": True, "credits": new_bal, "added": row["credits"]}
+
+
+@app.post("/admin/generate-codes")
+async def generate_codes(admin_key: str, credits: int = 10, count: int = 1, note: str = ""):
+    """Generate one-time redemption codes (admin only)."""
+    expected = os.getenv("ADMIN_KEY", "")
+    if not expected or admin_key != expected:
+        return Response(status_code=403)
+    if not (1 <= credits <= 10000) or not (1 <= count <= 200):
+        return JSONResponse({"error": "invalid params"}, status_code=400)
+    new_codes = [uuid.uuid4().hex[:12].upper() for _ in range(count)]
+    with _db() as c:
+        c.executemany(
+            "INSERT INTO codes(code, credits, note) VALUES(?,?,?)",
+            [(code, credits, note) for code in new_codes],
+        )
+    return {"codes": new_codes, "credits_each": credits, "count": count}
+
+
+@app.get("/admin/stats")
+async def admin_stats(admin_key: str):
+    """Basic usage stats (admin only)."""
+    if admin_key != os.getenv("ADMIN_KEY", ""):
+        return Response(status_code=403)
+    with _db() as c:
+        users     = c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        total_scans = c.execute("SELECT SUM(total_scans) FROM users").fetchone()[0] or 0
+        codes_total = c.execute("SELECT COUNT(*) FROM codes").fetchone()[0]
+        codes_used  = c.execute("SELECT COUNT(*) FROM codes WHERE used_by IS NOT NULL").fetchone()[0]
+    return {
+        "users": users,
+        "total_scans": total_scans,
+        "codes_total": codes_total,
+        "codes_used": codes_used,
+        "codes_available": codes_total - codes_used,
+    }
+
+
 @app.get("/health")
 async def health():
     """Check MobSF connectivity."""
@@ -119,14 +228,29 @@ def _first(*vals) -> str:
 
 
 @app.post("/scan")
-async def scan_app(file: UploadFile, background_tasks: BackgroundTasks, lang: str = "zh"):
-    """Submit APK for scanning. Returns task_id immediately."""
+async def scan_app(file: UploadFile, background_tasks: BackgroundTasks,
+                   lang: str = "zh", token: str = ""):
+    """Submit APK/IPA for scanning. Requires a valid token with credits."""
+    if not token:
+        return JSONResponse({"error": "missing_token", "message": "缺少用户 Token"}, status_code=400)
+
+    # Check credits
+    with _db() as c:
+        row = c.execute("SELECT credits FROM users WHERE token=?", (token,)).fetchone()
+    if not row or row["credits"] <= 0:
+        return JSONResponse(
+            {"error": "credits_exhausted",
+             "message": "扫描次数不足，请购买次数包后继续使用。"},
+            status_code=402,
+        )
+
     task_id = str(uuid.uuid4())
     file_data = await file.read()
     _tasks[task_id] = {
         "status": "uploading",
         "filename": file.filename,
         "lang": lang,
+        "token": token,
         "started_at": datetime.now().isoformat(),
     }
     background_tasks.add_task(_run_scan, task_id, file.filename, file_data, lang)
@@ -190,8 +314,6 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
         _tasks[task_id]["status"] = "summarizing"
         is_ios = scan_type == "ipa"
         platform_name = "iOS" if is_ios else "Android"
-        raw_plist = report.get("info_plist")
-        plist = raw_plist if isinstance(raw_plist, dict) else {}
         raw_perms = report.get("permissions")
         perms_keys = list(raw_perms.keys())[:20] if isinstance(raw_perms, dict) else []
         raw_trackers = report.get("trackers")
@@ -234,8 +356,8 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
             except Exception as _e:
                 _emsg = str(_e)
                 if "429" in _emsg or "RESOURCE_EXHAUSTED" in _emsg or "quota" in _emsg.lower():
-                    continue   # try next model
-                raise          # other errors bubble up
+                    continue
+                raise
         if ai_text is None:
             ai_text = (
                 "⚠️ AI 分析暂时不可用（Gemini API 请求已达每日免费限额），"
@@ -244,6 +366,15 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
                 "⚠️ AI analysis unavailable (Gemini API free tier daily quota exceeded). "
                 "MobSF static analysis results are complete — please review the data above."
             )
+        # Deduct 1 credit on successful scan
+        _token = _tasks[task_id].get("token", "")
+        if _token:
+            with _db() as c:
+                c.execute(
+                    "UPDATE users SET credits=credits-1, total_scans=total_scans+1,"
+                    " updated_at=datetime('now') WHERE token=? AND credits>0",
+                    (_token,),
+                )
         _tasks[task_id].update({
             "status": "done",
             "report": report,
