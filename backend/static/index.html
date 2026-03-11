@@ -165,7 +165,7 @@
     .code-input:focus { border-color: #2563eb; }
 
     /* Purchase modal */
-    .pkg-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
     .pkg {
       border: 2px solid #e2e8f0; border-radius: 12px;
       padding: 14px 8px; text-align: center; cursor: pointer;
@@ -625,6 +625,11 @@
           <div class="scans">50</div>
           <div class="price">5.5 USDT</div>
           <div class="unit">0.11 USDT / 次</div>
+        </div>
+        <div class="pkg" data-pkg="p100" onclick="selectPkg(this)">
+          <div class="scans">100</div>
+          <div class="price">10 USDT</div>
+          <div class="unit">0.10 USDT / 次</div>
         </div>
         <div class="pkg" data-pkg="p200" onclick="selectPkg(this)">
           <div class="scans">200</div>

@@ -43,6 +43,7 @@ JWT_EXP_DAYS = 7
 PACKAGES = {
     "p10":  {"credits": 10,  "amount": 9.9,   "usdt": "1.50"},
     "p50":  {"credits": 50,  "amount": 39.9,  "usdt": "5.50"},
+    "p100": {"credits": 100, "amount": 69.9,  "usdt": "10.00"},
     "p200": {"credits": 200, "amount": 129.9, "usdt": "18.00"},
 }
 
