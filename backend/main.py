@@ -1,5 +1,9 @@
-from fastapi import FastAPI, UploadFile, BackgroundTasks, Header
+from fastapi import FastAPI, UploadFile, BackgroundTasks, Header, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response, JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
+import bcrypt as _bcrypt_lib
+from jose import jwt, JWTError
 import httpx
 import asyncio
 import os
@@ -8,15 +12,39 @@ import re
 import html as html_lib
 import urllib.parse
 import sqlite3
+import smtplib
+import random
+import hashlib
+import time
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from google import genai
+from email.mime.text import MIMEText
 
 load_dotenv()
 app = FastAPI(title="AI Mobile Sec Scanner")
 
 _tasks: dict = {}
+
+# ── Auth helpers ────────────────────────────────────────────
+def _hash_pw(password: str) -> str:
+    return _bcrypt_lib.hashpw(password.encode(), _bcrypt_lib.gensalt()).decode()
+
+def _verify_pw(password: str, hashed: str) -> bool:
+    return _bcrypt_lib.checkpw(password.encode(), hashed.encode())
+
+_bearer = HTTPBearer(auto_error=False)
+JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
+JWT_ALG = "HS256"
+JWT_EXP_DAYS = 7
+
+# ── Payment packages ────────────────────────────────────────
+PACKAGES = {
+    "p10":  {"credits": 10,  "amount": 9.9,   "usdt": "1.50"},
+    "p50":  {"credits": 50,  "amount": 39.9,  "usdt": "5.50"},
+    "p200": {"credits": 200, "amount": 129.9, "usdt": "18.00"},
+}
 
 # ── SQLite database ────────────────────────────────────────────
 _DB_PATH = Path(os.getenv("DB_PATH", "/app/data/scanner.db"))
@@ -45,9 +73,128 @@ def _init_db():
                 used_by    TEXT,
                 used_at    TEXT
             );
+            CREATE TABLE IF NOT EXISTS users_v2 (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                email         TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                is_verified   INTEGER DEFAULT 0,
+                credits       INTEGER DEFAULT 0,
+                total_scans   INTEGER DEFAULT 0,
+                created_at    TEXT DEFAULT (datetime('now')),
+                updated_at    TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS verify_codes (
+                email      TEXT PRIMARY KEY,
+                code       TEXT NOT NULL,
+                expires_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS orders (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_no     TEXT UNIQUE NOT NULL,
+                user_id      INTEGER NOT NULL,
+                credits      INTEGER NOT NULL,
+                amount       REAL NOT NULL,
+                status       TEXT DEFAULT 'pending',
+                pay_method   TEXT,
+                pay_trade_no TEXT,
+                created_at   TEXT DEFAULT (datetime('now')),
+                paid_at      TEXT
+            );
         """)
 
 _init_db()
+
+
+# ── Auth & payment helpers ──────────────────────────────────
+
+def _make_jwt(user_id: int) -> str:
+    exp = datetime.utcnow() + timedelta(days=JWT_EXP_DAYS)
+    return jwt.encode({"sub": str(user_id), "exp": exp}, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def _decode_jwt(token: str):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        return int(payload["sub"])
+    except (JWTError, Exception):
+        return None
+
+
+async def _current_user(creds: HTTPAuthorizationCredentials = Depends(_bearer)) -> dict:
+    if not creds:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = _decode_jwt(creds.credentials)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    with _db() as c:
+        row = c.execute("SELECT * FROM users_v2 WHERE id=?", (user_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="User not found")
+    return dict(row)
+
+
+def _send_verify_email(email: str, code: str):
+    host = os.getenv("SMTP_HOST", "")
+    port = int(os.getenv("SMTP_PORT", "465"))
+    user = os.getenv("SMTP_USER", "")
+    pwd  = os.getenv("SMTP_PASS", "")
+    frm  = os.getenv("SMTP_FROM", user)
+    if not host:
+        print(f"[DEV] Verify code for {email}: {code}")
+        return
+    msg = MIMEText(f"您的验证码是：{code}，10分钟内有效。\n\nYour verification code is: {code} (valid 10 minutes).", "plain", "utf-8")
+    msg["Subject"] = "邮箱验证码 - AI 移动安全扫描器"
+    msg["From"] = frm
+    msg["To"] = email
+    try:
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port) as s:
+                s.login(user, pwd)
+                s.sendmail(frm, [email], msg.as_string())
+        else:
+            with smtplib.SMTP(host, port) as s:
+                s.starttls()
+                s.login(user, pwd)
+                s.sendmail(frm, [email], msg.as_string())
+    except Exception as e:
+        print(f"[SMTP ERROR] {e}")
+
+
+def _make_order_no() -> str:
+    return f"ORD{int(time.time() * 1000)}{random.randint(100, 999)}"
+
+
+def _cryptomus_sign(body_str: str) -> str:
+    """MD5 signature for Cryptomus: md5(base64(json_body) + api_key)."""
+    import base64
+    api_key = os.getenv("CRYPTOMUS_API_KEY", "")
+    return hashlib.md5((base64.b64encode(body_str.encode()).decode() + api_key).encode()).hexdigest()
+
+
+_CRYPTOMUS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+
+
+# ── Auth request bodies ─────────────────────────────────────
+
+class RegisterBody(BaseModel):
+    email: str
+    password: str
+
+class VerifyBody(BaseModel):
+    email: str
+    code: str
+
+class ResendBody(BaseModel):
+    email: str
+
+class LoginBody(BaseModel):
+    email: str
+    password: str
+
+class OrderCreateBody(BaseModel):
+    package_id: str
+    pay_type: str = "alipay"   # "alipay" or "wechat"
+
 
 # ── Report HTML labels (zh / en) ──────────────────────────────
 _LABELS = {
@@ -198,6 +345,248 @@ async def admin_stats(admin_key: str):
     }
 
 
+# ── Auth Endpoints ─────────────────────────────────────────
+
+@app.post("/auth/register")
+async def auth_register(body: RegisterBody):
+    """Register with email + password; send 6-digit verification code."""
+    email = body.email.strip().lower()
+    if not email or "@" not in email:
+        return JSONResponse({"ok": False, "error": "邮箱格式不正确"}, status_code=400)
+    if len(body.password) < 6:
+        return JSONResponse({"ok": False, "error": "密码至少6位"}, status_code=400)
+    pw_hash = _hash_pw(body.password)
+    try:
+        with _db() as c:
+            c.execute(
+                "INSERT INTO users_v2(email, password_hash) VALUES(?,?)",
+                (email, pw_hash),
+            )
+    except sqlite3.IntegrityError:
+        # Email already exists — allow re-registration if not verified
+        with _db() as c:
+            row = c.execute("SELECT is_verified FROM users_v2 WHERE email=?", (email,)).fetchone()
+        if row and row["is_verified"]:
+            return JSONResponse({"ok": False, "error": "该邮箱已注册，请直接登录"}, status_code=400)
+        # Update password hash and re-send verification
+        with _db() as c:
+            c.execute("UPDATE users_v2 SET password_hash=? WHERE email=?", (pw_hash, email))
+    code = str(random.randint(100000, 999999))
+    expires = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
+    with _db() as c:
+        c.execute(
+            "INSERT OR REPLACE INTO verify_codes(email, code, expires_at) VALUES(?,?,?)",
+            (email, code, expires),
+        )
+    _send_verify_email(email, code)
+    return {"ok": True, "message": "验证码已发送，请查收邮件"}
+
+
+@app.post("/auth/verify")
+async def auth_verify(body: VerifyBody):
+    """Verify email with 6-digit code; return JWT on success."""
+    email = body.email.strip().lower()
+    with _db() as c:
+        row = c.execute("SELECT * FROM verify_codes WHERE email=?", (email,)).fetchone()
+    if not row:
+        return JSONResponse({"ok": False, "error": "验证码不存在，请重新发送"}, status_code=400)
+    if datetime.utcnow().isoformat() > row["expires_at"]:
+        return JSONResponse({"ok": False, "error": "验证码已过期，请重新发送"}, status_code=400)
+    if row["code"] != body.code.strip():
+        return JSONResponse({"ok": False, "error": "验证码错误"}, status_code=400)
+    with _db() as c:
+        c.execute("UPDATE users_v2 SET is_verified=1, updated_at=datetime('now') WHERE email=?", (email,))
+        c.execute("DELETE FROM verify_codes WHERE email=?", (email,))
+        user = c.execute("SELECT * FROM users_v2 WHERE email=?", (email,)).fetchone()
+    token = _make_jwt(user["id"])
+    return {
+        "ok": True,
+        "token": token,
+        "user": {"id": user["id"], "email": user["email"], "credits": user["credits"], "total_scans": user["total_scans"]},
+    }
+
+
+@app.post("/auth/resend")
+async def auth_resend(body: ResendBody):
+    """Resend verification code (rate-limit: not if sent < 60s ago)."""
+    email = body.email.strip().lower()
+    with _db() as c:
+        existing = c.execute("SELECT expires_at FROM verify_codes WHERE email=?", (email,)).fetchone()
+    if existing:
+        # expires_at is 10 min from send; if more than 9 min remain, deny
+        expires = datetime.fromisoformat(existing["expires_at"])
+        sent_at = expires - timedelta(minutes=10)
+        if (datetime.utcnow() - sent_at).total_seconds() < 60:
+            return JSONResponse({"ok": False, "error": "请等待60秒后再重新发送"}, status_code=429)
+    with _db() as c:
+        row = c.execute("SELECT id FROM users_v2 WHERE email=?", (email,)).fetchone()
+    if not row:
+        return JSONResponse({"ok": False, "error": "邮箱未注册"}, status_code=400)
+    code = str(random.randint(100000, 999999))
+    expires = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
+    with _db() as c:
+        c.execute(
+            "INSERT OR REPLACE INTO verify_codes(email, code, expires_at) VALUES(?,?,?)",
+            (email, code, expires),
+        )
+    _send_verify_email(email, code)
+    return {"ok": True, "message": "验证码已重新发送"}
+
+
+@app.post("/auth/login")
+async def auth_login(body: LoginBody):
+    """Login with email + password; return JWT."""
+    email = body.email.strip().lower()
+    with _db() as c:
+        user = c.execute("SELECT * FROM users_v2 WHERE email=?", (email,)).fetchone()
+    if not user:
+        return JSONResponse({"ok": False, "error": "邮箱或密码错误"}, status_code=401)
+    if not _verify_pw(body.password, user["password_hash"]):
+        return JSONResponse({"ok": False, "error": "邮箱或密码错误"}, status_code=401)
+    if not user["is_verified"]:
+        return JSONResponse({"ok": False, "error": "邮箱尚未验证，请查收验证码邮件", "need_verify": True, "email": email}, status_code=403)
+    token = _make_jwt(user["id"])
+    return {
+        "ok": True,
+        "token": token,
+        "user": {"id": user["id"], "email": user["email"], "credits": user["credits"], "total_scans": user["total_scans"]},
+    }
+
+
+@app.get("/auth/me")
+async def auth_me(user: dict = Depends(_current_user)):
+    """Return current user info from JWT."""
+    return {"id": user["id"], "email": user["email"], "credits": user["credits"], "total_scans": user["total_scans"]}
+
+
+# ── Payment Endpoints ───────────────────────────────────────
+
+@app.post("/orders/create")
+async def orders_create(body: OrderCreateBody, user: dict = Depends(_current_user)):
+    """Create an order via Cryptomus USDT and return pay_url."""
+    pkg = PACKAGES.get(body.package_id)
+    if not pkg:
+        raise HTTPException(status_code=400, detail="Invalid package_id")
+    merchant = os.getenv("CRYPTOMUS_MERCHANT", "")
+    api_key  = os.getenv("CRYPTOMUS_API_KEY", "")
+    site_url = os.getenv("SITE_URL", "http://localhost:8080").rstrip("/")
+    if not merchant or not api_key:
+        raise HTTPException(status_code=503, detail="支付功能暂未开放")
+    order_no = _make_order_no()
+    with _db() as c:
+        c.execute(
+            "INSERT INTO orders(order_no, user_id, credits, amount) VALUES(?,?,?,?)",
+            (order_no, user["id"], pkg["credits"], pkg["amount"]),
+        )
+    payload = {
+        "amount":       pkg["usdt"],
+        "currency":     "USDT",
+        "network":      "tron",
+        "order_id":     order_no,
+        "url_callback": f"{site_url}/payment/notify",
+        "url_return":   f"{site_url}/payment/return",
+        "url_success":  f"{site_url}/payment/return",
+        "lifetime":     3600,
+        "to_currency":  "USDT",
+    }
+    import json as _json
+    body_str = _json.dumps(payload, separators=(",", ":"))
+    sign = _cryptomus_sign(body_str)
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                "https://api.cryptomus.com/v1/payment",
+                content=body_str.encode(),
+                headers={
+                    "merchant": merchant,
+                    "sign": sign,
+                    "Content-Type": "application/json",
+                    "User-Agent": _CRYPTOMUS_UA,
+                },
+            )
+            result = resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"支付网关请求失败: {e}")
+    if result.get("state") != 0:
+        raise HTTPException(status_code=400, detail=result.get("message", "支付创建失败"))
+    pay_url = result.get("result", {}).get("url", "")
+    return {"order_no": order_no, "pay_url": pay_url}
+
+
+@app.post("/payment/notify")
+async def payment_notify(request: Request):
+    """Cryptomus server-to-server POST callback to confirm payment."""
+    import json as _json
+    data = await request.json()
+    received_sign = data.pop("sign", "")
+    body_str = _json.dumps(data, separators=(",", ":"))
+    if not received_sign or received_sign != _cryptomus_sign(body_str):
+        return Response("fail")
+    status   = data.get("status", "")
+    order_no = data.get("order_id", "")
+    trade_no = data.get("uuid", "")
+    if status not in ("paid", "paid_over"):
+        return Response("ok")
+    with _db() as c:
+        order = c.execute("SELECT * FROM orders WHERE order_no=?", (order_no,)).fetchone()
+        if not order:
+            return Response("fail")
+        if order["status"] == "paid":
+            return Response("ok")   # idempotent
+        c.execute(
+            "UPDATE orders SET status='paid', pay_trade_no=?, paid_at=datetime('now') WHERE order_no=?",
+            (trade_no, order_no),
+        )
+        c.execute(
+            "UPDATE users_v2 SET credits=credits+?, updated_at=datetime('now') WHERE id=?",
+            (order["credits"], order["user_id"]),
+        )
+    return Response("ok")
+
+
+@app.get("/payment/return")
+async def payment_return():
+    """Epay browser redirect after payment; send user back to home page."""
+    return HTMLResponse(
+        '<html><head><meta http-equiv="refresh" content="0;url=/?payment=success"></head>'
+        "<body>支付成功，正在跳转...</body></html>"
+    )
+
+
+@app.post("/auth/redeem")
+async def auth_redeem(code: str, user: dict = Depends(_current_user)):
+    """Redeem a one-time code to add credits to users_v2."""
+    code = code.strip().upper()
+    with _db() as c:
+        row = c.execute(
+            "SELECT * FROM codes WHERE code=? AND used_by IS NULL", (code,)
+        ).fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "error": "兑换码无效或已使用"}, status_code=400)
+        c.execute(
+            "UPDATE codes SET used_by=?, used_at=datetime('now') WHERE code=?",
+            (f"user_v2:{user['id']}", code),
+        )
+        c.execute(
+            "UPDATE users_v2 SET credits=credits+?, updated_at=datetime('now') WHERE id=?",
+            (row["credits"], user["id"]),
+        )
+        new_bal = c.execute("SELECT credits FROM users_v2 WHERE id=?", (user["id"],)).fetchone()["credits"]
+    return {"ok": True, "credits": new_bal, "added": row["credits"]}
+
+
+@app.get("/orders/list")
+async def orders_list(user: dict = Depends(_current_user)):
+    """Return order history for the current user."""
+    with _db() as c:
+        rows = c.execute(
+            "SELECT order_no, credits, amount, status, pay_method, created_at, paid_at "
+            "FROM orders WHERE user_id=? ORDER BY created_at DESC LIMIT 50",
+            (user["id"],),
+        ).fetchall()
+    return {"orders": [dict(r) for r in rows]}
+
+
 @app.get("/health")
 async def health():
     """Check MobSF connectivity."""
@@ -210,6 +599,13 @@ async def health():
     except Exception:
         ok = False
     return {"mobsf": "ok" if ok else "unreachable", "mobsf_url": mobsf_url}
+
+
+@app.get("/favicon.svg")
+async def favicon():
+    svg_path = os.path.join(os.path.dirname(__file__), "static", "favicon.svg")
+    with open(svg_path, encoding="utf-8") as f:
+        return Response(content=f.read(), media_type="image/svg+xml")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -229,28 +625,49 @@ def _first(*vals) -> str:
 
 @app.post("/scan")
 async def scan_app(file: UploadFile, background_tasks: BackgroundTasks,
-                   lang: str = "zh", token: str = ""):
-    """Submit APK/IPA for scanning. Requires a valid token with credits."""
-    if not token:
-        return JSONResponse({"error": "missing_token", "message": "缺少用户 Token"}, status_code=400)
+                   lang: str = "zh", token: str = "",
+                   authorization: str = Header(default="")):
+    """Submit APK/IPA for scanning. Accepts JWT Bearer header (v2) or legacy token query param."""
+    auth_type = None
+    user_id   = None
 
-    # Check credits
-    with _db() as c:
-        row = c.execute("SELECT credits FROM users WHERE token=?", (token,)).fetchone()
-    if not row or row["credits"] <= 0:
-        return JSONResponse(
-            {"error": "credits_exhausted",
-             "message": "扫描次数不足，请购买次数包后继续使用。"},
-            status_code=402,
-        )
+    # ── JWT path (new users_v2 system) ──────────────────────
+    bearer = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
+    if bearer:
+        uid = _decode_jwt(bearer)
+        if uid:
+            with _db() as c:
+                row = c.execute("SELECT credits FROM users_v2 WHERE id=?", (uid,)).fetchone()
+            if not row or row["credits"] <= 0:
+                return JSONResponse(
+                    {"error": "credits_exhausted", "message": "扫描次数不足，请购买次数包后继续使用。"},
+                    status_code=402,
+                )
+            auth_type = "jwt"
+            user_id   = uid
+
+    # ── Legacy token path (users table) ─────────────────────
+    if auth_type is None:
+        if not token:
+            return JSONResponse({"error": "missing_token", "message": "请先登录或提供用户 Token"}, status_code=400)
+        with _db() as c:
+            row = c.execute("SELECT credits FROM users WHERE token=?", (token,)).fetchone()
+        if not row or row["credits"] <= 0:
+            return JSONResponse(
+                {"error": "credits_exhausted", "message": "扫描次数不足，请购买次数包后继续使用。"},
+                status_code=402,
+            )
+        auth_type = "legacy"
 
     task_id = str(uuid.uuid4())
     file_data = await file.read()
     _tasks[task_id] = {
-        "status": "uploading",
-        "filename": file.filename,
-        "lang": lang,
-        "token": token,
+        "status":    "uploading",
+        "filename":  file.filename,
+        "lang":      lang,
+        "token":     token,        # legacy
+        "auth_type": auth_type,
+        "user_id":   user_id,      # jwt
         "started_at": datetime.now().isoformat(),
     }
     background_tasks.add_task(_run_scan, task_id, file.filename, file_data, lang)
@@ -367,14 +784,25 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
                 "MobSF static analysis results are complete — please review the data above."
             )
         # Deduct 1 credit on successful scan
-        _token = _tasks[task_id].get("token", "")
-        if _token:
-            with _db() as c:
-                c.execute(
-                    "UPDATE users SET credits=credits-1, total_scans=total_scans+1,"
-                    " updated_at=datetime('now') WHERE token=? AND credits>0",
-                    (_token,),
-                )
+        _auth_type = _tasks[task_id].get("auth_type", "legacy")
+        if _auth_type == "jwt":
+            _uid = _tasks[task_id].get("user_id")
+            if _uid:
+                with _db() as c:
+                    c.execute(
+                        "UPDATE users_v2 SET credits=credits-1, total_scans=total_scans+1,"
+                        " updated_at=datetime('now') WHERE id=? AND credits>0",
+                        (_uid,),
+                    )
+        else:
+            _token = _tasks[task_id].get("token", "")
+            if _token:
+                with _db() as c:
+                    c.execute(
+                        "UPDATE users SET credits=credits-1, total_scans=total_scans+1,"
+                        " updated_at=datetime('now') WHERE token=? AND credits>0",
+                        (_token,),
+                    )
         _tasks[task_id].update({
             "status": "done",
             "report": report,

@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI 移动安全扫描器</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <meta name="cryptomus" content="835d325e" />
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -43,32 +46,64 @@
     }
     .lang-btn:hover { background: rgba(255,255,255,.3); }
 
-    /* ── Credits bar ─────────────────── */
-    .credits-bar {
+    /* ── Auth area (top-left) ─────────────────── */
+    .auth-area {
       position: absolute;
-      top: 18px; left: 20px;
-      display: flex; align-items: center; gap: 10px;
+      top: 14px; left: 16px;
+      display: flex; align-items: center; gap: 8px;
     }
+    .auth-btn {
+      background: rgba(255,255,255,.18);
+      color: white;
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: .85em; font-weight: 700;
+      cursor: pointer; transition: background .2s;
+    }
+    .auth-btn:hover { background: rgba(255,255,255,.3); }
     .credits-badge {
       background: rgba(255,255,255,.18);
       border: 1px solid rgba(255,255,255,.4);
       border-radius: 20px;
-      padding: 6px 14px;
-      font-size: .85em; font-weight: 700;
-      display: flex; align-items: center; gap: 6px;
-      cursor: default;
+      padding: 5px 12px;
+      font-size: .83em; font-weight: 700;
+      display: flex; align-items: center; gap: 5px;
     }
-    .credits-badge .num { font-size: 1.1em; }
     .credits-badge.low { background: rgba(239,68,68,.35); border-color: rgba(239,68,68,.5); }
     .buy-btn {
       background: #f59e0b; color: #1a1a1a;
       border: none; border-radius: 20px;
-      padding: 6px 14px; font-size: .82em; font-weight: 800;
+      padding: 5px 12px; font-size: .82em; font-weight: 800;
       cursor: pointer; transition: background .2s;
     }
     .buy-btn:hover { background: #fbbf24; }
+    .user-menu-wrap { position: relative; }
+    .user-chip {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .83em; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: background .2s;
+    }
+    .user-chip:hover { background: rgba(255,255,255,.28); }
+    .user-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0;
+      background: white; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+      min-width: 160px; overflow: hidden; z-index: 200;
+    }
+    .user-dropdown div {
+      padding: 11px 16px; font-size: .88em; color: #1e293b;
+      cursor: pointer; font-weight: 500;
+      transition: background .12s;
+    }
+    .user-dropdown div:hover { background: #f1f5f9; }
+    .user-dropdown .divider { height: 1px; background: #e2e8f0; padding: 0; pointer-events: none; }
 
-    /* ── Purchase modal ─────────────────── */
+    /* ── Modals ─────────────────── */
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,.55);
@@ -88,6 +123,48 @@
     .modal-head h2 { font-size: 1.3em; font-weight: 800; margin-bottom: 4px; }
     .modal-head p  { font-size: .88em; opacity: .8; }
     .modal-body { padding: 24px 28px; }
+    .modal-footer {
+      padding: 16px 28px; background: #f8fafc;
+      border-top: 1px solid #e2e8f0; text-align: center;
+      font-size: .78em; color: #94a3b8;
+    }
+    .modal-close {
+      float: right; background: none; border: none;
+      font-size: 1.4em; cursor: pointer; color: rgba(255,255,255,.7);
+      line-height: 1; padding: 0;
+    }
+    .modal-close:hover { color: white; }
+
+    /* Auth form inputs */
+    .form-field { margin-bottom: 14px; }
+    .form-field label { display: block; font-size: .82em; font-weight: 700; color: #475569; margin-bottom: 5px; }
+    .form-input {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px; font-size: .95em; outline: none;
+      transition: border .15s; box-sizing: border-box;
+    }
+    .form-input:focus { border-color: #2563eb; }
+    .form-btn {
+      width: 100%; background: #2563eb; color: white; border: none;
+      border-radius: 8px; padding: 12px; font-size: 1em; font-weight: 700;
+      cursor: pointer; transition: background .2s; margin-top: 4px;
+    }
+    .form-btn:hover { background: #1d4ed8; }
+    .form-btn:disabled { background: #93c5fd; cursor: default; }
+    .form-msg { font-size: .84em; margin-top: 8px; min-height: 18px; text-align: center; }
+    .form-msg.ok  { color: #16a34a; }
+    .form-msg.err { color: #dc2626; }
+    .form-link { font-size: .84em; color: #2563eb; cursor: pointer; text-decoration: underline; }
+    .form-link:hover { color: #1d4ed8; }
+    .modal-alt { text-align: center; margin-top: 14px; font-size: .85em; color: #64748b; }
+    .code-input {
+      width: 100%; border: 2px solid #e2e8f0; border-radius: 8px;
+      padding: 14px; font-size: 1.6em; font-weight: 700; text-align: center;
+      letter-spacing: .3em; outline: none; transition: border .15s;
+    }
+    .code-input:focus { border-color: #2563eb; }
+
+    /* Purchase modal */
     .pkg-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
     .pkg {
       border: 2px solid #e2e8f0; border-radius: 12px;
@@ -98,17 +175,16 @@
     .pkg .scans { font-size: 1.6em; font-weight: 900; color: #1e3a8a; }
     .pkg .price { font-size: .9em; font-weight: 700; color: #dc2626; margin-top: 2px; }
     .pkg .unit  { font-size: .72em; color: #94a3b8; margin-top: 2px; }
-    .pay-section { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    .pay-section h4 { font-size: .85em; font-weight: 700; color: #475569; margin-bottom: 10px; }
-    .pay-methods { display: flex; gap: 10px; }
-    .pay-method {
+    .pay-btn-row { display: flex; gap: 10px; }
+    .pay-btn {
       flex: 1; border: 2px solid #e2e8f0; border-radius: 10px;
       padding: 12px 8px; text-align: center; cursor: pointer;
-      font-size: .82em; font-weight: 600; transition: all .15s;
+      font-size: .85em; font-weight: 700; background: white;
+      transition: all .15s;
     }
-    .pay-method:hover { border-color: #2563eb; background: #eff6ff; }
-    .pay-method .icon { font-size: 1.6em; display: block; margin-bottom: 4px; }
-    .redeem-row { display: flex; gap: 8px; }
+    .pay-btn:hover { border-color: #2563eb; background: #eff6ff; }
+    .pay-btn .icon { font-size: 1.5em; display: block; margin-bottom: 4px; }
+    .redeem-row { display: flex; gap: 8px; margin-top: 16px; }
     .redeem-input {
       flex: 1; border: 1.5px solid #e2e8f0; border-radius: 8px;
       padding: 10px 14px; font-size: .9em; outline: none;
@@ -124,19 +200,26 @@
     .redeem-msg { font-size: .82em; margin-top: 6px; min-height: 18px; }
     .redeem-msg.ok  { color: #16a34a; }
     .redeem-msg.err { color: #dc2626; }
-    .modal-footer {
-      padding: 16px 28px; background: #f8fafc;
-      border-top: 1px solid #e2e8f0; text-align: center;
-      font-size: .78em; color: #94a3b8;
-    }
-    .modal-close {
-      float: right; background: none; border: none;
-      font-size: 1.4em; cursor: pointer; color: rgba(255,255,255,.7);
-      line-height: 1; padding: 0;
-    }
-    .modal-close:hover { color: white; }
 
-    /* ── No-credits gate ─────────────────── */
+    /* Order history */
+    .order-row { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: .88em; }
+    .order-row:last-child { border-bottom: none; }
+    .order-no { font-family: monospace; font-size: .8em; color: #64748b; }
+    .order-status-paid { color: #16a34a; font-weight: 700; }
+    .order-status-pending { color: #d97706; font-weight: 700; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: white;
+      padding: 12px 24px; border-radius: 10px;
+      font-size: .9em; font-weight: 600;
+      z-index: 2000; pointer-events: none;
+      transition: opacity .3s;
+    }
+    .toast.hidden { opacity: 0; }
+
+    /* ── Gate cards ─────────────────── */
     .gate-card {
       text-align: center; padding: 48px 32px;
     }
@@ -147,9 +230,16 @@
       background: #dc2626; color: white; border: none;
       padding: 14px 32px; border-radius: 10px;
       font-size: 1em; font-weight: 700; cursor: pointer;
-      transition: background .2s;
+      transition: background .2s; margin: 4px;
     }
     .gate-buy-btn:hover { background: #b91c1c; }
+    .gate-login-btn {
+      background: #2563eb; color: white; border: none;
+      padding: 14px 32px; border-radius: 10px;
+      font-size: 1em; font-weight: 700; cursor: pointer;
+      transition: background .2s; margin: 4px;
+    }
+    .gate-login-btn:hover { background: #1d4ed8; }
 
     /* ── Page ─────────────────── */
     .page { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
@@ -322,6 +412,74 @@
     .mobsf-banner.ok   .dot { background: #22c55e; }
     .mobsf-banner a { color: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 
+    /* ── Features strip ───────────────────────── */
+    .features-strip {
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 32px 20px;
+    }
+    .feat-grid {
+      max-width: 960px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    }
+    .feat-card { text-align: center; padding: 8px; }
+    .feat-icon { font-size: 2em; margin-bottom: 10px; }
+    .feat-title { font-weight: 700; font-size: .95em; color: #1e3a8a; margin-bottom: 6px; }
+    .feat-desc { font-size: .82em; color: #64748b; line-height: 1.5; }
+
+    /* ── Score ring ───────────────────────────── */
+    .score-wrap {
+      display: flex; align-items: center; gap: 32px;
+      flex-wrap: wrap;
+    }
+    .score-ring-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+    .score-ring-wrap svg { transform: rotate(-90deg); }
+    .score-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .score-num { font-size: 1.8em; font-weight: 900; line-height: 1; }
+    .score-lbl { font-size: .65em; color: #94a3b8; font-weight: 600; margin-top: 2px; }
+    .score-info { flex: 1; min-width: 200px; }
+    .score-info h3 { font-size: 1.05em; font-weight: 700; margin-bottom: 6px; }
+    .score-info p  { font-size: .85em; color: #64748b; line-height: 1.6; }
+
+    /* ── Copy button ──────────────────────────── */
+    .copy-btn {
+      background: none; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 2px 8px; font-size: .75em; color: #64748b; cursor: pointer;
+      margin-left: 8px; transition: all .15s; vertical-align: middle;
+    }
+    .copy-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+    .copy-btn.copied { color: #16a34a; border-color: #16a34a; }
+
+    /* ── File selected state ──────────────────── */
+    .file-selected {
+      display: flex; align-items: center; gap: 12px;
+      background: #eff6ff; border: 2px solid #2563eb; border-radius: 12px;
+      padding: 16px 20px; margin-top: 12px;
+    }
+    .file-selected-icon { font-size: 2em; }
+    .file-selected-info { flex: 1; }
+    .file-selected-name { font-weight: 700; font-size: .95em; color: #1e3a8a; word-break: break-all; }
+    .file-selected-size { font-size: .82em; color: #64748b; margin-top: 2px; }
+    .file-clear-btn {
+      background: none; border: none; cursor: pointer; color: #94a3b8;
+      font-size: 1.2em; padding: 4px; transition: color .15s;
+    }
+    .file-clear-btn:hover { color: #dc2626; }
+
+    /* ── Footer ───────────────────────────────── */
+    .footer {
+      background: #1e293b; color: #94a3b8;
+      text-align: center; padding: 28px 20px;
+      font-size: .82em; line-height: 1.8;
+      margin-top: 40px;
+    }
+    .footer a { color: #64748b; text-decoration: none; }
+    .footer a:hover { color: #94a3b8; }
+    .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap; }
+
     @media (max-width: 640px) {
       .info-grid { grid-template-columns: 1fr; }
       .risk-grid { grid-template-columns: 1fr 1fr; }
@@ -330,75 +488,161 @@
       .card { padding: 20px 16px; }
       .ai-box { padding: 16px; }
       .lang-btn { top: 12px; right: 12px; }
+      .feat-grid { grid-template-columns: 1fr 1fr; }
+      .score-wrap { justify-content: center; text-align: center; }
     }
   </style>
 </head>
 <body>
 
+<!-- Toast notification -->
+<div class="toast hidden" id="toast"></div>
+
 <!-- Header -->
 <div class="header">
-  <!-- Credits badge (top-left) -->
-  <div class="credits-bar">
-    <div class="credits-badge" id="credits-badge" title="剩余扫描次数">
-      🔑 <span id="credits-num">…</span> 次
+  <!-- Auth area (top-left) -->
+  <div class="auth-area" id="auth-area">
+    <!-- Not logged in -->
+    <button id="login-btn" class="auth-btn" onclick="openLoginModal()">登录 / 注册</button>
+    <!-- Logged in (hidden until auth) -->
+    <div id="user-logged-in" class="hidden" style="display:flex;align-items:center;gap:8px">
+      <div class="credits-badge" id="credits-badge">
+        🔑 <span id="credits-num">0</span> 次
+      </div>
+      <button class="buy-btn" onclick="openBuyModal()">购买</button>
+      <div class="user-menu-wrap">
+        <div class="user-chip" id="user-chip" onclick="toggleUserDropdown()">
+          <span id="user-email-chip">...</span> ▾
+        </div>
+        <div class="user-dropdown hidden" id="user-dropdown">
+          <div onclick="openOrderHistory()">📋 订单历史</div>
+          <div class="divider"></div>
+          <div onclick="doLogout()" style="color:#dc2626">退出登录</div>
+        </div>
+      </div>
     </div>
-    <button class="buy-btn" onclick="openBuyModal()" id="buy-btn">购买次数</button>
   </div>
   <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
   <h1 id="hdr-title">🔍 AI 移动安全扫描器</h1>
   <p id="hdr-subtitle">上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
 </div>
 
-<!-- Purchase / Redeem Modal -->
+<!-- Login Modal -->
+<div class="modal-overlay hidden" id="login-modal" onclick="if(event.target===this)closeLoginModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-close" onclick="closeLoginModal()">✕</button>
+      <h2>🔐 登录</h2>
+      <p>使用邮箱和密码登录您的账号</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>邮箱地址</label>
+        <input class="form-input" id="login-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="form-field">
+        <label>密码</label>
+        <input class="form-input" id="login-password" type="password" placeholder="请输入密码" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-msg" id="login-msg"></div>
+      <button class="form-btn" id="login-submit-btn" onclick="doLogin()">登录</button>
+      <div class="modal-alt">
+        没有账号？<span class="form-link" onclick="switchToRegister()">立即注册</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal-overlay hidden" id="register-modal" onclick="if(event.target===this)closeRegisterModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-close" onclick="closeRegisterModal()">✕</button>
+      <h2>✉️ 注册账号</h2>
+      <p>注册后即可获得扫描次数并查看订单</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>邮箱地址</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="form-field">
+        <label>密码（至少6位）</label>
+        <input class="form-input" id="reg-password" type="password" placeholder="请输入密码" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div class="form-msg" id="reg-msg"></div>
+      <button class="form-btn" id="reg-submit-btn" onclick="doRegister()">发送验证码</button>
+      <div class="modal-alt">
+        已有账号？<span class="form-link" onclick="switchToLogin()">立即登录</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Verify Modal -->
+<div class="modal-overlay hidden" id="verify-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-close" onclick="hide('verify-modal');openRegisterModal()">✕</button>
+      <h2>📬 邮箱验证</h2>
+      <p id="verify-email-hint">验证码已发送到您的邮箱</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>请输入6位验证码</label>
+        <input class="code-input" id="verify-code" type="text" maxlength="6"
+               placeholder="000000" inputmode="numeric"
+               oninput="this.value=this.value.replace(/\D/g,'')"
+               onkeydown="if(event.key==='Enter')doVerify()">
+      </div>
+      <div class="form-msg" id="verify-msg"></div>
+      <button class="form-btn" onclick="doVerify()">验证</button>
+      <div class="modal-alt">
+        没收到？<span class="form-link" id="resend-link" onclick="doResend()">重新发送</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Purchase Modal -->
 <div class="modal-overlay hidden" id="buy-modal" onclick="if(event.target===this)closeBuyModal()">
   <div class="modal">
     <div class="modal-head">
       <button class="modal-close" onclick="closeBuyModal()">✕</button>
-      <h2>💳 购买扫描次数</h2>
-      <p>一次购买，永久有效，不限使用时间</p>
+      <h2 id="buy-modal-title">💳 购买扫描次数</h2>
+      <p id="buy-modal-sub">一次购买，永久有效，不限使用时间</p>
     </div>
     <div class="modal-body">
-      <!-- Packages -->
-      <div class="pkg-grid" id="pkg-grid">
-        <div class="pkg selected" data-scans="10" data-price="9.9" onclick="selectPkg(this)">
+      <div class="pkg-grid">
+        <div class="pkg selected" data-pkg="p10" onclick="selectPkg(this)">
           <div class="scans">10</div>
-          <div class="price">¥ 9.9</div>
-          <div class="unit">¥0.99 / 次</div>
+          <div class="price">1.5 USDT</div>
+          <div class="unit">0.15 USDT / 次</div>
         </div>
-        <div class="pkg" data-scans="50" data-price="39" onclick="selectPkg(this)">
+        <div class="pkg" data-pkg="p50" onclick="selectPkg(this)">
           <div class="scans">50</div>
-          <div class="price">¥ 39</div>
-          <div class="unit">¥0.78 / 次</div>
+          <div class="price">5.5 USDT</div>
+          <div class="unit">0.11 USDT / 次</div>
         </div>
-        <div class="pkg" data-scans="200" data-price="99" onclick="selectPkg(this)">
+        <div class="pkg" data-pkg="p200" onclick="selectPkg(this)">
           <div class="scans">200</div>
-          <div class="price">¥ 99</div>
-          <div class="unit">¥0.50 / 次</div>
+          <div class="price">18 USDT</div>
+          <div class="unit">0.09 USDT / 次</div>
         </div>
       </div>
-
-      <!-- Payment methods -->
-      <div class="pay-section">
-        <h4>选择支付方式 → 付款后联系客服获取兑换码</h4>
-        <div class="pay-methods">
-          <div class="pay-method" onclick="showPayQR('wechat')">
-            <span class="icon">💚</span>微信支付
-          </div>
-          <div class="pay-method" onclick="showPayQR('alipay')">
-            <span class="icon">💙</span>支付宝
-          </div>
-        </div>
-        <div id="pay-qr-tip" style="margin-top:10px;font-size:.8em;color:#64748b;display:none">
-          请扫码支付，备注选择的套餐次数。支付后微信/邮件联系客服发兑换码：<br>
-          <strong id="contact-info">微信: your_wechat_id &nbsp;|&nbsp; 邮箱: your@email.com</strong>
-        </div>
+      <div class="pay-btn-row">
+        <button class="pay-btn" onclick="doPay('usdt')" style="flex:1">
+          <span class="icon">💎</span><span id="pay-usdt-label">USDT 支付（TRC20）</span>
+        </button>
       </div>
-
+      <div id="buy-msg" class="form-msg"></div>
       <!-- Redeem code -->
-      <div>
-        <div style="font-size:.85em;font-weight:700;color:#475569;margin-bottom:8px">已有兑换码？立即兑换</div>
+      <div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:16px">
+        <div style="font-size:.82em;font-weight:700;color:#475569;margin-bottom:8px">已有兑换码？</div>
         <div class="redeem-row">
-          <input class="redeem-input" id="redeem-input" placeholder="输入兑换码（如 A1B2C3D4E5F6）"
+          <input class="redeem-input" id="redeem-input" placeholder="输入兑换码"
                  maxlength="20" oninput="this.value=this.value.toUpperCase()">
           <button class="redeem-btn" onclick="doRedeem()">兑换</button>
         </div>
@@ -406,7 +650,47 @@
       </div>
     </div>
     <div class="modal-footer">
-      购买即同意服务条款 &nbsp;·&nbsp; 技术问题请联系客服 &nbsp;·&nbsp; Credits 不可退款
+      <span id="buy-modal-footer">购买即同意服务条款 &nbsp;·&nbsp; Credits 不可退款</span>
+    </div>
+  </div>
+</div>
+
+<!-- Order History Modal -->
+<div class="modal-overlay hidden" id="order-modal" onclick="if(event.target===this)closeOrderModal()">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-head">
+      <button class="modal-close" onclick="closeOrderModal()">✕</button>
+      <h2>📋 订单历史</h2>
+      <p>最近50条订单记录</p>
+    </div>
+    <div class="modal-body" style="max-height:400px;overflow-y:auto" id="order-list">
+      <div style="text-align:center;color:#94a3b8;padding:20px">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Features strip -->
+<div id="features-strip" class="features-strip">
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🔍</div>
+      <div class="feat-title" id="feat1-title">深度静态分析</div>
+      <div class="feat-desc"  id="feat1-desc">基于 MobSF 引擎，检测权限滥用、代码漏洞与不安全配置</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title" id="feat2-title">AI 智能报告</div>
+      <div class="feat-desc"  id="feat2-desc">Gemini AI 自动分析风险，生成中英文安全摘要</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📄</div>
+      <div class="feat-title" id="feat3-title">一键导出报告</div>
+      <div class="feat-desc"  id="feat3-desc">完整 HTML 报告，可提交团队审查或合规审计</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title" id="feat4-title">分钟级出结果</div>
+      <div class="feat-desc"  id="feat4-desc">支持 Android APK 与 iOS IPA，快速完成扫描</div>
     </div>
   </div>
 </div>
@@ -419,12 +703,13 @@
 
 <div class="page">
 
-  <!-- ① No-credits gate -->
+  <!-- ① Gate (not logged in / no credits) -->
   <div id="gate-card" class="card gate-card hidden">
-    <div class="gate-icon">🔒</div>
-    <h3 id="gate-title">扫描次数已用完</h3>
-    <p  id="gate-desc">请购买次数包继续使用，或兑换已有兑换码</p>
-    <button class="gate-buy-btn" onclick="openBuyModal()">立即购买次数包</button>
+    <div class="gate-icon" id="gate-icon">🔒</div>
+    <h3 id="gate-title">请先登录</h3>
+    <p  id="gate-desc">登录后购买扫描次数，即可使用 AI 安全扫描服务</p>
+    <button class="gate-login-btn" id="gate-login-btn" onclick="openLoginModal()">登录 / 注册</button>
+    <button class="gate-buy-btn hidden" id="gate-buy-btn" onclick="openBuyModal()">立即购买次数包</button>
   </div>
 
   <!-- ① Upload -->
@@ -439,6 +724,14 @@
       </button>
     </div>
     <input type="file" id="file-input" accept=".apk,.ipa">
+    <div id="file-preview" class="file-selected hidden">
+      <div class="file-selected-icon">📦</div>
+      <div class="file-selected-info">
+        <div class="file-selected-name" id="file-preview-name"></div>
+        <div class="file-selected-size" id="file-preview-size"></div>
+      </div>
+      <button class="file-clear-btn" onclick="clearFileSelection()" title="取消">✕</button>
+    </div>
     <div id="upload-error" class="error-box hidden"></div>
   </div>
 
@@ -480,16 +773,39 @@
   <!-- ③ Results -->
   <div id="results" class="hidden">
 
+    <!-- Security Score Card -->
+    <div class="card" id="score-card">
+      <div class="score-wrap">
+        <div class="score-ring-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="46" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+            <circle id="score-arc" cx="55" cy="55" r="46" fill="none" stroke="#16a34a"
+                    stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="289" stroke-dashoffset="289"
+                    style="transition: stroke-dashoffset 1s ease, stroke .5s"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-num" id="score-num">-</div>
+            <div class="score-lbl">/ 100</div>
+          </div>
+        </div>
+        <div class="score-info">
+          <h3 id="score-title">安全评分</h3>
+          <p id="score-desc-text">综合危险权限、清单问题与追踪器数量计算</p>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2 class="st" id="sec-appinfo">📱 应用信息</h2>
       <div class="info-grid">
         <div class="info-item"><label id="lbl-appname">应用名称</label><p id="r-app-name">-</p></div>
-        <div class="info-item"><label id="lbl-package">包名</label><p id="r-package">-</p></div>
+        <div class="info-item"><label id="lbl-package">包名</label><p><span id="r-package">-</span><button class="copy-btn" onclick="copyText('r-package',this)">复制</button></p></div>
         <div class="info-item"><label id="lbl-version">版本号</label><p id="r-version">-</p></div>
         <div class="info-item"><label id="lbl-size">文件大小</label><p id="r-size">-</p></div>
         <div class="info-item wide">
           <label id="lbl-md5">MD5 哈希</label>
-          <p><span class="mono" id="r-md5">-</span></p>
+          <p><span class="mono" id="r-md5">-</span><button class="copy-btn" onclick="copyText('r-md5',this)">复制</button></p>
         </div>
       </div>
     </div>
@@ -554,6 +870,17 @@
   </div><!-- #results -->
 </div><!-- .page -->
 
+<footer class="footer">
+  <div class="footer-links">
+    <span id="footer-product">AI 移动安全扫描器</span>
+    <span>·</span>
+    <span id="footer-support">支持 Android APK / iOS IPA</span>
+    <span>·</span>
+    <a href="https://t.me/ChenSirLite" target="_blank" rel="noopener">💬 Telegram: @ChenSirLite</a>
+  </div>
+  <div id="footer-copy">© 2026 maclechen.top &nbsp;·&nbsp; Powered by MobSF &amp; Gemini AI</div>
+</footer>
+
 <script>
 // ── i18n ────────────────────────────────────────────────────
 const LANG = {
@@ -608,6 +935,31 @@ const LANG = {
     mobsfCmd:     'docker compose up -d mobsf',
     errMobsfDown: 'MobSF 服务未启动，请先启动 MobSF 后重试。',
     errTimeout:   'MobSF 响应超时，请稍后重试。',
+    errNoCredits: '扫描次数不足，请购买次数包。',
+    errNotLogin:  '请先登录后再扫描。',
+    feat1Title: '深度静态分析',
+    feat1Desc:  '基于 MobSF 引擎，检测权限滥用、代码漏洞与不安全配置',
+    feat2Title: 'AI 智能报告',
+    feat2Desc:  'Gemini AI 自动分析风险，生成中英文安全摘要',
+    feat3Title: '一键导出报告',
+    feat3Desc:  '完整 HTML 报告，可提交团队审查或合规审计',
+    feat4Title: '分钟级出结果',
+    feat4Desc:  '支持 Android APK 与 iOS IPA，快速完成扫描',
+    btnScan:      '开始扫描',
+    btnCopy:      '复制',
+    scoreDesc:    '综合危险权限、清单问题与追踪器数量计算',
+    scoreLabels:  { safe:'安全', medium:'中等风险', high:'高风险', critical:'严重风险' },
+    payUsdt:      'USDT 支付（TRC20）',
+    buyTitle:     '💳 购买扫描次数',
+    buySub:       '一次购买，永久有效，不限使用时间',
+    buyFooter:    '购买即同意服务条款 · Credits 不可退款',
+    orderPaid:    '✅ 已支付',
+    orderPending: '⏳ 待支付',
+    footerProduct: 'AI 移动安全扫描器',
+    footerSupport: '支持 Android APK / iOS IPA',
+    footerCopy:    '© 2026 maclechen.top · Powered by MobSF & Gemini AI',
+    redeemPlaceholder: '输入兑换码',
+    redeemLabel:  '已有兑换码？',
   },
   en: {
     pageTitle:    'AI Mobile Security Scanner',
@@ -660,34 +1012,408 @@ const LANG = {
     mobsfCmd:     'docker compose up -d mobsf',
     errMobsfDown: 'MobSF is not running. Please start MobSF and try again.',
     errTimeout:   'MobSF timed out. Please try again later.',
+    errNoCredits: 'Insufficient credits. Please purchase a package.',
+    errNotLogin:  'Please log in before scanning.',
+    feat1Title: 'Deep Static Analysis',
+    feat1Desc:  'Powered by MobSF — detects permission abuse, code vulnerabilities & insecure configs',
+    feat2Title: 'AI-Powered Report',
+    feat2Desc:  'Gemini AI analyzes risks and generates bilingual security summaries',
+    feat3Title: 'One-Click Export',
+    feat3Desc:  'Full HTML report ready for team review or compliance audits',
+    feat4Title: 'Results in Minutes',
+    feat4Desc:  'Supports Android APK and iOS IPA for fast scanning',
+    btnScan:      'Start Scan',
+    btnCopy:      'Copy',
+    scoreDesc:    'Calculated from dangerous permissions, manifest issues & trackers',
+    scoreLabels:  { safe:'Secure', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' },
+    payUsdt:      'Pay with USDT (TRC20)',
+    buyTitle:     '💳 Buy Scan Credits',
+    buySub:       'Buy once, use forever — no expiry',
+    buyFooter:    'By purchasing you agree to our Terms · Credits are non-refundable',
+    orderPaid:    '✅ Paid',
+    orderPending: '⏳ Pending',
+    footerProduct: 'AI Mobile Security Scanner',
+    footerSupport: 'Supports Android APK / iOS IPA',
+    footerCopy:    '© 2026 maclechen.top · Powered by MobSF & Gemini AI',
+    redeemPlaceholder: 'Enter redeem code',
+    redeemLabel:  'Have a redeem code?',
   },
 };
 
-// ── Token (user identity) ───────────────────────────────────
-function getToken() {
-  let t = localStorage.getItem('scanner_token');
-  if (!t) { t = crypto.randomUUID(); localStorage.setItem('scanner_token', t); }
-  return t;
-}
-const USER_TOKEN = getToken();
+// ── Auth State ──────────────────────────────────────────────
+let jwt       = localStorage.getItem('jwt') || '';
+let userInfo  = null;   // { id, email, credits, total_scans }
 
-// ── State ───────────────────────────────────────────────────
+// ── UI State ────────────────────────────────────────────────
 let lang      = localStorage.getItem('lang') || 'zh';
 let taskId    = null;
 let pollTimer = null;
-let lastReport = null;   // cache for re-render on lang switch
-let userCredits = 0;
+let lastReport = null;
+let pendingVerifyEmail = '';
+let selectedPkg = 'p10';
 
 const STATUS_STEP = { uploading:0, scanning:1, analyzing:2, summarizing:3, done:4 };
 
 function L() { return LANG[lang]; }
+
+// ── UI Helpers ─────────────────────────────────────────────
+function show(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
+function hide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
+function setText(id, v) { const el=document.getElementById(id); if(el) el.textContent=v??''; }
+function showUpload()     { show('upload-card'); hide('processing-card'); hide('results'); }
+function showProcessing() { hide('upload-card'); show('processing-card'); hide('results'); }
+function showResults()    { hide('upload-card'); hide('processing-card'); show('results'); }
+
+function showUploadError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function showToast(msg, ms=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), ms);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Auth: render header state ────────────────────────────────
+function renderAuthState() {
+  if (userInfo) {
+    hide('login-btn');
+    show('user-logged-in');
+    // Force flex display since show() just removes hidden
+    const el = document.getElementById('user-logged-in');
+    if (el) el.style.display = 'flex';
+    setText('credits-num', userInfo.credits ?? 0);
+    setText('user-email-chip', userInfo.email || '');
+    const badge = document.getElementById('credits-badge');
+    if (badge) badge.classList.toggle('low', (userInfo.credits ?? 0) === 0);
+  } else {
+    show('login-btn');
+    hide('user-logged-in');
+  }
+  renderGate();
+}
+
+function renderGate() {
+  if (taskId || lastReport) return;  // scan in progress — don't show gate
+  const loggedIn  = !!userInfo;
+  const hasCredits = loggedIn && (userInfo.credits ?? 0) > 0;
+  if (!loggedIn) {
+    show('gate-card');
+    hide('upload-card');
+    setText('gate-icon', '🔒');
+    setText('gate-title', '请先登录');
+    setText('gate-desc', '登录后购买扫描次数，即可使用 AI 安全扫描服务');
+    show('gate-login-btn');
+    hide('gate-buy-btn');
+  } else if (!hasCredits) {
+    show('gate-card');
+    hide('upload-card');
+    setText('gate-icon', '💳');
+    setText('gate-title', '扫描次数已用完');
+    setText('gate-desc', '请购买次数包继续使用');
+    hide('gate-login-btn');
+    show('gate-buy-btn');
+  } else {
+    hide('gate-card');
+    show('upload-card');
+  }
+}
+
+// ── Auth: fetch current user ─────────────────────────────────
+async function fetchMe() {
+  if (!jwt) { renderAuthState(); return; }
+  try {
+    const resp = await fetch('/auth/me', { headers: { Authorization: `Bearer ${jwt}` } });
+    if (resp.ok) {
+      userInfo = await resp.json();
+      renderAuthState();
+    } else {
+      // Token expired or invalid
+      jwt = '';
+      localStorage.removeItem('jwt');
+      userInfo = null;
+      renderAuthState();
+    }
+  } catch(_) { renderAuthState(); }
+}
+
+function doLogout() {
+  jwt = '';
+  userInfo = null;
+  localStorage.removeItem('jwt');
+  hide('user-dropdown');
+  renderAuthState();
+  showToast('已退出登录');
+}
+
+function toggleUserDropdown() {
+  const dd = document.getElementById('user-dropdown');
+  dd.classList.toggle('hidden');
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('user-menu-wrap') ||
+               e.target.closest?.('.user-menu-wrap');
+  if (!wrap && !e.target.closest('#user-chip')) {
+    const dd = document.getElementById('user-dropdown');
+    if (dd) dd.classList.add('hidden');
+  }
+});
+
+// ── Login Modal ─────────────────────────────────────────────
+function openLoginModal() {
+  hide('register-modal'); hide('verify-modal');
+  show('login-modal');
+  setText('login-msg', '');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  setTimeout(() => document.getElementById('login-email').focus(), 50);
+}
+function closeLoginModal()    { hide('login-modal'); }
+function switchToRegister()   { closeLoginModal(); openRegisterModal(); }
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-password').value;
+  const msg   = document.getElementById('login-msg');
+  const btn   = document.getElementById('login-submit-btn');
+  if (!email || !pw) { msg.className='form-msg err'; msg.textContent='请填写邮箱和密码'; return; }
+  btn.disabled = true;
+  msg.className='form-msg'; msg.textContent='登录中...';
+  try {
+    const resp = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pw }),
+    });
+    const d = await resp.json();
+    if (d.ok) {
+      jwt = d.token;
+      localStorage.setItem('jwt', jwt);
+      userInfo = d.user;
+      closeLoginModal();
+      renderAuthState();
+      showToast(`欢迎回来，${userInfo.email}`);
+    } else if (d.need_verify) {
+      pendingVerifyEmail = d.email;
+      closeLoginModal();
+      openVerifyModal(d.email);
+    } else {
+      msg.className='form-msg err'; msg.textContent = d.error || '登录失败';
+    }
+  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  btn.disabled = false;
+}
+
+// ── Register Modal ───────────────────────────────────────────
+function openRegisterModal() {
+  hide('login-modal'); hide('verify-modal');
+  show('register-modal');
+  setText('reg-msg', '');
+  document.getElementById('reg-email').value = '';
+  document.getElementById('reg-password').value = '';
+  setTimeout(() => document.getElementById('reg-email').focus(), 50);
+}
+function closeRegisterModal() { hide('register-modal'); }
+function switchToLogin()      { closeRegisterModal(); openLoginModal(); }
+
+async function doRegister() {
+  const email = document.getElementById('reg-email').value.trim();
+  const pw    = document.getElementById('reg-password').value;
+  const msg   = document.getElementById('reg-msg');
+  const btn   = document.getElementById('reg-submit-btn');
+  if (!email || !pw) { msg.className='form-msg err'; msg.textContent='请填写邮箱和密码'; return; }
+  if (pw.length < 6) { msg.className='form-msg err'; msg.textContent='密码至少6位'; return; }
+  btn.disabled = true;
+  msg.className='form-msg'; msg.textContent='发送中...';
+  try {
+    const resp = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pw }),
+    });
+    const d = await resp.json();
+    if (d.ok) {
+      pendingVerifyEmail = email;
+      closeRegisterModal();
+      openVerifyModal(email);
+    } else {
+      msg.className='form-msg err'; msg.textContent = d.error || '注册失败';
+    }
+  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  btn.disabled = false;
+}
+
+// ── Verify Modal ─────────────────────────────────────────────
+function openVerifyModal(email) {
+  hide('login-modal'); hide('register-modal');
+  setText('verify-email-hint', `验证码已发送至 ${email}，请查收邮件`);
+  setText('verify-msg', '');
+  document.getElementById('verify-code').value = '';
+  show('verify-modal');
+  setTimeout(() => document.getElementById('verify-code').focus(), 50);
+}
+
+async function doVerify() {
+  const code = document.getElementById('verify-code').value.trim();
+  const msg  = document.getElementById('verify-msg');
+  if (!code || code.length !== 6) { msg.className='form-msg err'; msg.textContent='请输入6位验证码'; return; }
+  msg.className='form-msg'; msg.textContent='验证中...';
+  try {
+    const resp = await fetch('/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: pendingVerifyEmail, code }),
+    });
+    const d = await resp.json();
+    if (d.ok) {
+      jwt = d.token;
+      localStorage.setItem('jwt', jwt);
+      userInfo = d.user;
+      hide('verify-modal');
+      renderAuthState();
+      showToast('注册成功！欢迎使用');
+    } else {
+      msg.className='form-msg err'; msg.textContent = d.error || '验证失败';
+    }
+  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+}
+
+let resendCooldown = false;
+async function doResend() {
+  if (resendCooldown) return;
+  const msg  = document.getElementById('verify-msg');
+  const link = document.getElementById('resend-link');
+  resendCooldown = true;
+  link.style.opacity = '0.4';
+  msg.className='form-msg'; msg.textContent='发送中...';
+  try {
+    const resp = await fetch('/auth/resend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: pendingVerifyEmail }),
+    });
+    const d = await resp.json();
+    if (d.ok) {
+      msg.className='form-msg ok'; msg.textContent='验证码已重新发送';
+    } else {
+      msg.className='form-msg err'; msg.textContent = d.error || '发送失败';
+    }
+  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  setTimeout(() => { resendCooldown=false; link.style.opacity=''; }, 60000);
+}
+
+// ── Buy Modal ────────────────────────────────────────────────
+function openBuyModal() {
+  if (!userInfo) { openLoginModal(); return; }
+  show('buy-modal');
+  setText('redeem-msg', '');
+  document.getElementById('redeem-input').value = '';
+  setText('buy-msg', '');
+}
+function closeBuyModal() { hide('buy-modal'); }
+
+function selectPkg(el) {
+  document.querySelectorAll('.pkg').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPkg = el.dataset.pkg;
+}
+
+async function doPay(method) {
+  if (!userInfo) { closeBuyModal(); openLoginModal(); return; }
+  const msg = document.getElementById('buy-msg');
+  msg.className='form-msg'; msg.textContent='正在创建订单...';
+  try {
+    const resp = await fetch('/orders/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ package_id: selectedPkg, pay_type: method }),
+    });
+    if (resp.status === 401) {
+      closeBuyModal(); openLoginModal(); return;
+    }
+    const d = await resp.json();
+    if (d.pay_url) {
+      msg.className='form-msg ok'; msg.textContent='正在跳转支付页面...';
+      setTimeout(() => window.open(d.pay_url, '_blank'), 400);
+    } else {
+      msg.className='form-msg err'; msg.textContent=d.detail || '创建订单失败，请重试';
+    }
+  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+}
+
+async function doRedeem() {
+  if (!userInfo) { closeBuyModal(); openLoginModal(); return; }
+  const code = document.getElementById('redeem-input').value.trim();
+  const msg  = document.getElementById('redeem-msg');
+  if (!code) { msg.className='redeem-msg err'; msg.textContent='请输入兑换码'; return; }
+  msg.className='redeem-msg'; msg.textContent='兑换中...';
+  try {
+    const r = await fetch(`/auth/redeem?code=${encodeURIComponent(code)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    const d = await r.json();
+    if (d.ok) {
+      userInfo.credits = d.credits;
+      renderAuthState();
+      msg.className='redeem-msg ok';
+      msg.textContent = `✅ 兑换成功！已到账 ${d.added} 次，余额 ${d.credits} 次`;
+      document.getElementById('redeem-input').value = '';
+      setTimeout(closeBuyModal, 1800);
+    } else {
+      msg.className='redeem-msg err'; msg.textContent = d.error || '兑换失败';
+    }
+  } catch(_) { msg.className='redeem-msg err'; msg.textContent='网络错误，请重试'; }
+}
+
+// ── Order History Modal ──────────────────────────────────────
+function closeOrderModal() { hide('order-modal'); }
+
+async function openOrderHistory() {
+  hide('user-dropdown');
+  show('order-modal');
+  const list = document.getElementById('order-list');
+  list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">加载中...</div>';
+  try {
+    const resp = await fetch('/orders/list', { headers: { Authorization: `Bearer ${jwt}` } });
+    const d = await resp.json();
+    if (!d.orders || d.orders.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">暂无订单记录</div>';
+      return;
+    }
+    list.innerHTML = d.orders.map(o => `
+      <div class="order-row">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700">${o.credits} 次扫描</span>
+          <span class="${o.status==='paid' ? 'order-status-paid' : 'order-status-pending'}">
+            ${o.status === 'paid' ? '✅ 已支付' : '⏳ 待支付'}
+          </span>
+        </div>
+        <div style="margin-top:4px;color:#64748b;font-size:.85em">
+          USDT · ${o.created_at.slice(0,16).replace('T',' ')}
+        </div>
+        <div class="order-no">${o.order_no}</div>
+      </div>`).join('');
+  } catch(_) {
+    list.innerHTML = '<div style="text-align:center;color:#dc2626;padding:20px">加载失败，请重试</div>';
+  }
+}
 
 // ── i18n Apply ─────────────────────────────────────────────
 function applyI18n() {
   const l = L();
   document.title = l.pageTitle;
   document.documentElement.lang = l.htmlLang;
-
   setText('hdr-title',    '🔍 ' + l.pageTitle);
   setText('hdr-subtitle', l.pageSubtitle);
   setText('lang-btn',     l.langBtn);
@@ -695,9 +1421,7 @@ function applyI18n() {
   setText('uz-subtitle',  l.uzSubtitle);
   setText('uz-btn',       l.uzBtn);
   setText('proc-title',   l.procTitle);
-
   l.sl.forEach((s, i) => setText(`sl-${i}`, s));
-
   setText('sec-appinfo',    l.secAppInfo);
   setText('sec-risk',       l.secRisk);
   setText('sec-ai',         l.secAI);
@@ -717,13 +1441,33 @@ function applyI18n() {
   setText('th-issue-desc',  l.thIssueDesc);
   setText('btn-download',   l.btnDownload);
   setText('btn-rescan',     l.btnRescan);
-
-  // Update download URL lang param
+  // Features
+  setText('feat1-title', l.feat1Title); setText('feat1-desc', l.feat1Desc);
+  setText('feat2-title', l.feat2Title); setText('feat2-desc', l.feat2Desc);
+  setText('feat3-title', l.feat3Title); setText('feat3-desc', l.feat3Desc);
+  setText('feat4-title', l.feat4Title); setText('feat4-desc', l.feat4Desc);
+  // Score
+  setText('score-desc-text', l.scoreDesc);
+  // Buy modal
+  setText('buy-modal-title',  l.buyTitle);
+  setText('buy-modal-sub',    l.buySub);
+  setText('pay-usdt-label',   l.payUsdt);
+  setText('buy-modal-footer', l.buyFooter);
+  // Footer
+  setText('footer-product', l.footerProduct);
+  setText('footer-support', l.footerSupport);
+  setText('footer-copy',    l.footerCopy);
+  // Redeem
+  const ri = document.getElementById('redeem-input');
+  if (ri) ri.placeholder = l.redeemPlaceholder;
+  // Copy buttons (reset state)
+  document.querySelectorAll('.copy-btn:not(.copied)').forEach(b => { b.textContent = l.btnCopy; });
+  // Scan button (if file selected)
+  const uzBtn = document.getElementById('uz-btn');
+  if (uzBtn && selectedFile) uzBtn.textContent = l.btnScan;
   const dlBtn = document.getElementById('btn-download');
-  if (taskId) dlBtn.href = `/scan/report/${taskId}/download?lang=${lang}`;
-
-  // Re-render tables if report already loaded (only labels change)
-  if (lastReport) renderTables(lastReport);
+  if (taskId && dlBtn) dlBtn.href = `/scan/report/${taskId}/download?lang=${lang}`;
+  if (lastReport) { renderTables(lastReport); renderScore(lastReport); }
 }
 
 function toggleLang() {
@@ -732,103 +1476,19 @@ function toggleLang() {
   applyI18n();
 }
 
-// ── UI Helpers ─────────────────────────────────────────────
-function show(id) { document.getElementById(id).classList.remove('hidden'); }
-function hide(id) { document.getElementById(id).classList.add('hidden'); }
-function setText(id, v) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = v ?? '';
-}
-
-function showUpload()     { show('upload-card'); hide('processing-card'); hide('results'); }
-function showProcessing() { hide('upload-card'); show('processing-card'); hide('results'); }
-function showResults()    { hide('upload-card'); hide('processing-card'); show('results'); }
-
 function setStep(idx, message) {
   for (let i = 0; i <= 4; i++) {
     const el = document.getElementById(`step-${i}`);
+    if (!el) continue;
     el.classList.remove('active', 'done');
-    if (i < idx)       el.classList.add('done');
+    if (i < idx)        el.classList.add('done');
     else if (i === idx) el.classList.add('active');
   }
   for (let i = 0; i <= 3; i++) {
-    document.getElementById(`line-${i}`).classList.toggle('done', i < idx);
+    const ln = document.getElementById(`line-${i}`);
+    if (ln) ln.classList.toggle('done', i < idx);
   }
   if (message) setText('progress-text', message);
-}
-
-function showUploadError(msg) {
-  const el = document.getElementById('upload-error');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-}
-
-function esc(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Credits ────────────────────────────────────────────────
-async function fetchCredits() {
-  try {
-    const d = await fetch(`/credits/${USER_TOKEN}`).then(r => r.json());
-    userCredits = d.credits ?? 0;
-    renderCredits();
-  } catch(_) {}
-}
-
-function renderCredits() {
-  const badge = document.getElementById('credits-badge');
-  document.getElementById('credits-num').textContent = userCredits;
-  badge.classList.toggle('low', userCredits === 0);
-  // Show gate or upload card
-  if (userCredits <= 0 && !taskId && !lastReport) {
-    document.getElementById('gate-card').classList.remove('hidden');
-    document.getElementById('upload-card').classList.add('hidden');
-  } else {
-    document.getElementById('gate-card').classList.add('hidden');
-    if (!taskId && !lastReport)
-      document.getElementById('upload-card').classList.remove('hidden');
-  }
-}
-
-// ── Buy modal ──────────────────────────────────────────────
-function openBuyModal() {
-  document.getElementById('buy-modal').classList.remove('hidden');
-  document.getElementById('redeem-msg').textContent = '';
-  document.getElementById('redeem-input').value = '';
-}
-function closeBuyModal() {
-  document.getElementById('buy-modal').classList.add('hidden');
-}
-function selectPkg(el) {
-  document.querySelectorAll('.pkg').forEach(p => p.classList.remove('selected'));
-  el.classList.add('selected');
-}
-function showPayQR(method) {
-  document.getElementById('pay-qr-tip').style.display = 'block';
-}
-async function doRedeem() {
-  const code = document.getElementById('redeem-input').value.trim();
-  const msg  = document.getElementById('redeem-msg');
-  if (!code) { msg.className='redeem-msg err'; msg.textContent='请输入兑换码'; return; }
-  msg.className='redeem-msg'; msg.textContent='兑换中...';
-  try {
-    const r = await fetch(`/credits/redeem?token=${USER_TOKEN}&code=${encodeURIComponent(code)}`, {method:'POST'});
-    const d = await r.json();
-    if (d.ok) {
-      userCredits = d.credits;
-      renderCredits();
-      msg.className='redeem-msg ok';
-      msg.textContent = `✅ 兑换成功！已到账 ${d.added} 次，余额 ${d.credits} 次`;
-      document.getElementById('redeem-input').value = '';
-      setTimeout(closeBuyModal, 1800);
-    } else {
-      msg.className='redeem-msg err'; msg.textContent = d.error || '兑换失败';
-    }
-  } catch(_) { msg.className='redeem-msg err'; msg.textContent='网络错误，请重试'; }
 }
 
 // ── Upload ─────────────────────────────────────────────────
@@ -840,32 +1500,54 @@ zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
 zone.addEventListener('drop', e => {
   e.preventDefault();
   zone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files[0]) {
+    const file = e.dataTransfer.files[0];
+    if (!file.name.match(/\.(apk|ipa)$/i)) { showUploadError(L().errFormat); return; }
+    showFilePreview(file);
+  }
 });
 fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  if (fileInput.files[0]) {
+    const file = fileInput.files[0];
+    if (!file.name.match(/\.(apk|ipa)$/i)) {
+      showUploadError(L().errFormat); return;
+    }
+    showFilePreview(file);
+  }
 });
 
 async function handleFile(file) {
   document.getElementById('upload-error').classList.add('hidden');
+  hide('file-preview');
   const l = L();
-
-  if (!file.name.match(/\.(apk|ipa)$/i)) {
-    showUploadError(l.errFormat);
+  if (!userInfo) {
+    showUploadError(l.errNotLogin);
+    openLoginModal();
     return;
   }
-
+  if ((userInfo.credits ?? 0) <= 0) {
+    showUploadError(l.errNoCredits);
+    openBuyModal();
+    return;
+  }
   showProcessing();
-  setStep(0, `${l.status.uploading}`);
-
+  setStep(0, l.status.uploading);
   const fd = new FormData();
   fd.append('file', file);
-
   try {
-    const resp = await fetch(`/scan?lang=${lang}&token=${USER_TOKEN}`, { method: 'POST', body: fd });
+    const resp = await fetch(`/scan?lang=${lang}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwt}` },
+      body: fd,
+    });
     if (resp.status === 402) {
       resetToUpload();
       openBuyModal();
+      return;
+    }
+    if (resp.status === 400 || resp.status === 401) {
+      resetToUpload();
+      openLoginModal();
       return;
     }
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -885,33 +1567,27 @@ async function pollStatus() {
     const resp = await fetch(`/scan/status/${taskId}`);
     const data = await resp.json();
     const l = L();
-
     const idx = STATUS_STEP[data.status] ?? 0;
-    const msg = l.status[data.status] || data.status;
-    setStep(idx, msg);
-
+    setStep(idx, l.status[data.status] || data.status);
     if (data.status === 'done') {
       clearInterval(pollTimer);
       setStep(4, l.status.loading);
-      await fetchCredits();   // refresh balance after scan consumed 1 credit
+      await fetchMe();   // refresh credits after scan
       await loadReport();
     } else if (data.status === 'error') {
       clearInterval(pollTimer);
       resetToUpload();
-      // Use friendly messages for known error codes
       let errMsg;
       if (data.error_code === 'mobsf_unreachable') {
-        errMsg = l.errMobsfDown;
-        checkMobSF();   // refresh the banner
+        errMsg = l.errMobsfDown; checkMobSF();
       } else if (data.error_code === 'timeout') {
         errMsg = l.errTimeout;
       } else {
-        // Fall back: prefer localised field, then raw error
         errMsg = l.errScan + (lang === 'en' ? (data.error_en || data.error) : data.error || '');
       }
       showUploadError(errMsg);
     }
-  } catch (_) { /* network hiccup */ }
+  } catch (_) {}
 }
 
 // ── Report ─────────────────────────────────────────────────
@@ -922,6 +1598,7 @@ async function loadReport() {
     if (data.error) throw new Error(data.error);
     lastReport = data;
     renderReport(data);
+    renderScore(data);
     showResults();
   } catch (err) {
     resetToUpload();
@@ -931,49 +1608,32 @@ async function loadReport() {
 
 function renderReport(d) {
   const l = L();
-
-  // App info
   setText('r-app-name', d.app_name);
   setText('r-package',  d.package_name);
   setText('r-version',  d.version_name || 'N/A');
   setText('r-size',     d.size || 'N/A');
   setText('r-md5',      d.md5 || 'N/A');
-
-  // Risk counts
   const rc = d.risk_counts || {};
   setText('r-critical', rc.critical || 0);
   setText('r-high',     rc.high     || 0);
   setText('r-warning',  rc.warning  || 0);
   setText('r-trackers', d.tracker_count || 0);
-
   renderTables(d);
-
-  // AI summary (markdown)
   try {
     document.getElementById('r-ai').innerHTML = marked.parse(d.ai_summary || '');
   } catch (_) {
     document.getElementById('r-ai').textContent = d.ai_summary || '';
   }
-
-  // Download button
   document.getElementById('btn-download').href = `/scan/report/${taskId}/download?lang=${lang}`;
 }
 
 function renderTables(d) {
   const l = L();
-
-  // Permissions
   const perms = d.dangerous_permissions || [];
   setText('r-perm-title', l.permTitle(perms.length));
   document.getElementById('r-perm-body').innerHTML = perms.length
-    ? perms.map(p => `
-        <tr>
-          <td><code>${esc(p.name)}</code></td>
-          <td>${esc(p.info)}</td>
-        </tr>`).join('')
+    ? perms.map(p => `<tr><td><code>${esc(p.name)}</code></td><td>${esc(p.info)}</td></tr>`).join('')
     : `<tr><td colspan="2" class="empty">${l.noPerms}</td></tr>`;
-
-  // Manifest issues
   const issues = d.manifest_issues || [];
   setText('r-issue-title', l.issueTitle(issues.length));
   const SEV_CLS = { critical:'sev-critical', high:'sev-high', warning:'sev-warning', info:'sev-info' };
@@ -983,14 +1643,75 @@ function renderTables(d) {
         const cls = SEV_CLS[sev] || 'sev-default';
         const lbl = l.sevLabels[sev] || sev.toUpperCase();
         const desc = item.description || '';
-        return `
-          <tr>
-            <td><span class="sev ${cls}">${lbl}</span></td>
-            <td>${esc(item.title)}</td>
-            <td class="desc">${esc(desc.substring(0, 160))}${desc.length > 160 ? '…' : ''}</td>
-          </tr>`;
+        return `<tr>
+          <td><span class="sev ${cls}">${lbl}</span></td>
+          <td>${esc(item.title)}</td>
+          <td class="desc">${esc(desc.substring(0,160))}${desc.length>160?'…':''}</td>
+        </tr>`;
       }).join('')
     : `<tr><td colspan="3" class="empty">${l.noIssues}</td></tr>`;
+}
+
+// ── Copy to clipboard ───────────────────────────────────────
+function copyText(elId, btn) {
+  const text = document.getElementById(elId)?.textContent?.trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── Security score ──────────────────────────────────────────
+function renderScore(d) {
+  const critical = d.risk_counts?.critical || 0;
+  const high     = d.risk_counts?.high     || 0;
+  const warning  = d.risk_counts?.warning  || 0;
+  const trackers = d.tracker_count         || 0;
+  const perms    = (d.dangerous_permissions || []).length;
+  let score = 100 - critical * 20 - high * 8 - warning * 3 - trackers * 2 - perms * 1;
+  score = Math.max(0, Math.min(100, score));
+  const arc = document.getElementById('score-arc');
+  const num = document.getElementById('score-num');
+  const title = document.getElementById('score-title');
+  const circumference = 289;
+  const offset = circumference - (score / 100) * circumference;
+  let color, label;
+  if (score >= 80)      { color = '#16a34a'; label = '安全'; }
+  else if (score >= 60) { color = '#d97706'; label = '中等风险'; }
+  else if (score >= 40) { color = '#ea580c'; label = '高风险'; }
+  else                  { color = '#dc2626'; label = '严重风险'; }
+  setTimeout(() => {
+    arc.style.stroke = color;
+    arc.style.strokeDashoffset = offset;
+    num.style.color = color;
+  }, 100);
+  num.textContent = score;
+  title.textContent = `安全评分 · ${label}`;
+}
+
+// ── File preview ────────────────────────────────────────────
+let selectedFile = null;
+
+function showFilePreview(file) {
+  selectedFile = file;
+  const mb = (file.size / 1024 / 1024).toFixed(2);
+  document.getElementById('file-preview-name').textContent = file.name;
+  document.getElementById('file-preview-size').textContent = `${mb} MB`;
+  show('file-preview');
+  hide('upload-error');
+  // Show upload button in zone
+  document.getElementById('uz-btn').textContent = '开始扫描';
+  document.getElementById('uz-btn').onclick = () => selectedFile && handleFile(selectedFile);
+}
+
+function clearFileSelection() {
+  selectedFile = null;
+  fileInput.value = '';
+  hide('file-preview');
+  document.getElementById('uz-btn').textContent = L().uzBtn;
+  document.getElementById('uz-btn').onclick = () => document.getElementById('file-input').click();
 }
 
 // ── Reset ──────────────────────────────────────────────────
@@ -998,9 +1719,11 @@ function resetToUpload() {
   if (pollTimer) clearInterval(pollTimer);
   taskId = null;
   lastReport = null;
+  selectedFile = null;
   fileInput.value = '';
+  hide('file-preview');
   showUpload();
-  renderCredits();   // show gate if credits = 0
+  renderGate();
 }
 
 // ── MobSF Health Check ──────────────────────────────────────
@@ -1009,28 +1732,36 @@ async function checkMobSF() {
   const text   = document.getElementById('mobsf-banner-text');
   const l = L();
   try {
-    const resp = await fetch('/health');
-    const data = await resp.json();
+    const data = await fetch('/health').then(r => r.json());
     if (data.mobsf === 'ok') {
       banner.className = 'mobsf-banner ok';
       text.textContent = l.mobsfOk;
       banner.classList.remove('hidden');
-      // Auto-hide the OK banner after 4s
       setTimeout(() => banner.classList.add('hidden'), 4000);
     } else {
       banner.className = 'mobsf-banner warn';
       text.innerHTML = `${l.mobsfDown} <a onclick="navigator.clipboard.writeText('${l.mobsfCmd}').then(()=>this.textContent='✅ copied!')" title="Click to copy"><code>${l.mobsfCmd}</code></a>`;
       banner.classList.remove('hidden');
     }
-  } catch (_) {
-    // Backend not reachable — don't show banner
-  }
+  } catch (_) {}
 }
+
+// ── Handle ?payment=success ──────────────────────────────────
+(function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    showToast('🎉 支付成功！次数已到账', 5000);
+    // Remove query param from URL without reload
+    history.replaceState(null, '', '/');
+    // Refresh credits
+    fetchMe();
+  }
+})();
 
 // ── Init ───────────────────────────────────────────────────
 applyI18n();
 checkMobSF();
-fetchCredits();
+fetchMe();
 </script>
 </body>
 </html>
