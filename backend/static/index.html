@@ -647,8 +647,8 @@
       <div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:16px">
         <div style="font-size:.82em;font-weight:700;color:#475569;margin-bottom:8px">已有兑换码？</div>
         <div class="redeem-row">
-          <input class="redeem-input" id="redeem-input" placeholder="输入兑换码"
-                 maxlength="20" oninput="this.value=this.value.toUpperCase()">
+          <input class="redeem-input" id="redeem-input" placeholder="XXXX-XXXX-XXXX"
+                 maxlength="14" oninput="fmtRedeemInput(this)" onkeydown="if(event.key==='Enter')doRedeem()">
           <button class="redeem-btn" onclick="doRedeem()">兑换</button>
         </div>
         <div class="redeem-msg" id="redeem-msg"></div>
@@ -1356,6 +1356,14 @@ async function doPay(method) {
   } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
 }
 
+function fmtRedeemInput(el) {
+  // Strip non-alphanumeric, uppercase, then insert dashes at positions 4 and 9
+  let v = el.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 12);
+  if (v.length > 8) v = v.slice(0, 4) + '-' + v.slice(4, 8) + '-' + v.slice(8);
+  else if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4);
+  el.value = v;
+}
+
 async function doRedeem() {
   if (!userInfo) { closeBuyModal(); openLoginModal(); return; }
   const code = document.getElementById('redeem-input').value.trim();
@@ -1372,9 +1380,9 @@ async function doRedeem() {
       userInfo.credits = d.credits;
       renderAuthState();
       msg.className='redeem-msg ok';
-      msg.textContent = `✅ 兑换成功！已到账 ${d.added} 次，余额 ${d.credits} 次`;
+      msg.textContent = `兑换成功！+${d.added} 次，余额 ${d.credits} 次`;
       document.getElementById('redeem-input').value = '';
-      setTimeout(closeBuyModal, 1800);
+      setTimeout(closeBuyModal, 2000);
     } else {
       msg.className='redeem-msg err'; msg.textContent = d.error || '兑换失败';
     }

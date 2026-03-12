@@ -67,12 +67,22 @@ def _init_db():
                 updated_at TEXT DEFAULT (datetime('now'))
             );
             CREATE TABLE IF NOT EXISTS codes (
-                code       TEXT PRIMARY KEY,
-                credits    INTEGER NOT NULL,
-                note       TEXT DEFAULT '',
-                created_at TEXT DEFAULT (datetime('now')),
-                used_by    TEXT,
-                used_at    TEXT
+                code        TEXT PRIMARY KEY,
+                credits     INTEGER NOT NULL,
+                note        TEXT DEFAULT '',
+                created_at  TEXT DEFAULT (datetime('now')),
+                expires_at  TEXT,
+                max_uses    INTEGER DEFAULT 1,
+                uses_count  INTEGER DEFAULT 0,
+                is_revoked  INTEGER DEFAULT 0,
+                used_by     TEXT,
+                used_at     TEXT
+            );
+            CREATE TABLE IF NOT EXISTS code_uses (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                code     TEXT NOT NULL,
+                user_id  INTEGER NOT NULL,
+                used_at  TEXT DEFAULT (datetime('now'))
             );
             CREATE TABLE IF NOT EXISTS users_v2 (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +113,82 @@ def _init_db():
             );
         """)
 
+def _migrate_db():
+    """Add new columns to existing databases (safe to re-run)."""
+    migrations = [
+        "ALTER TABLE codes ADD COLUMN expires_at  TEXT",
+        "ALTER TABLE codes ADD COLUMN max_uses    INTEGER DEFAULT 1",
+        "ALTER TABLE codes ADD COLUMN uses_count  INTEGER DEFAULT 0",
+        "ALTER TABLE codes ADD COLUMN is_revoked  INTEGER DEFAULT 0",
+    ]
+    with _db() as c:
+        for sql in migrations:
+            try:
+                c.execute(sql)
+            except Exception:
+                pass  # Column already exists
+
 _init_db()
+_migrate_db()
+
+
+# ── Redemption code helpers ──────────────────────────────────
+
+# Unambiguous charset: no 0/O/I/1 to avoid confusion when read aloud or handwritten
+_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+def _gen_code() -> str:
+    """Generate a human-readable code in XXXX-XXXX-XXXX format."""
+    seg = lambda: "".join(random.choices(_CODE_CHARS, k=4))
+    return f"{seg()}-{seg()}-{seg()}"
+
+# Simple in-memory rate limiter: {user_id: [timestamps]}
+_redeem_attempts: dict = {}
+_REDEEM_WINDOW = 60   # seconds
+_REDEEM_MAX    = 5    # max attempts per window
+
+def _check_redeem_rate(user_id: int) -> bool:
+    """Return True if allowed, False if rate-limited."""
+    now = time.time()
+    prev = [t for t in _redeem_attempts.get(user_id, []) if now - t < _REDEEM_WINDOW]
+    if len(prev) >= _REDEEM_MAX:
+        return False
+    prev.append(now)
+    _redeem_attempts[user_id] = prev
+    return True
+
+
+# ── Admin auth helpers ───────────────────────────────────────
+
+_ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
+_ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "admin")
+
+
+def _make_admin_jwt() -> str:
+    exp = datetime.utcnow() + timedelta(hours=8)
+    return jwt.encode({"sub": "admin", "role": "admin", "exp": exp}, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def _is_admin_jwt(token: str) -> bool:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        return payload.get("role") == "admin"
+    except Exception:
+        return False
+
+
+async def _require_admin(
+    request: Request,
+    creds: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> None:
+    """Accepts admin JWT Bearer (web UI) or admin_key query param (API)."""
+    if creds and _is_admin_jwt(creds.credentials):
+        return
+    env_key = os.getenv("ADMIN_KEY", "")
+    qkey = request.query_params.get("admin_key", "")
+    if env_key and qkey == env_key:
+        return
+    raise HTTPException(status_code=403, detail="Admin access required")
 
 
 # ── Auth & payment helpers ──────────────────────────────────
@@ -310,39 +395,110 @@ async def redeem_code(token: str, code: str):
     return {"ok": True, "credits": new_bal, "added": row["credits"]}
 
 
+@app.post("/admin/login")
+async def admin_login(username: str, password: str):
+    """Login to the admin panel; returns a short-lived admin JWT."""
+    if username == _ADMIN_USER and password == _ADMIN_PASS:
+        return {"ok": True, "token": _make_admin_jwt()}
+    return JSONResponse({"ok": False, "error": "用户名或密码错误"}, status_code=401)
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page():
+    """Serve the admin panel HTML."""
+    html_path = os.path.join(os.path.dirname(__file__), "static", "admin.html")
+    with open(html_path, encoding="utf-8") as f:
+        return f.read()
+
+
 @app.post("/admin/generate-codes")
-async def generate_codes(admin_key: str, credits: int = 10, count: int = 1, note: str = ""):
-    """Generate one-time redemption codes (admin only)."""
-    expected = os.getenv("ADMIN_KEY", "")
-    if not expected or admin_key != expected:
-        return Response(status_code=403)
-    if not (1 <= credits <= 10000) or not (1 <= count <= 200):
+async def generate_codes(
+    credits: int = 10,
+    count: int = 1,
+    note: str = "",
+    expires_days: int = 0,
+    max_uses: int = 1,
+    _: None = Depends(_require_admin),
+):
+    """Generate redemption codes (admin only).
+
+    - expires_days: 0 = never expire; >0 = expire after N days
+    - max_uses: 1 = one-time; >1 = shared promo code usable by N users
+    """
+    if not (1 <= credits <= 10000) or not (1 <= count <= 500):
         return JSONResponse({"error": "invalid params"}, status_code=400)
-    new_codes = [uuid.uuid4().hex[:12].upper() for _ in range(count)]
+    if not (1 <= max_uses <= 100000):
+        return JSONResponse({"error": "max_uses must be 1–100000"}, status_code=400)
+
+    expires_at = None
+    if expires_days > 0:
+        expires_at = (datetime.utcnow() + timedelta(days=expires_days)).isoformat()
+
+    new_codes = [_gen_code() for _ in range(count)]
     with _db() as c:
         c.executemany(
-            "INSERT INTO codes(code, credits, note) VALUES(?,?,?)",
-            [(code, credits, note) for code in new_codes],
+            "INSERT INTO codes(code, credits, note, expires_at, max_uses) VALUES(?,?,?,?,?)",
+            [(code, credits, note, expires_at, max_uses) for code in new_codes],
         )
-    return {"codes": new_codes, "credits_each": credits, "count": count}
+    return {
+        "codes": new_codes,
+        "credits_each": credits,
+        "count": count,
+        "max_uses": max_uses,
+        "expires_at": expires_at,
+    }
+
+
+@app.get("/admin/codes")
+async def admin_list_codes(
+    limit: int = 500,
+    offset: int = 0,
+    _: None = Depends(_require_admin),
+):
+    """List redemption codes with usage stats (admin only)."""
+    limit = min(limit, 500)
+    with _db() as c:
+        rows = c.execute(
+            """SELECT code, credits, note, created_at, expires_at,
+                      max_uses, uses_count, is_revoked, used_by, used_at
+               FROM codes ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            (limit, offset),
+        ).fetchall()
+        total = c.execute("SELECT COUNT(*) FROM codes").fetchone()[0]
+    return {"total": total, "codes": [dict(r) for r in rows]}
+
+
+@app.post("/admin/codes/{code}/revoke")
+async def admin_revoke_code(code: str, _: None = Depends(_require_admin)):
+    """Revoke a redemption code so it can no longer be used (admin only)."""
+    code = re.sub(r"[-\s]", "", code.strip().upper())
+    with _db() as c:
+        r = c.execute("UPDATE codes SET is_revoked=1 WHERE code=?", (code,))
+        if r.rowcount == 0:
+            return JSONResponse({"error": "Code not found"}, status_code=404)
+    return {"ok": True, "revoked": code}
 
 
 @app.get("/admin/stats")
-async def admin_stats(admin_key: str):
-    """Basic usage stats (admin only)."""
-    if admin_key != os.getenv("ADMIN_KEY", ""):
-        return Response(status_code=403)
+async def admin_stats(_: None = Depends(_require_admin)):
+    """Usage stats (admin only)."""
     with _db() as c:
-        users     = c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-        total_scans = c.execute("SELECT SUM(total_scans) FROM users").fetchone()[0] or 0
-        codes_total = c.execute("SELECT COUNT(*) FROM codes").fetchone()[0]
-        codes_used  = c.execute("SELECT COUNT(*) FROM codes WHERE used_by IS NOT NULL").fetchone()[0]
+        users         = c.execute("SELECT COUNT(*) FROM users_v2").fetchone()[0]
+        total_scans   = c.execute("SELECT SUM(total_scans) FROM users_v2").fetchone()[0] or 0
+        codes_total   = c.execute("SELECT COUNT(*) FROM codes").fetchone()[0]
+        codes_revoked = c.execute("SELECT COUNT(*) FROM codes WHERE is_revoked=1").fetchone()[0]
+        code_uses     = c.execute("SELECT COUNT(*) FROM code_uses").fetchone()[0]
+        codes_active  = c.execute(
+            "SELECT COUNT(*) FROM codes WHERE is_revoked=0 AND uses_count < max_uses"
+            " AND (expires_at IS NULL OR expires_at > datetime('now'))"
+        ).fetchone()[0]
     return {
         "users": users,
         "total_scans": total_scans,
         "codes_total": codes_total,
-        "codes_used": codes_used,
-        "codes_available": codes_total - codes_used,
+        "codes_revoked": codes_revoked,
+        "codes_active": codes_active,
+        "code_uses_total": code_uses,
     }
 
 
@@ -556,23 +712,55 @@ async def payment_return():
 
 @app.post("/auth/redeem")
 async def auth_redeem(code: str, user: dict = Depends(_current_user)):
-    """Redeem a one-time code to add credits to users_v2."""
-    code = code.strip().upper()
+    """Redeem a code to add credits to users_v2. Supports multi-use and expiry."""
+    if not _check_redeem_rate(user["id"]):
+        return JSONResponse({"ok": False, "error": "操作过于频繁，请稍后再试"}, status_code=429)
+
+    # Normalize: strip whitespace, uppercase, remove dashes
+    code = re.sub(r"[-\s]", "", code.strip().upper())
+    if not code:
+        return JSONResponse({"ok": False, "error": "兑换码不能为空"}, status_code=400)
+
     with _db() as c:
         row = c.execute(
-            "SELECT * FROM codes WHERE code=? AND used_by IS NULL", (code,)
+            """SELECT * FROM codes
+               WHERE code=? AND is_revoked=0
+                 AND (expires_at IS NULL OR expires_at > datetime('now'))
+                 AND uses_count < max_uses""",
+            (code,),
         ).fetchone()
         if not row:
-            return JSONResponse({"ok": False, "error": "兑换码无效或已使用"}, status_code=400)
+            return JSONResponse({"ok": False, "error": "兑换码无效、已用完或已过期"}, status_code=400)
+
+        # Each user can only redeem the same code once
+        already = c.execute(
+            "SELECT 1 FROM code_uses WHERE code=? AND user_id=?",
+            (code, user["id"]),
+        ).fetchone()
+        if already:
+            return JSONResponse({"ok": False, "error": "您已使用过此兑换码"}, status_code=400)
+
+        # Record usage in audit log
         c.execute(
-            "UPDATE codes SET used_by=?, used_at=datetime('now') WHERE code=?",
+            "INSERT INTO code_uses(code, user_id) VALUES(?,?)",
+            (code, user["id"]),
+        )
+        # Increment counter; for first use also set used_by/used_at for backwards compat
+        c.execute(
+            """UPDATE codes
+               SET uses_count = uses_count + 1,
+                   used_by    = COALESCE(used_by, ?),
+                   used_at    = COALESCE(used_at, datetime('now'))
+               WHERE code=?""",
             (f"user_v2:{user['id']}", code),
         )
         c.execute(
             "UPDATE users_v2 SET credits=credits+?, updated_at=datetime('now') WHERE id=?",
             (row["credits"], user["id"]),
         )
-        new_bal = c.execute("SELECT credits FROM users_v2 WHERE id=?", (user["id"],)).fetchone()["credits"]
+        new_bal = c.execute(
+            "SELECT credits FROM users_v2 WHERE id=?", (user["id"],)
+        ).fetchone()["credits"]
     return {"ok": True, "credits": new_bal, "added": row["credits"]}
 
 

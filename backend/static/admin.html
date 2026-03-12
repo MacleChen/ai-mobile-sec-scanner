@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>管理后台 · AI 移动安全扫描器</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    /* ── Login ───────────────────────────────────── */
+    .login-wrap { display: flex; align-items: center; justify-content: center;
+                  min-height: 100vh; padding: 20px; }
+    .login-card { background: white; border-radius: 16px; padding: 40px 36px;
+                  width: 100%; max-width: 380px;
+                  box-shadow: 0 8px 32px rgba(0,0,0,.1); }
+    .login-logo  { font-size: 2.4em; text-align: center; margin-bottom: 6px; }
+    .login-title { text-align: center; font-size: 1.25em; font-weight: 800; margin-bottom: 2px; }
+    .login-sub   { text-align: center; font-size: .84em; color: #64748b; margin-bottom: 28px; }
+
+    /* ── Form shared ────────────────────────────── */
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: .78em; font-weight: 700; color: #475569;
+                   margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+    .field input, .field select, .field textarea {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 9px 12px; font-size: .92em; outline: none;
+      transition: border-color .15s; background: white; color: #1e293b; }
+    .field input:focus, .field select:focus { border-color: #2563eb; }
+    .field-hint { font-size: .74em; color: #94a3b8; margin-top: 4px; }
+    .err-msg { color: #dc2626; font-size: .82em; margin-top: 8px; min-height: 18px; }
+
+    /* ── Buttons ────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; justify-content: center;
+           padding: 9px 18px; background: #2563eb; color: white; border: none;
+           border-radius: 8px; font-size: .9em; font-weight: 600; cursor: pointer;
+           transition: background .15s; white-space: nowrap; }
+    .btn:hover   { background: #1d4ed8; }
+    .btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-full  { width: 100%; }
+    .btn-sm    { padding: 5px 12px; font-size: .8em; }
+    .btn-ghost { background: transparent; color: #64748b; border: 1.5px solid #e2e8f0; }
+    .btn-ghost:hover { background: #f8fafc; }
+    .btn-outline { background: transparent; color: #2563eb; border: 1.5px solid #2563eb; }
+    .btn-outline:hover { background: #eff6ff; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+
+    /* ── Top nav ────────────────────────────────── */
+    nav.topnav { background: #0f172a; color: white; display: flex; align-items: center;
+                 padding: 0 24px; height: 54px; gap: 16px;
+                 position: sticky; top: 0; z-index: 100;
+                 box-shadow: 0 1px 8px rgba(0,0,0,.3); }
+    .nav-brand { font-weight: 800; font-size: 1em; flex: 1;
+                 display: flex; align-items: center; gap: 8px; }
+    .nav-badge { background: rgba(255,255,255,.12); border-radius: 4px;
+                 padding: 2px 8px; font-size: .72em; font-weight: 600;
+                 color: rgba(255,255,255,.7); }
+    .nav-logout { padding: 5px 14px; background: rgba(255,255,255,.1); border: none;
+                  color: rgba(255,255,255,.85); border-radius: 6px; cursor: pointer;
+                  font-size: .82em; transition: background .15s; }
+    .nav-logout:hover { background: rgba(255,255,255,.2); }
+
+    /* ── Tabs ────────────────────────────────────── */
+    .tabs-bar { background: white; border-bottom: 1px solid #e2e8f0;
+                padding: 0 24px; display: flex; gap: 0; overflow-x: auto; }
+    .tab-btn { padding: 14px 20px; font-size: .88em; font-weight: 500; color: #64748b;
+               cursor: pointer; border: none; background: none;
+               border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+               transition: all .15s; white-space: nowrap; }
+    .tab-btn:hover  { color: #2563eb; }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+
+    /* ── Main content ───────────────────────────── */
+    .content { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+    .hidden  { display: none !important; }
+
+    /* ── Stat cards ─────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                  gap: 14px; margin-bottom: 20px; }
+    .stat-card  { background: white; border-radius: 12px; padding: 20px 22px;
+                  box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .stat-label { font-size: .72em; font-weight: 700; color: #94a3b8;
+                  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .stat-val   { font-size: 2em; font-weight: 800; color: #1e293b; line-height: 1; }
+    .stat-sub   { font-size: .74em; color: #64748b; margin-top: 4px; }
+
+    /* ── Cards ───────────────────────────────────── */
+    .card       { background: white; border-radius: 12px; padding: 24px;
+                  box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .card-title { font-size: 1em; font-weight: 700; margin-bottom: 20px;
+                  display: flex; align-items: center; justify-content: space-between; }
+    .card-title span { font-size: .78em; font-weight: 400; color: #64748b; }
+
+    /* ── Generate layout ────────────────────────── */
+    .gen-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 720px) { .gen-layout { grid-template-columns: 1fr; } }
+    .form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    /* ── Result area ────────────────────────────── */
+    .result-area { background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px;
+                   padding: 14px; min-height: 120px; max-height: 340px; overflow-y: auto; }
+    .result-empty { color: #94a3b8; font-size: .88em; text-align: center; padding: 28px 0; }
+    .code-item  { display: flex; align-items: center; gap: 8px; padding: 6px 0;
+                  border-bottom: 1px solid #e2e8f0; }
+    .code-item:last-child { border-bottom: none; }
+    .code-text  { font-family: 'Courier New', monospace; font-weight: 700;
+                  font-size: .93em; color: #1e293b; flex: 1; letter-spacing: .06em; }
+    .copy-btn   { padding: 3px 10px; cursor: pointer; background: #e2e8f0; border: none;
+                  border-radius: 4px; color: #475569; font-size: .75em; }
+    .copy-btn:hover  { background: #cbd5e1; }
+    .copy-btn.copied { background: #dcfce7; color: #16a34a; }
+    .result-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+    /* ── Table ───────────────────────────────────── */
+    .table-toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+    .search-input  { flex: 1; min-width: 180px; border: 1.5px solid #e2e8f0;
+                     border-radius: 8px; padding: 7px 12px; font-size: .87em; outline: none; }
+    .search-input:focus { border-color: #2563eb; }
+    .filter-sel    { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 7px 10px;
+                     font-size: .87em; outline: none; cursor: pointer; background: white; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .84em; }
+    th    { text-align: left; padding: 9px 12px; background: #f8fafc;
+            font-weight: 700; font-size: .74em; text-transform: uppercase;
+            letter-spacing: .05em; color: #64748b; border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap; }
+    td    { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfc; }
+    .code-cell { font-family: 'Courier New', monospace; font-weight: 700;
+                 letter-spacing: .05em; font-size: .9em; color: #1e293b; }
+
+    /* ── Status badges ───────────────────────────── */
+    .badge         { display: inline-block; padding: 2px 8px; border-radius: 4px;
+                     font-size: .74em; font-weight: 700; }
+    .badge-active  { background: #dcfce7; color: #15803d; }
+    .badge-used    { background: #fef3c7; color: #b45309; }
+    .badge-expired { background: #fee2e2; color: #dc2626; }
+    .badge-revoked { background: #f1f5f9; color: #94a3b8; }
+
+    /* ── Pagination ─────────────────────────────── */
+    .pagination { display: flex; align-items: center; gap: 8px; margin-top: 14px;
+                  justify-content: flex-end; font-size: .84em; color: #64748b;
+                  flex-wrap: wrap; }
+    .page-btn { padding: 5px 12px; border: 1.5px solid #e2e8f0; border-radius: 6px;
+                cursor: pointer; background: white; font-size: .84em; }
+    .page-btn:hover    { background: #f1f5f9; }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Toast ──────────────────────────────────── */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+             background: #0f172a; color: white; padding: 10px 22px; border-radius: 8px;
+             font-size: .87em; pointer-events: none; opacity: 0; transition: opacity .25s;
+             z-index: 9999; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+
+    /* ── Misc ───────────────────────────────────── */
+    .refresh-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ LOGIN ══ -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🛡️</div>
+    <div class="login-title">管理后台</div>
+    <div class="login-sub">AI 移动安全扫描器</div>
+    <div class="field">
+      <label>用户名</label>
+      <input type="text" id="login-user" autocomplete="username" value="admin">
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input type="password" id="login-pass" autocomplete="current-password"
+             placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="err-msg" id="login-err"></div>
+    <button class="btn btn-full" id="login-btn" style="margin-top:6px" onclick="doLogin()">
+      登录
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ PANEL ══ -->
+<div id="admin-panel" class="hidden">
+
+  <!-- Top nav -->
+  <nav class="topnav">
+    <div class="nav-brand">
+      🛡️ AI Scanner
+      <span class="nav-badge">管理后台</span>
+    </div>
+    <button class="nav-logout" onclick="doLogout()">退出登录</button>
+  </nav>
+
+  <!-- Tab bar -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('stats',   this)">📊 概览</button>
+    <button class="tab-btn"        onclick="switchTab('generate', this)">🔑 生成兑换码</button>
+    <button class="tab-btn"        onclick="switchTab('codes',   this)">📋 兑换码管理</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══════════ TAB: Stats ══════════════════════ -->
+    <div id="tab-stats">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">注册用户</div>
+          <div class="stat-val" id="s-users">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总扫描次数</div>
+          <div class="stat-val" id="s-scans">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">有效兑换码</div>
+          <div class="stat-val" id="s-active">—</div>
+          <div class="stat-sub">可继续兑换</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">累计兑换次数</div>
+          <div class="stat-val" id="s-uses">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总码数</div>
+          <div class="stat-val" id="s-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已撤销</div>
+          <div class="stat-val" id="s-revoked">—</div>
+        </div>
+      </div>
+      <div class="refresh-row">
+        <button class="btn btn-sm btn-ghost" onclick="loadStats()">🔄 刷新数据</button>
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB: Generate ════════════════════ -->
+    <div id="tab-generate" class="hidden">
+      <div class="gen-layout">
+
+        <!-- Form -->
+        <div class="card">
+          <div class="card-title">生成兑换码</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Credits 数量</label>
+              <input type="number" id="g-credits" value="10" min="1" max="10000">
+              <div class="field-hint">每码赠送的扫描次数</div>
+            </div>
+            <div class="field">
+              <label>生成数量</label>
+              <input type="number" id="g-count" value="1" min="1" max="500">
+              <div class="field-hint">最多 500 个 / 次</div>
+            </div>
+            <div class="field">
+              <label>每码可用次数</label>
+              <input type="number" id="g-maxuses" value="1" min="1" max="100000">
+              <div class="field-hint">1 = 一次性；> 1 = 多人共享</div>
+            </div>
+            <div class="field">
+              <label>有效天数</label>
+              <input type="number" id="g-expires" value="0" min="0">
+              <div class="field-hint">0 = 永不过期</div>
+            </div>
+            <div class="field full">
+              <label>备注</label>
+              <input type="text" id="g-note" placeholder="可选，如：新用户福利、内测专属…">
+            </div>
+          </div>
+          <div style="margin-top:18px">
+            <button class="btn btn-full" id="gen-btn" onclick="doGenerate()">生成兑换码</button>
+          </div>
+          <div class="err-msg" id="gen-err"></div>
+        </div>
+
+        <!-- Result -->
+        <div class="card">
+          <div class="card-title">
+            生成结果
+            <span id="gen-meta"></span>
+          </div>
+          <div class="result-area" id="result-area">
+            <div class="result-empty">生成的兑换码将显示在这里</div>
+          </div>
+          <div class="result-actions" id="result-actions" style="display:none">
+            <button class="btn btn-sm btn-outline" onclick="copyAll()">📋 复制全部</button>
+            <button class="btn btn-sm btn-ghost"   onclick="exportTxt()">⬇️ 导出 TXT</button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- tab-generate -->
+
+    <!-- ═══════════ TAB: Code list ════════════════════ -->
+    <div id="tab-codes" class="hidden">
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="search-input" id="code-search"
+                 placeholder="搜索兑换码、备注…" oninput="filterCodes()">
+          <select class="filter-sel" id="code-status" onchange="filterCodes()">
+            <option value="all">全部状态</option>
+            <option value="active">✅ 有效</option>
+            <option value="used">🟡 已用完</option>
+            <option value="expired">🔴 已过期</option>
+            <option value="revoked">⬛ 已撤销</option>
+          </select>
+          <button class="btn btn-sm btn-ghost" onclick="loadCodes()">🔄 刷新</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>兑换码</th>
+                <th>Credits</th>
+                <th>使用情况</th>
+                <th>状态</th>
+                <th>有效期</th>
+                <th>备注</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="codes-tbody">
+              <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:32px">
+                请切换到此标签页加载数据
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <span id="page-info"></span>
+          <button class="page-btn" id="prev-btn" onclick="changePage(-1)" disabled>‹ 上一页</button>
+          <button class="page-btn" id="next-btn" onclick="changePage(1)"  disabled>下一页 ›</button>
+        </div>
+      </div>
+    </div><!-- tab-codes -->
+
+  </div><!-- .content -->
+</div><!-- #admin-panel -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────
+let adminToken  = localStorage.getItem('admin_token') || '';
+let allCodes    = [];
+let filtered    = [];
+const PAGE      = 20;
+let page        = 0;
+let lastCodes   = [];
+
+// ── Boot ──────────────────────────────────────────────────
+(function init() {
+  if (adminToken) { showPanel(); loadStats(); }
+})();
+
+// ── Auth ──────────────────────────────────────────────────
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-err');
+  const btn  = document.getElementById('login-btn');
+  if (!user || !pass) { err.textContent = '请输入用户名和密码'; return; }
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = '登录中…';
+  try {
+    const r = await fetch(
+      `/admin/login?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`,
+      { method: 'POST' }
+    );
+    const d = await r.json();
+    if (d.ok && d.token) {
+      adminToken = d.token;
+      localStorage.setItem('admin_token', adminToken);
+      showPanel(); loadStats();
+    } else {
+      err.textContent = d.error || '登录失败';
+    }
+  } catch (_) { err.textContent = '网络错误，请重试'; }
+  btn.disabled = false; btn.textContent = '登录';
+}
+
+function showPanel() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('admin-panel').classList.remove('hidden');
+}
+
+function doLogout() {
+  adminToken = '';
+  localStorage.removeItem('admin_token');
+  allCodes = []; filtered = []; lastCodes = [];
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('admin-panel').classList.add('hidden');
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+// ── Tab switching ──────────────────────────────────────────
+function switchTab(name, btn) {
+  ['stats', 'generate', 'codes'].forEach(t =>
+    document.getElementById('tab-' + t).classList.add('hidden')
+  );
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  btn.classList.add('active');
+  if (name === 'stats')   loadStats();
+  if (name === 'codes')   loadCodes();
+}
+
+// ── API helper ────────────────────────────────────────────
+async function api(path, opts = {}) {
+  opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${adminToken}` };
+  const r = await fetch(path, opts);
+  if (r.status === 403) { toast('会话已过期，请重新登录'); doLogout(); throw new Error('403'); }
+  return r.json();
+}
+
+// ── Stats ─────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const d = await api('/admin/stats');
+    setText('s-users',   fmt(d.users));
+    setText('s-scans',   fmt(d.total_scans));
+    setText('s-active',  fmt(d.codes_active));
+    setText('s-uses',    fmt(d.code_uses_total));
+    setText('s-total',   fmt(d.codes_total));
+    setText('s-revoked', fmt(d.codes_revoked));
+  } catch (_) {}
+}
+
+// ── Generate codes ────────────────────────────────────────
+async function doGenerate() {
+  const credits  = parseInt(document.getElementById('g-credits').value)  || 10;
+  const count    = parseInt(document.getElementById('g-count').value)    || 1;
+  const maxUses  = parseInt(document.getElementById('g-maxuses').value)  || 1;
+  const expires  = parseInt(document.getElementById('g-expires').value)  || 0;
+  const note     = document.getElementById('g-note').value.trim();
+  const btn      = document.getElementById('gen-btn');
+  const err      = document.getElementById('gen-err');
+  err.textContent = '';
+
+  if (credits < 1 || credits > 10000) { err.textContent = 'Credits 须在 1–10000 之间'; return; }
+  if (count   < 1 || count   > 500)   { err.textContent = '数量须在 1–500 之间'; return; }
+
+  btn.disabled = true; btn.textContent = '生成中…';
+  try {
+    const q = new URLSearchParams({ credits, count, max_uses: maxUses, expires_days: expires, note });
+    const d = await api(`/admin/generate-codes?${q}`, { method: 'POST' });
+    if (d.codes) {
+      lastCodes = d.codes;
+      renderResult(d);
+      toast(`✅ 已生成 ${d.count} 个兑换码`);
+    } else {
+      err.textContent = d.error || '生成失败';
+    }
+  } catch (e) { if (e.message !== '403') err.textContent = '网络错误，请重试'; }
+  btn.disabled = false; btn.textContent = '生成兑换码';
+}
+
+function renderResult(d) {
+  const area    = document.getElementById('result-area');
+  const meta    = document.getElementById('gen-meta');
+  const actions = document.getElementById('result-actions');
+  const parts   = [];
+  if (d.credits_each)              parts.push(`${d.credits_each} Credits`);
+  if (d.max_uses > 1)              parts.push(`每码最多 ${d.max_uses} 人使用`);
+  if (d.expires_at)                parts.push(`到期 ${d.expires_at.slice(0,10)}`);
+  else                             parts.push('永不过期');
+  meta.textContent = parts.join('　·　');
+
+  area.innerHTML = d.codes.map(c => `
+    <div class="code-item">
+      <span class="code-text">${c}</span>
+      <button class="copy-btn" onclick="copySingle(this,'${c}')">复制</button>
+    </div>`).join('');
+  actions.style.display = 'flex';
+}
+
+function copySingle(btn, code) {
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '已复制'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function copyAll() {
+  navigator.clipboard.writeText(lastCodes.join('\n'))
+    .then(() => toast(`已复制 ${lastCodes.length} 个兑换码`));
+}
+
+function exportTxt() {
+  const blob = new Blob([lastCodes.join('\n')], { type: 'text/plain' });
+  const a    = Object.assign(document.createElement('a'), {
+    href:     URL.createObjectURL(blob),
+    download: `codes_${new Date().toISOString().slice(0,10)}.txt`,
+  });
+  a.click();
+}
+
+// ── Code list ─────────────────────────────────────────────
+async function loadCodes() {
+  const tbody = document.getElementById('codes-tbody');
+  tbody.innerHTML = `<tr><td colspan="8"
+    style="text-align:center;color:#94a3b8;padding:32px">加载中…</td></tr>`;
+  try {
+    const d = await api('/admin/codes?limit=500');
+    allCodes = d.codes || [];
+    filterCodes();
+  } catch (e) {
+    if (e.message !== '403')
+      tbody.innerHTML = `<tr><td colspan="8"
+        style="text-align:center;color:#dc2626;padding:32px">加载失败，请刷新重试</td></tr>`;
+  }
+}
+
+function codeStatus(r) {
+  if (r.is_revoked) return 'revoked';
+  if (r.expires_at && r.expires_at < new Date().toISOString()) return 'expired';
+  if (r.uses_count >= r.max_uses) return 'used';
+  return 'active';
+}
+
+function filterCodes() {
+  const q  = (document.getElementById('code-search').value || '').toUpperCase();
+  const st = document.getElementById('code-status').value;
+  filtered = allCodes.filter(r => {
+    if (st !== 'all' && codeStatus(r) !== st) return false;
+    if (q && !r.code.includes(q) && !(r.note || '').toUpperCase().includes(q)) return false;
+    return true;
+  });
+  page = 0;
+  renderPage();
+}
+
+function renderPage() {
+  const tbody  = document.getElementById('codes-tbody');
+  const start  = page * PAGE;
+  const slice  = filtered.slice(start, start + PAGE);
+  const total  = filtered.length;
+  const LABEL  = { active: '有效', used: '已用完', expired: '已过期', revoked: '已撤销' };
+  const CLS    = { active: 'badge-active', used: 'badge-used',
+                   expired: 'badge-expired', revoked: 'badge-revoked' };
+
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="8"
+      style="text-align:center;color:#94a3b8;padding:32px">暂无数据</td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(r => {
+      const st      = codeStatus(r);
+      const expiry  = r.expires_at ? r.expires_at.slice(0, 10) : '永久';
+      const created = r.created_at ? r.created_at.slice(0, 16).replace('T', ' ') : '—';
+      const note    = r.note || '—';
+      const canRevoke = st === 'active';
+      return `<tr>
+        <td>
+          <span class="code-cell">${fmtCode(r.code)}</span>
+          <button class="copy-btn" style="margin-left:6px"
+                  onclick="copyCode('${r.code}')">复制</button>
+        </td>
+        <td>${r.credits}</td>
+        <td>${r.uses_count} / ${r.max_uses}</td>
+        <td><span class="badge ${CLS[st]}">${LABEL[st]}</span></td>
+        <td>${expiry}</td>
+        <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            title="${note}">${note}</td>
+        <td>${created}</td>
+        <td>${canRevoke
+          ? `<button class="btn btn-sm btn-danger" onclick="revokeCode('${r.code}',this)">撤销</button>`
+          : '<span style="color:#cbd5e1">—</span>'
+        }</td>
+      </tr>`;
+    }).join('');
+  }
+
+  setText('page-info', total
+    ? `第 ${start + 1}–${Math.min(start + PAGE, total)} 条，共 ${total} 条`
+    : '无结果');
+  document.getElementById('prev-btn').disabled = page === 0;
+  document.getElementById('next-btn').disabled = start + PAGE >= total;
+}
+
+function changePage(d) { page += d; renderPage(); }
+
+function copyCode(code) {
+  navigator.clipboard.writeText(fmtCode(code)).then(() => toast('已复制'));
+}
+
+async function revokeCode(code, btn) {
+  if (!confirm(`确认撤销兑换码 ${fmtCode(code)}？撤销后不可恢复。`)) return;
+  btn.disabled = true; btn.textContent = '撤销中…';
+  try {
+    const d = await api(`/admin/codes/${encodeURIComponent(code)}/revoke`, { method: 'POST' });
+    if (d.ok) {
+      toast('已撤销');
+      const row = allCodes.find(r => r.code === code);
+      if (row) row.is_revoked = 1;
+      filterCodes();
+    } else {
+      btn.disabled = false; btn.textContent = '撤销';
+      toast(d.error || '撤销失败');
+    }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '撤销';
+    if (e.message !== '403') toast('网络错误');
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────
+function fmtCode(code) {
+  // Display XXXX-XXXX-XXXX; legacy 12-char no-dash codes get dashes added
+  const c = code.replace(/-/g, '');
+  if (c.length === 12) return `${c.slice(0,4)}-${c.slice(4,8)}-${c.slice(8)}`;
+  return code;
+}
+
+function fmt(n) { return n == null ? '—' : Number(n).toLocaleString('zh-CN'); }
+
+function setText(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = v;
+}
+
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
