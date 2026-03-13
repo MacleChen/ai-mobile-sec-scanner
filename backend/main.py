@@ -883,42 +883,50 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
     mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
     headers = _mobsf_headers()
     try:
+        # 1. Upload file to MobSF
+        _tasks[task_id]["status"] = "uploading"
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=30, read=300, write=300, pool=30)
+            timeout=httpx.Timeout(connect=30, read=120, write=300, pool=30)
         ) as client:
-            # 1. Stream file to MobSF (no full in-memory copy)
-            _tasks[task_id]["status"] = "uploading"
             with open(tmp_path, "rb") as fh:
                 resp = await client.post(
                     f"{mobsf_url}/api/v1/upload",
                     files={"file": (filename, fh, "application/octet-stream")},
                     headers=headers,
                 )
-            upload_data = resp.json()
-            if "hash" not in upload_data:
-                _tasks[task_id].update({"status": "error", "error": str(upload_data)})
-                return
-            scan_id = upload_data["hash"]
-            scan_type = upload_data.get("scan_type", "apk")
-            _tasks[task_id]["scan_type"] = scan_type
+        upload_data = resp.json()
+        if "hash" not in upload_data:
+            _tasks[task_id].update({"status": "error", "error": str(upload_data)})
+            return
+        scan_id = upload_data["hash"]
+        scan_type = upload_data.get("scan_type", "apk")
+        _tasks[task_id]["scan_type"] = scan_type
 
-            # 2. Trigger scan
-            _tasks[task_id]["status"] = "scanning"
+        # 2. Trigger scan — MobSF /api/v1/scan is synchronous (blocks until analysis done)
+        #    Large APKs can take 10-20 min; use a dedicated client with high read timeout.
+        _tasks[task_id]["status"] = "scanning"
+        _tasks[task_id]["scan_started_at"] = time.time()
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=30, read=1200, write=60, pool=30)
+        ) as client:
             resp = await client.post(
                 f"{mobsf_url}/api/v1/scan",
                 data={"hash": scan_id, "scan_type": scan_type},
                 headers=headers,
             )
-            scan_result = resp.json()
-            if "error" in scan_result:
-                _tasks[task_id].update({"status": "error", "error": str(scan_result["error"])})
-                return
+        scan_result = resp.json()
+        if "error" in scan_result:
+            _tasks[task_id].update({"status": "error", "error": str(scan_result["error"])})
+            return
 
-            # 3. Poll for report (max 300s)
-            _tasks[task_id]["status"] = "analyzing"
-            report = None
-            for _ in range(60):
-                await asyncio.sleep(5)
+        # 3. Fetch report — scan is synchronous so report is ready immediately.
+        #    Retry up to 5 times (3s apart) in case of edge cases.
+        _tasks[task_id]["status"] = "analyzing"
+        report = None
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=30, read=60, write=60, pool=30)
+        ) as client:
+            for _ in range(5):
                 resp = await client.post(
                     f"{mobsf_url}/api/v1/report_json",
                     data={"hash": scan_id},
@@ -928,9 +936,10 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
                 if "report" not in data:
                     report = data
                     break
+                await asyncio.sleep(3)
 
         if report is None:
-            _tasks[task_id].update({"status": "error", "error": "Scan timed out (300s)"})
+            _tasks[task_id].update({"status": "error", "error": "MobSF 报告获取失败，请重试"})
             return
 
         # 4. Gemini AI summary (bilingual prompt)
@@ -1046,10 +1055,16 @@ async def get_status(task_id: str):
     task = _tasks.get(task_id)
     if not task:
         return {"status": "not_found"}
-    return {
+    resp: dict = {
         "status": task.get("status", "unknown"),
         "error":  task.get("error"),
+        "error_en": task.get("error_en"),
+        "error_code": task.get("error_code"),
     }
+    # Expose elapsed seconds so frontend can show a timer
+    if "scan_started_at" in task:
+        resp["scan_elapsed"] = int(time.time() - task["scan_started_at"])
+    return resp
 
 
 def _count_sev(sev: str, risk: dict):

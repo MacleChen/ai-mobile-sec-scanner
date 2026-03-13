@@ -903,9 +903,9 @@ const LANG = {
     procTitle:    '📊 正在分析中',
     sl: ['上传', '静态分析', '报告提取', 'AI 摘要', '完成'],
     status: {
-      uploading:   '正在上传 APK 到分析引擎...',
-      scanning:    'MobSF 静态分析中，请耐心等待...',
-      analyzing:   '等待分析报告生成...',
+      uploading:   '正在上传文件到分析引擎...',
+      scanning:    'MobSF 静态分析中（大文件可能需要 5-15 分钟）',
+      analyzing:   '正在提取分析报告...',
       summarizing: 'AI 正在生成安全摘要...',
       done:        '扫描完成 ✅',
       loading:     '正在加载报告...',
@@ -980,9 +980,9 @@ const LANG = {
     procTitle:    '📊 Analyzing...',
     sl: ['Upload', 'Static Analysis', 'Report', 'AI Summary', 'Done'],
     status: {
-      uploading:   'Uploading APK to analysis engine...',
-      scanning:    'MobSF static analysis in progress...',
-      analyzing:   'Waiting for analysis report...',
+      uploading:   'Uploading file to analysis engine...',
+      scanning:    'MobSF static analysis in progress (may take 5-15 min for large files)',
+      analyzing:   'Extracting analysis report...',
       summarizing: 'AI generating security summary...',
       done:        'Scan complete ✅',
       loading:     'Loading report...',
@@ -1604,7 +1604,15 @@ async function pollStatus() {
     const data = await resp.json();
     const l = L();
     const idx = STATUS_STEP[data.status] ?? 0;
-    setStep(idx, l.status[data.status] || data.status);
+    // Build status message with elapsed time for slow steps
+    let msg = l.status[data.status] || data.status;
+    if (data.scan_elapsed != null && (data.status === 'scanning' || data.status === 'analyzing')) {
+      const elapsed = data.scan_elapsed;
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const ss = String(elapsed % 60).padStart(2, '0');
+      msg += ` (${mm}:${ss})`;
+    }
+    setStep(idx, msg);
     if (data.status === 'done') {
       clearInterval(pollTimer);
       setStep(4, l.status.loading);
