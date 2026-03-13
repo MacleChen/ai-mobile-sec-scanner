@@ -9,6 +9,8 @@ import asyncio
 import os
 import uuid
 import re
+import shutil
+import tempfile
 import html as html_lib
 import urllib.parse
 import sqlite3
@@ -851,7 +853,18 @@ async def scan_app(file: UploadFile, background_tasks: BackgroundTasks,
         auth_type = "legacy"
 
     task_id = str(uuid.uuid4())
-    file_data = await file.read()
+
+    # Stream upload to a temp file — avoids loading the full APK into memory,
+    # which can exhaust RAM on large files and crash the container.
+    suffix = Path(file.filename or "file.apk").suffix or ".apk"
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix=f"scan_{task_id}_")
+    try:
+        with os.fdopen(tmp_fd, "wb") as tmp_f:
+            shutil.copyfileobj(file.file, tmp_f)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
+
     _tasks[task_id] = {
         "status":    "uploading",
         "filename":  file.filename,
@@ -861,24 +874,26 @@ async def scan_app(file: UploadFile, background_tasks: BackgroundTasks,
         "user_id":   user_id,      # jwt
         "started_at": datetime.now().isoformat(),
     }
-    background_tasks.add_task(_run_scan, task_id, file.filename, file_data, lang)
+    background_tasks.add_task(_run_scan, task_id, file.filename, tmp_path, lang)
     return {"task_id": task_id}
 
 
-async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "zh"):
+async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"):
+    """Run MobSF scan. tmp_path is a temp file on disk; deleted when done."""
     mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
     headers = _mobsf_headers()
     try:
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=30, read=300, write=120, pool=30)
+            timeout=httpx.Timeout(connect=30, read=300, write=300, pool=30)
         ) as client:
-            # 1. Upload to MobSF
+            # 1. Stream file to MobSF (no full in-memory copy)
             _tasks[task_id]["status"] = "uploading"
-            resp = await client.post(
-                f"{mobsf_url}/api/v1/upload",
-                files={"file": (filename, file_data, "application/octet-stream")},
-                headers=headers,
-            )
+            with open(tmp_path, "rb") as fh:
+                resp = await client.post(
+                    f"{mobsf_url}/api/v1/upload",
+                    files={"file": (filename, fh, "application/octet-stream")},
+                    headers=headers,
+                )
             upload_data = resp.json()
             if "hash" not in upload_data:
                 _tasks[task_id].update({"status": "error", "error": str(upload_data)})
@@ -1018,6 +1033,12 @@ async def _run_scan(task_id: str, filename: str, file_data: bytes, lang: str = "
         })
     except Exception as e:
         _tasks[task_id].update({"status": "error", "error": str(e)})
+    finally:
+        # Always clean up the temp file regardless of outcome
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 @app.get("/scan/status/{task_id}")

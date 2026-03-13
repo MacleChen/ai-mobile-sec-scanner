@@ -1529,6 +1529,42 @@ fileInput.addEventListener('change', () => {
   }
 });
 
+// Upload via XHR so we get progress events and explicit timeout control.
+// fetch() has no built-in timeout — on slow networks the browser can silently
+// drop the connection mid-upload, producing "Failed to fetch".
+function uploadFile(fd, url, authToken) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+    xhr.timeout = 10 * 60 * 1000; // 10 minutes
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round(e.loaded / e.total * 100);
+        const label = lang === 'en'
+          ? `Uploading… ${pct}%`
+          : `正在上传 APK… ${pct}%`;
+        setStep(0, label);
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        resolve({ status: xhr.status, data });
+      } catch (_) {
+        resolve({ status: xhr.status, data: {} });
+      }
+    };
+
+    xhr.onerror   = () => reject(new Error(lang === 'en' ? 'Network error' : '网络错误，请检查连接'));
+    xhr.ontimeout = () => reject(new Error(lang === 'en' ? 'Upload timed out' : '上传超时，请重试'));
+
+    xhr.send(fd);
+  });
+}
+
 async function handleFile(file) {
   document.getElementById('upload-error').classList.add('hidden');
   hide('file-preview');
@@ -1548,24 +1584,11 @@ async function handleFile(file) {
   const fd = new FormData();
   fd.append('file', file);
   try {
-    const resp = await fetch(`/scan?lang=${lang}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${jwt}` },
-      body: fd,
-    });
-    if (resp.status === 402) {
-      resetToUpload();
-      openBuyModal();
-      return;
-    }
-    if (resp.status === 400 || resp.status === 401) {
-      resetToUpload();
-      openLoginModal();
-      return;
-    }
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const { task_id } = await resp.json();
-    taskId = task_id;
+    const { status, data } = await uploadFile(fd, `/scan?lang=${lang}`, jwt);
+    if (status === 402) { resetToUpload(); openBuyModal(); return; }
+    if (status === 400 || status === 401) { resetToUpload(); openLoginModal(); return; }
+    if (status !== 200) throw new Error(`HTTP ${status}`);
+    taskId = data.task_id;
     pollTimer = setInterval(pollStatus, 2500);
   } catch (err) {
     resetToUpload();
