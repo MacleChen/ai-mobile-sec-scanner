@@ -902,31 +902,41 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
         scan_type = upload_data.get("scan_type", "apk")
         _tasks[task_id]["scan_type"] = scan_type
 
-        # 2. Trigger scan — MobSF /api/v1/scan is synchronous (blocks until analysis done)
-        #    Large APKs can take 10-20 min; use a dedicated client with high read timeout.
+        # 2. Trigger scan — MobSF /api/v1/scan blocks until analysis completes.
+        #    If the HTTP read times out, MobSF still keeps scanning in the background;
+        #    we catch ReadTimeout here and fall through to polling in step 3.
         _tasks[task_id]["status"] = "scanning"
         _tasks[task_id]["scan_started_at"] = time.time()
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=30, read=1200, write=60, pool=30)
-        ) as client:
-            resp = await client.post(
-                f"{mobsf_url}/api/v1/scan",
-                data={"hash": scan_id, "scan_type": scan_type},
-                headers=headers,
-            )
-        scan_result = resp.json()
-        if "error" in scan_result:
-            _tasks[task_id].update({"status": "error", "error": str(scan_result["error"])})
-            return
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(connect=30, read=1800, write=60, pool=30)
+            ) as client:
+                resp = await client.post(
+                    f"{mobsf_url}/api/v1/scan",
+                    data={"hash": scan_id, "scan_type": scan_type},
+                    headers=headers,
+                )
+            scan_result = resp.json()
+            if "error" in scan_result:
+                _tasks[task_id].update({"status": "error", "error": str(scan_result["error"])})
+                return
+        except httpx.ReadTimeout:
+            # Scan is still running on MobSF side — will poll for the report below
+            pass
 
-        # 3. Fetch report — scan is synchronous so report is ready immediately.
-        #    Retry up to 5 times (3s apart) in case of edge cases.
+        # 3. Poll report_json until MobSF finishes (budget: 35 min from scan start).
+        #    For fast scans, /api/v1/scan already returned and report is ready on first try.
+        #    For slow scans (large APKs), we poll every 10s until done or budget exhausted.
         _tasks[task_id]["status"] = "analyzing"
         report = None
+        scan_budget = 35 * 60  # 35 min total from scan_started_at
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(connect=30, read=60, write=60, pool=30)
         ) as client:
-            for _ in range(5):
+            while True:
+                elapsed = time.time() - _tasks[task_id]["scan_started_at"]
+                if elapsed > scan_budget:
+                    break
                 resp = await client.post(
                     f"{mobsf_url}/api/v1/report_json",
                     data={"hash": scan_id},
@@ -936,10 +946,15 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
                 if "report" not in data:
                     report = data
                     break
-                await asyncio.sleep(3)
+                await asyncio.sleep(10)
 
         if report is None:
-            _tasks[task_id].update({"status": "error", "error": "MobSF 报告获取失败，请重试"})
+            _tasks[task_id].update({
+                "status": "error",
+                "error": "MobSF 静态分析超时（超过35分钟），请检查服务器资源或尝试较小的文件。",
+                "error_en": "MobSF static analysis timed out (>35 min). Check server resources or try a smaller file.",
+                "error_code": "timeout",
+            })
             return
 
         # 4. Gemini AI summary (bilingual prompt)
