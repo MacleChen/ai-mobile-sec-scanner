@@ -434,14 +434,16 @@ async def generate_codes(
     if expires_days > 0:
         expires_at = (datetime.utcnow() + timedelta(days=expires_days)).isoformat()
 
-    new_codes = [_gen_code() for _ in range(count)]
+    display_codes = [_gen_code() for _ in range(count)]
+    # Store without dashes; redeem endpoint also strips dashes so lookup always matches
+    db_codes = [c.replace("-", "") for c in display_codes]
     with _db() as c:
         c.executemany(
             "INSERT INTO codes(code, credits, note, expires_at, max_uses) VALUES(?,?,?,?,?)",
-            [(code, credits, note, expires_at, max_uses) for code in new_codes],
+            [(code, credits, note, expires_at, max_uses) for code in db_codes],
         )
     return {
-        "codes": new_codes,
+        "codes": display_codes,  # return formatted (with dashes) for display
         "credits_each": credits,
         "count": count,
         "max_uses": max_uses,
