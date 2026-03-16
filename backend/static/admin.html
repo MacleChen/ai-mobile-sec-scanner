@@ -159,6 +159,38 @@
 
     /* ── Misc ───────────────────────────────────── */
     .refresh-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+    /* ── Nav user ───────────────────────────────── */
+    .nav-user { display: flex; align-items: center; gap: 9px; margin-right: 6px; }
+    .nav-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8em; font-weight: 800; color: white; flex-shrink: 0;
+      text-transform: uppercase; letter-spacing: .02em;
+    }
+    .nav-uname { font-size: .84em; color: rgba(255,255,255,.85);
+                 max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Settings layout ────────────────────────── */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 780px) { .settings-grid { grid-template-columns: 1fr; } }
+    .settings-grid .full-col { grid-column: 1 / -1; }
+
+    /* ── Account table ──────────────────────────── */
+    .acct-row { display: flex; align-items: center; gap: 10px; padding: 10px 0;
+                border-bottom: 1px solid #f1f5f9; }
+    .acct-row:last-child { border-bottom: none; }
+    .acct-avatar { width: 36px; height: 36px; border-radius: 50%;
+                   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                   display: flex; align-items: center; justify-content: center;
+                   font-size: .8em; font-weight: 800; color: white;
+                   text-transform: uppercase; flex-shrink: 0; }
+    .acct-info { flex: 1; min-width: 0; }
+    .acct-name { font-weight: 700; font-size: .9em; }
+    .acct-meta { font-size: .74em; color: #94a3b8; margin-top: 2px; }
+    .badge-super { background: #fef3c7; color: #b45309; padding: 1px 7px;
+                   border-radius: 4px; font-size: .7em; font-weight: 700; margin-left: 6px; }
   </style>
 </head>
 <body>
@@ -194,6 +226,10 @@
       🛡️ AI Scanner
       <span class="nav-badge">管理后台</span>
     </div>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">A</div>
+      <span class="nav-uname" id="nav-uname">admin</span>
+    </div>
     <button class="nav-logout" onclick="doLogout()">退出登录</button>
   </nav>
 
@@ -202,6 +238,7 @@
     <button class="tab-btn active" onclick="switchTab('stats',   this)">📊 概览</button>
     <button class="tab-btn"        onclick="switchTab('generate', this)">🔑 生成兑换码</button>
     <button class="tab-btn"        onclick="switchTab('codes',   this)">📋 兑换码管理</button>
+    <button class="tab-btn"        onclick="switchTab('settings', this)">⚙️ 账号设置</button>
   </div>
 
   <div class="content">
@@ -343,6 +380,68 @@
       </div>
     </div><!-- tab-codes -->
 
+    <!-- ═══════════ TAB: Settings ══════════════════════ -->
+    <div id="tab-settings" class="hidden">
+      <div class="settings-grid">
+
+        <!-- Change password -->
+        <div class="card">
+          <div class="card-title">🔒 修改密码</div>
+          <div class="field">
+            <label>当前密码</label>
+            <input type="password" id="cp-old" placeholder="••••••" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label>新密码</label>
+            <input type="password" id="cp-new" placeholder="至少 6 位" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>确认新密码</label>
+            <input type="password" id="cp-confirm" placeholder="再次输入新密码" autocomplete="new-password"
+                   onkeydown="if(event.key==='Enter')doChangePassword()">
+          </div>
+          <div class="err-msg" id="cp-err"></div>
+          <button class="btn btn-full" id="cp-btn" onclick="doChangePassword()" style="margin-top:4px">
+            修改密码
+          </button>
+        </div>
+
+        <!-- Add admin -->
+        <div class="card">
+          <div class="card-title">➕ 添加管理员</div>
+          <div class="field">
+            <label>用户名</label>
+            <input type="text" id="na-user" placeholder="至少 2 个字符" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>密码</label>
+            <input type="password" id="na-pass" placeholder="至少 6 位" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>确认密码</label>
+            <input type="password" id="na-confirm" placeholder="再次输入密码" autocomplete="new-password"
+                   onkeydown="if(event.key==='Enter')doAddAdmin()">
+          </div>
+          <div class="err-msg" id="na-err"></div>
+          <button class="btn btn-full" id="na-btn" onclick="doAddAdmin()" style="margin-top:4px">
+            添加管理员
+          </button>
+        </div>
+
+        <!-- Admin list -->
+        <div class="card full-col">
+          <div class="card-title">
+            👥 管理员列表
+            <button class="btn btn-sm btn-ghost" onclick="loadAdmins()">🔄 刷新</button>
+          </div>
+          <div id="acct-list">
+            <div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">加载中…</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- tab-settings -->
+
   </div><!-- .content -->
 </div><!-- #admin-panel -->
 
@@ -351,6 +450,7 @@
 <script>
 // ── State ─────────────────────────────────────────────────
 let adminToken  = localStorage.getItem('admin_token') || '';
+let adminName   = localStorage.getItem('admin_name')  || 'admin';
 let allCodes    = [];
 let filtered    = [];
 const PAGE      = 20;
@@ -359,7 +459,10 @@ let lastCodes   = [];
 
 // ── Boot ──────────────────────────────────────────────────
 (function init() {
-  if (adminToken) { showPanel(); loadStats(); }
+  if (adminToken) {
+    setNavUser(adminName);
+    showPanel(); loadStats(); loadMe();
+  }
 })();
 
 // ── Auth ──────────────────────────────────────────────────
@@ -380,7 +483,7 @@ async function doLogin() {
     if (d.ok && d.token) {
       adminToken = d.token;
       localStorage.setItem('admin_token', adminToken);
-      showPanel(); loadStats();
+      showPanel(); loadStats(); loadMe();
     } else {
       err.textContent = d.error || '登录失败';
     }
@@ -394,8 +497,9 @@ function showPanel() {
 }
 
 function doLogout() {
-  adminToken = '';
+  adminToken = ''; adminName = 'admin';
   localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_name');
   allCodes = []; filtered = []; lastCodes = [];
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('admin-panel').classList.add('hidden');
@@ -403,16 +507,32 @@ function doLogout() {
   document.getElementById('login-err').textContent = '';
 }
 
+function setNavUser(name) {
+  adminName = name;
+  localStorage.setItem('admin_name', name);
+  const initial = (name || 'A')[0].toUpperCase();
+  setText('nav-avatar', initial);
+  setText('nav-uname', name);
+}
+
+async function loadMe() {
+  try {
+    const d = await api('/admin/me');
+    if (d.username) setNavUser(d.username);
+  } catch (_) {}
+}
+
 // ── Tab switching ──────────────────────────────────────────
 function switchTab(name, btn) {
-  ['stats', 'generate', 'codes'].forEach(t =>
+  ['stats', 'generate', 'codes', 'settings'].forEach(t =>
     document.getElementById('tab-' + t).classList.add('hidden')
   );
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.remove('hidden');
   btn.classList.add('active');
-  if (name === 'stats')   loadStats();
-  if (name === 'codes')   loadCodes();
+  if (name === 'stats')    loadStats();
+  if (name === 'codes')    loadCodes();
+  if (name === 'settings') loadAdmins();
 }
 
 // ── API helper ────────────────────────────────────────────
@@ -609,6 +729,112 @@ async function revokeCode(code, btn) {
     }
   } catch (e) {
     btn.disabled = false; btn.textContent = '撤销';
+    if (e.message !== '403') toast('网络错误');
+  }
+}
+
+// ── Account settings ──────────────────────────────────────
+async function doChangePassword() {
+  const oldPw  = document.getElementById('cp-old').value;
+  const newPw  = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  const err    = document.getElementById('cp-err');
+  const btn    = document.getElementById('cp-btn');
+  err.textContent = '';
+  if (!oldPw || !newPw)     { err.textContent = '请填写所有字段'; return; }
+  if (newPw.length < 6)     { err.textContent = '新密码至少 6 位'; return; }
+  if (newPw !== confirm)    { err.textContent = '两次输入的新密码不一致'; return; }
+  btn.disabled = true; btn.textContent = '修改中…';
+  try {
+    const q = new URLSearchParams({ current_password: oldPw, new_password: newPw });
+    const d = await api(`/admin/change-password?${q}`, { method: 'POST' });
+    if (d.ok) {
+      toast('✅ 密码已修改，下次登录生效');
+      document.getElementById('cp-old').value = '';
+      document.getElementById('cp-new').value = '';
+      document.getElementById('cp-confirm').value = '';
+    } else {
+      err.textContent = d.error || '修改失败';
+    }
+  } catch (e) { if (e.message !== '403') err.textContent = '网络错误'; }
+  btn.disabled = false; btn.textContent = '修改密码';
+}
+
+async function doAddAdmin() {
+  const user    = document.getElementById('na-user').value.trim();
+  const pass    = document.getElementById('na-pass').value;
+  const confirm = document.getElementById('na-confirm').value;
+  const err     = document.getElementById('na-err');
+  const btn     = document.getElementById('na-btn');
+  err.textContent = '';
+  if (!user || !pass)       { err.textContent = '请填写所有字段'; return; }
+  if (user.length < 2)      { err.textContent = '用户名至少 2 个字符'; return; }
+  if (pass.length < 6)      { err.textContent = '密码至少 6 位'; return; }
+  if (pass !== confirm)     { err.textContent = '两次输入的密码不一致'; return; }
+  btn.disabled = true; btn.textContent = '添加中…';
+  try {
+    const q = new URLSearchParams({ username: user, password: pass });
+    const d = await api(`/admin/accounts?${q}`, { method: 'POST' });
+    if (d.ok) {
+      toast(`✅ 管理员 ${user} 已添加`);
+      document.getElementById('na-user').value = '';
+      document.getElementById('na-pass').value = '';
+      document.getElementById('na-confirm').value = '';
+      loadAdmins();
+    } else {
+      err.textContent = d.error || '添加失败';
+    }
+  } catch (e) { if (e.message !== '403') err.textContent = '网络错误'; }
+  btn.disabled = false; btn.textContent = '添加管理员';
+}
+
+async function loadAdmins() {
+  const container = document.getElementById('acct-list');
+  container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">加载中…</div>';
+  try {
+    const d = await api('/admin/accounts');
+    const accounts = d.accounts || [];
+    if (!accounts.length) {
+      container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">暂无账号</div>';
+      return;
+    }
+    container.innerHTML = accounts.map(a => {
+      const initial  = (a.username || 'A')[0].toUpperCase();
+      const isSelf   = a.username === adminName;
+      const created  = (a.created_at || '').slice(0, 10);
+      const metaParts = [`创建于 ${created || '—'}`];
+      if (a.is_super) metaParts.push('超级管理员');
+      if (isSelf)     metaParts.push('(当前账号)');
+      const canDelete = !a.is_super && !isSelf;
+      return `<div class="acct-row">
+        <div class="acct-avatar">${initial}</div>
+        <div class="acct-info">
+          <div class="acct-name">
+            ${a.username}
+            ${a.is_super ? '<span class="badge-super">超级</span>' : ''}
+          </div>
+          <div class="acct-meta">${metaParts.join(' · ')}</div>
+        </div>
+        ${canDelete
+          ? `<button class="btn btn-sm btn-danger" onclick="deleteAdmin('${a.username}',this)">删除</button>`
+          : '<span style="color:#e2e8f0;font-size:.8em">—</span>'}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    if (e.message !== '403')
+      container.innerHTML = '<div style="color:#dc2626;font-size:.87em;padding:16px 0;text-align:center">加载失败</div>';
+  }
+}
+
+async function deleteAdmin(username, btn) {
+  if (!confirm(`确认删除管理员账号「${username}」？此操作不可恢复。`)) return;
+  btn.disabled = true; btn.textContent = '删除中…';
+  try {
+    const d = await api(`/admin/accounts/${encodeURIComponent(username)}`, { method: 'DELETE' });
+    if (d.ok) { toast(`已删除账号 ${username}`); loadAdmins(); }
+    else      { btn.disabled = false; btn.textContent = '删除'; toast(d.error || '删除失败'); }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '删除';
     if (e.message !== '403') toast('网络错误');
   }
 }

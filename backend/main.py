@@ -113,6 +113,13 @@ def _init_db():
                 created_at   TEXT DEFAULT (datetime('now')),
                 paid_at      TEXT
             );
+            CREATE TABLE IF NOT EXISTS admin_accounts (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                username      TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                is_super      INTEGER DEFAULT 0,
+                created_at    TEXT DEFAULT (datetime('now'))
+            );
         """)
 
 def _migrate_db():
@@ -166,30 +173,52 @@ _ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
 _ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "admin")
 
 
-def _make_admin_jwt() -> str:
+def _seed_admin():
+    """Ensure at least one admin account exists (seeded from env vars)."""
+    with _db() as c:
+        n = c.execute("SELECT COUNT(*) as n FROM admin_accounts").fetchone()["n"]
+        if n == 0:
+            c.execute(
+                "INSERT OR IGNORE INTO admin_accounts (username, password_hash, is_super) VALUES (?, ?, 1)",
+                (_ADMIN_USER, _hash_pw(_ADMIN_PASS)),
+            )
+
+_seed_admin()
+
+
+def _make_admin_jwt(username: str) -> str:
     exp = datetime.utcnow() + timedelta(hours=8)
-    return jwt.encode({"sub": "admin", "role": "admin", "exp": exp}, JWT_SECRET, algorithm=JWT_ALG)
+    return jwt.encode({"sub": username, "role": "admin", "exp": exp}, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def _get_admin_from_jwt(token: str) -> str | None:
+    """Returns admin username if token is a valid admin JWT, else None."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        if payload.get("role") == "admin":
+            return payload.get("sub", "admin")
+    except Exception:
+        pass
+    return None
 
 
 def _is_admin_jwt(token: str) -> bool:
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
-        return payload.get("role") == "admin"
-    except Exception:
-        return False
+    return _get_admin_from_jwt(token) is not None
 
 
 async def _require_admin(
     request: Request,
     creds: HTTPAuthorizationCredentials = Depends(_bearer),
-) -> None:
-    """Accepts admin JWT Bearer (web UI) or admin_key query param (API)."""
-    if creds and _is_admin_jwt(creds.credentials):
-        return
+) -> str:
+    """Returns admin username. Accepts JWT Bearer (web UI) or admin_key query param (API)."""
+    if creds:
+        u = _get_admin_from_jwt(creds.credentials)
+        if u:
+            return u
     env_key = os.getenv("ADMIN_KEY", "")
     qkey = request.query_params.get("admin_key", "")
     if env_key and qkey == env_key:
-        return
+        return _ADMIN_USER
     raise HTTPException(status_code=403, detail="Admin access required")
 
 
@@ -400,9 +429,87 @@ async def redeem_code(token: str, code: str):
 @app.post("/admin/login")
 async def admin_login(username: str, password: str):
     """Login to the admin panel; returns a short-lived admin JWT."""
-    if username == _ADMIN_USER and password == _ADMIN_PASS:
-        return {"ok": True, "token": _make_admin_jwt()}
+    with _db() as c:
+        row = c.execute(
+            "SELECT password_hash FROM admin_accounts WHERE username=?", (username,)
+        ).fetchone()
+    if row and _verify_pw(password, row["password_hash"]):
+        return {"ok": True, "token": _make_admin_jwt(username)}
     return JSONResponse({"ok": False, "error": "用户名或密码错误"}, status_code=401)
+
+
+@app.get("/admin/me")
+async def admin_me(admin_user: str = Depends(_require_admin)):
+    return {"username": admin_user}
+
+
+@app.post("/admin/change-password")
+async def admin_change_password(
+    current_password: str,
+    new_password: str,
+    admin_user: str = Depends(_require_admin),
+):
+    if len(new_password) < 6:
+        return JSONResponse({"ok": False, "error": "新密码至少 6 位"}, status_code=400)
+    with _db() as c:
+        row = c.execute(
+            "SELECT password_hash FROM admin_accounts WHERE username=?", (admin_user,)
+        ).fetchone()
+    if not row or not _verify_pw(current_password, row["password_hash"]):
+        return JSONResponse({"ok": False, "error": "当前密码不正确"}, status_code=400)
+    with _db() as c:
+        c.execute(
+            "UPDATE admin_accounts SET password_hash=? WHERE username=?",
+            (_hash_pw(new_password), admin_user),
+        )
+    return {"ok": True}
+
+
+@app.get("/admin/accounts")
+async def admin_list_accounts(_: str = Depends(_require_admin)):
+    with _db() as c:
+        rows = c.execute(
+            "SELECT username, is_super, created_at FROM admin_accounts ORDER BY id"
+        ).fetchall()
+    return {"accounts": [dict(r) for r in rows]}
+
+
+@app.post("/admin/accounts")
+async def admin_create_account(
+    username: str,
+    password: str,
+    _: str = Depends(_require_admin),
+):
+    username = username.strip()
+    if len(username) < 2:
+        return JSONResponse({"ok": False, "error": "用户名至少 2 个字符"}, status_code=400)
+    if len(password) < 6:
+        return JSONResponse({"ok": False, "error": "密码至少 6 位"}, status_code=400)
+    try:
+        with _db() as c:
+            c.execute(
+                "INSERT INTO admin_accounts (username, password_hash) VALUES (?, ?)",
+                (username, _hash_pw(password)),
+            )
+        return {"ok": True}
+    except Exception:
+        return JSONResponse({"ok": False, "error": "用户名已存在"}, status_code=400)
+
+
+@app.delete("/admin/accounts/{username}")
+async def admin_delete_account(username: str, admin_user: str = Depends(_require_admin)):
+    if username == admin_user:
+        return JSONResponse({"ok": False, "error": "不能删除当前登录账号"}, status_code=400)
+    with _db() as c:
+        row = c.execute(
+            "SELECT is_super FROM admin_accounts WHERE username=?", (username,)
+        ).fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "error": "账号不存在"}, status_code=404)
+        if row["is_super"]:
+            return JSONResponse({"ok": False, "error": "超级管理员账号不可删除"}, status_code=400)
+        c.execute("DELETE FROM admin_accounts WHERE username=?", (username,))
+    return {"ok": True}
 
 
 @app.get("/admin", response_class=HTMLResponse)
