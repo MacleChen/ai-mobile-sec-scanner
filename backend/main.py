@@ -410,7 +410,8 @@ async def admin_page():
     """Serve the admin panel HTML."""
     html_path = os.path.join(os.path.dirname(__file__), "static", "admin.html")
     with open(html_path, encoding="utf-8") as f:
-        return f.read()
+        content = f.read()
+    return HTMLResponse(content=content, headers={"Cache-Control": "no-store"})
 
 
 @app.post("/admin/generate-codes")
@@ -805,7 +806,8 @@ async def favicon():
 async def index():
     html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     with open(html_path, encoding="utf-8") as f:
-        return f.read()
+        content = f.read()
+    return HTMLResponse(content=content, headers={"Cache-Control": "no-store"})
 
 
 def _first(*vals) -> str:
@@ -1237,7 +1239,10 @@ def _extract_summary(task: dict) -> dict:
         "build_version":       build_version,
         "size":                report.get("size", ""),
         "md5":                 report.get("md5", ""),
-        "security_score":      str(report.get("security_score") or _appsec.get("security_score") or "N/A"),
+        "security_score":      str(
+            s if (s := report.get("security_score")) is not None else
+            s if (s := _appsec.get("security_score")) is not None else "N/A"
+        ),
         "risk_counts":         risk,
         "dangerous_permissions": perm_list[:20],
         "tracker_count":       tracker_count,
