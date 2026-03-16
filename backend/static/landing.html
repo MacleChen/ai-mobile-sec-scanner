@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AppSec AI · 移动应用安全检测平台</title>
+  <meta name="description" content="AI 驱动的移动应用安全检测平台，深度扫描 Android/iOS 应用，自动识别漏洞、追踪器与高危权限，秒级生成专业安全报告。">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #050b18;
+      --bg2:       #0a1628;
+      --card:      rgba(255,255,255,.045);
+      --border:    rgba(255,255,255,.08);
+      --blue:      #3b82f6;
+      --blue-l:    #60a5fa;
+      --purple:    #8b5cf6;
+      --green:     #10b981;
+      --text:      #f1f5f9;
+      --muted:     #94a3b8;
+      --radius:    16px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── Scrollbar ─────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
+
+    /* ── Noise texture overlay ─────────────── */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ── Gradient orbs ─────────────────────── */
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(90px);
+      pointer-events: none; z-index: 0;
+    }
+    .orb-1 { width: 600px; height: 600px; background: rgba(59,130,246,.18); top: -200px; left: -200px; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(139,92,246,.15); top: 30%; right: -150px; }
+    .orb-3 { width: 400px; height: 400px; background: rgba(16,185,129,.10); bottom: 10%; left: 20%; }
+
+    /* ── Nav ───────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; padding: 0 5%;
+      height: 64px;
+      background: rgba(5,11,24,.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background .3s;
+    }
+    .nav-logo {
+      font-size: 1.18em; font-weight: 900; letter-spacing: -.02em;
+      background: linear-gradient(135deg, var(--blue-l), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      flex: 1; display: flex; align-items: center; gap: 9px;
+    }
+    .nav-logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1em; flex-shrink: 0;
+      -webkit-text-fill-color: white;
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: .88em;
+      font-weight: 500; transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { display: flex; gap: 10px; margin-left: 28px; }
+    .btn-outline-sm {
+      padding: 7px 18px; border: 1px solid rgba(255,255,255,.2);
+      border-radius: 8px; color: var(--text); text-decoration: none;
+      font-size: .85em; font-weight: 600; transition: all .2s;
+      background: transparent;
+    }
+    .btn-outline-sm:hover { border-color: var(--blue); color: var(--blue-l); }
+    .btn-primary-sm {
+      padding: 7px 18px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 8px; color: white; text-decoration: none;
+      font-size: .85em; font-weight: 700; transition: opacity .2s;
+      border: none;
+    }
+    .btn-primary-sm:hover { opacity: .88; }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .nav-cta { margin-left: auto; }
+    }
+
+    /* ── Section wrapper ───────────────────── */
+    section { position: relative; z-index: 1; }
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 5%; }
+
+    /* ── Hero ──────────────────────────────── */
+    #hero {
+      min-height: 100vh; display: flex; align-items: center;
+      padding: 100px 5% 80px;
+      text-align: center;
+    }
+    .hero-inner { max-width: 800px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3);
+      padding: 5px 14px; border-radius: 99px; font-size: .78em;
+      color: var(--blue-l); font-weight: 600; margin-bottom: 28px;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--blue);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .4; transform: scale(.8); }
+    }
+    h1 {
+      font-size: clamp(2.2em, 5.5vw, 3.6em);
+      font-weight: 900; line-height: 1.15; letter-spacing: -.03em;
+      margin-bottom: 20px;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--blue-l) 0%, var(--purple) 60%, #f472b6 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      font-size: clamp(1em, 2.2vw, 1.2em); color: var(--muted);
+      max-width: 580px; margin: 0 auto 40px; line-height: 1.7;
+    }
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-hero-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 12px; color: white; text-decoration: none;
+      font-size: 1em; font-weight: 700;
+      box-shadow: 0 8px 32px rgba(59,130,246,.35);
+      transition: all .2s; border: none; cursor: pointer;
+    }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(59,130,246,.45); }
+    .btn-hero-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px;
+      border: 1px solid var(--border); border-radius: 12px;
+      color: var(--text); text-decoration: none; font-size: 1em; font-weight: 600;
+      background: rgba(255,255,255,.04); transition: all .2s;
+    }
+    .btn-hero-ghost:hover { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
+
+    /* ── Stats strip ───────────────────────── */
+    .stats-strip {
+      display: flex; justify-content: center; gap: 48px;
+      margin-top: 64px; flex-wrap: wrap;
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-size: 2em; font-weight: 900; letter-spacing: -.03em;
+      background: linear-gradient(135deg, var(--blue-l), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: .78em; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+    /* ── Scan preview ──────────────────────── */
+    .scan-preview-wrap {
+      margin-top: 72px; position: relative;
+    }
+    .scan-preview {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05);
+      max-width: 860px; margin: 0 auto;
+    }
+    .preview-bar {
+      background: rgba(255,255,255,.04); padding: 12px 20px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .preview-url {
+      flex: 1; background: rgba(255,255,255,.06); border-radius: 6px;
+      padding: 4px 12px; font-size: .74em; color: var(--muted); text-align: center;
+    }
+    .preview-body { padding: 28px; }
+    .score-demo { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+    .score-ring-demo {
+      width: 90px; height: 90px; border-radius: 50%; flex-shrink: 0;
+      background: conic-gradient(#10b981 0% 72%, rgba(255,255,255,.08) 72%);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .score-ring-demo::before {
+      content: ''; position: absolute; inset: 12px;
+      background: var(--bg2); border-radius: 50%;
+    }
+    .score-val-demo {
+      position: relative; z-index: 1; font-size: 1.4em; font-weight: 900; color: #10b981;
+    }
+    .demo-info h4 { font-size: 1em; font-weight: 700; margin-bottom: 6px; }
+    .demo-info p  { font-size: .8em; color: var(--muted); margin-bottom: 12px; }
+    .demo-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dbadge {
+      padding: 3px 10px; border-radius: 6px; font-size: .74em; font-weight: 700;
+    }
+    .dbadge-warn { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+    .dbadge-info { background: rgba(59,130,246,.15); color: #93c5fd; border: 1px solid rgba(59,130,246,.25); }
+    .dbadge-ok   { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.25); }
+    .demo-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 20px; }
+    @media (max-width: 560px) { .demo-grid { grid-template-columns: repeat(2,1fr); } }
+    .demo-cell {
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px; text-align: center;
+    }
+    .demo-cell .n { font-size: 1.5em; font-weight: 800; }
+    .demo-cell .l { font-size: .68em; color: var(--muted); margin-top: 3px; }
+    .n-red    { color: #f87171; }
+    .n-orange { color: #fb923c; }
+    .n-yellow { color: #fbbf24; }
+    .n-blue   { color: #93c5fd; }
+
+    /* ── Trust logos ───────────────────────── */
+    .trust-section {
+      padding: 56px 5%; text-align: center;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .trust-label { font-size: .8em; color: var(--muted); font-weight: 600;
+                   text-transform: uppercase; letter-spacing: .1em; margin-bottom: 28px; }
+    .tech-logos  { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; align-items: center; }
+    .tech-chip {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: .88em; font-weight: 600;
+      padding: 8px 18px; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--card);
+    }
+    .tech-chip span { font-size: 1.1em; }
+
+    /* ── Section title ─────────────────────── */
+    .section-title {
+      text-align: center; margin-bottom: 56px;
+    }
+    .section-eyebrow {
+      font-size: .74em; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
+      color: var(--blue-l); margin-bottom: 12px;
+    }
+    .section-title h2 {
+      font-size: clamp(1.7em, 3.5vw, 2.5em); font-weight: 900; letter-spacing: -.03em;
+      margin-bottom: 14px;
+    }
+    .section-title p { font-size: 1em; color: var(--muted); max-width: 500px; margin: 0 auto; }
+
+    /* ── Features ──────────────────────────── */
+    #features { padding: 100px 5%; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      transition: all .25s; position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(59,130,246,.06), rgba(139,92,246,.04));
+      opacity: 0; transition: opacity .3s;
+    }
+    .feature-card:hover { border-color: rgba(59,130,246,.35); transform: translateY(-3px); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4em; margin-bottom: 16px;
+    }
+    .fi-blue   { background: rgba(59,130,246,.15); }
+    .fi-purple { background: rgba(139,92,246,.15); }
+    .fi-green  { background: rgba(16,185,129,.15); }
+    .fi-orange { background: rgba(249,115,22,.15); }
+    .fi-pink   { background: rgba(236,72,153,.15); }
+    .fi-yellow { background: rgba(234,179,8,.15); }
+    .feature-card h3 { font-size: .98em; font-weight: 800; margin-bottom: 8px; }
+    .feature-card p  { font-size: .84em; color: var(--muted); line-height: 1.65; }
+
+    /* ── How it works ──────────────────────── */
+    #how { padding: 100px 5%; background: linear-gradient(180deg, transparent, rgba(59,130,246,.04), transparent); }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; position: relative; }
+    @media (max-width: 680px) { .steps { grid-template-columns: 1fr; } }
+    .steps::before {
+      content: ''; position: absolute; top: 36px; left: 16.66%;
+      width: 66.66%; height: 1px;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      opacity: .35;
+    }
+    @media (max-width: 680px) { .steps::before { display: none; } }
+    .step { text-align: center; padding: 0 24px; }
+    .step-num {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 24px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5em; font-weight: 900; position: relative; z-index: 1;
+      box-shadow: 0 0 0 8px rgba(59,130,246,.1), 0 8px 32px rgba(59,130,246,.3);
+    }
+    .step h3 { font-size: 1em; font-weight: 800; margin-bottom: 10px; }
+    .step p   { font-size: .84em; color: var(--muted); line-height: 1.65; }
+
+    /* ── Detection ─────────────────────────── */
+    #detection { padding: 100px 5%; }
+    .detection-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;
+    }
+    .detect-item {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px;
+      transition: border-color .2s;
+    }
+    .detect-item:hover { border-color: rgba(59,130,246,.3); }
+    .detect-icon { font-size: 1.3em; flex-shrink: 0; }
+    .detect-text { font-size: .84em; font-weight: 600; }
+
+    /* ── Pricing ───────────────────────────── */
+    #pricing { padding: 100px 5%; }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    @media (max-width: 900px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .pricing-grid { grid-template-columns: 1fr; } }
+    .price-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 22px;
+      position: relative; transition: all .25s; text-align: center;
+    }
+    .price-card.featured {
+      border-color: var(--blue);
+      background: rgba(59,130,246,.08);
+      box-shadow: 0 0 0 1px rgba(59,130,246,.25), 0 20px 60px rgba(59,130,246,.15);
+    }
+    .price-card:hover { transform: translateY(-4px); }
+    .price-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      padding: 3px 14px; border-radius: 99px; font-size: .72em; font-weight: 800;
+      white-space: nowrap;
+    }
+    .price-name { font-size: .78em; font-weight: 700; color: var(--muted);
+                  text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+    .price-credits { font-size: 2.8em; font-weight: 900; letter-spacing: -.04em; line-height: 1; }
+    .price-credits-sub { font-size: .78em; color: var(--muted); margin: 4px 0 20px; }
+    .price-amount {
+      font-size: 1.6em; font-weight: 900; letter-spacing: -.02em;
+      background: linear-gradient(135deg, var(--blue-l), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .price-amount-sub { font-size: .74em; color: var(--muted); margin-top: 4px; margin-bottom: 24px; }
+    .price-features { list-style: none; text-align: left; margin-bottom: 24px; }
+    .price-features li {
+      font-size: .82em; color: var(--muted); padding: 5px 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .price-features li::before { content: '✓'; color: var(--green); font-weight: 800; flex-shrink: 0; }
+    .price-btn {
+      display: block; width: 100%; padding: 10px;
+      border-radius: 9px; text-align: center; font-weight: 700;
+      font-size: .88em; text-decoration: none; transition: all .2s;
+    }
+    .price-btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white; box-shadow: 0 4px 20px rgba(59,130,246,.3);
+    }
+    .price-btn-primary:hover { box-shadow: 0 6px 28px rgba(59,130,246,.45); transform: translateY(-1px); }
+    .price-btn-outline {
+      border: 1px solid var(--border); color: var(--muted);
+      background: transparent;
+    }
+    .price-btn-outline:hover { border-color: rgba(255,255,255,.25); color: var(--text); }
+
+    /* ── CTA banner ────────────────────────── */
+    #cta { padding: 100px 5%; }
+    .cta-inner {
+      background: linear-gradient(135deg, rgba(59,130,246,.12), rgba(139,92,246,.12));
+      border: 1px solid rgba(59,130,246,.25); border-radius: 24px;
+      padding: 72px 40px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta-inner::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,.15) 0%, transparent 65%);
+    }
+    .cta-inner h2 {
+      font-size: clamp(1.6em, 3.5vw, 2.4em); font-weight: 900;
+      letter-spacing: -.03em; margin-bottom: 14px; position: relative;
+    }
+    .cta-inner p { color: var(--muted); font-size: 1em; margin-bottom: 36px; position: relative; }
+    .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+    /* ── FAQ ───────────────────────────────── */
+    #faq { padding: 80px 5%; }
+    .faq-list { max-width: 680px; margin: 0 auto; }
+    .faq-item {
+      border-bottom: 1px solid var(--border); overflow: hidden;
+    }
+    .faq-q {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 0; cursor: pointer; font-size: .93em; font-weight: 600;
+      gap: 12px; user-select: none;
+    }
+    .faq-q:hover { color: var(--blue-l); }
+    .faq-arrow { font-size: .8em; transition: transform .25s; flex-shrink: 0; color: var(--muted); }
+    .faq-a {
+      font-size: .85em; color: var(--muted); line-height: 1.7;
+      max-height: 0; overflow: hidden; transition: max-height .35s ease, padding .25s;
+      padding: 0;
+    }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-item.open .faq-a     { max-height: 200px; padding-bottom: 16px; }
+
+    /* ── Footer ────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 40px 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-brand {
+      font-weight: 800; font-size: .9em;
+      background: linear-gradient(135deg, var(--blue-l), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { color: var(--muted); font-size: .82em; text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { color: var(--muted); font-size: .78em; }
+  </style>
+</head>
+<body>
+
+<!-- Gradient orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════ -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🛡️</div>
+    AppSec AI
+  </div>
+  <div class="nav-links">
+    <a href="#features">功能</a>
+    <a href="#how">使用流程</a>
+    <a href="#detection">检测项目</a>
+    <a href="#pricing">定价</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="nav-cta">
+    <a href="/app" class="btn-outline-sm">登录</a>
+    <a href="/app" class="btn-primary-sm">免费开始 →</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        AI 驱动 · 实时分析 · 专业报告
+      </div>
+
+      <h1>
+        移动应用安全<br>
+        <span class="gradient-text">深度检测平台</span>
+      </h1>
+
+      <p class="hero-sub">
+        上传 APK / IPA，MobSF 引擎秒级深度扫描，AI 自动生成专业安全报告。
+        识别权限滥用、代码漏洞、追踪器与证书配置问题，守护每一位用户的隐私与数据安全。
+      </p>
+
+      <div class="hero-actions">
+        <a href="/app" class="btn-hero-primary">
+          🚀 立即免费体验
+        </a>
+        <a href="#how" class="btn-hero-ghost">
+          了解工作原理 ↓
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-strip">
+        <div class="stat-item">
+          <div class="stat-num">500MB</div>
+          <div class="stat-label">最大文件支持</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">2 分钟</div>
+          <div class="stat-label">平均出报告时间</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">50+</div>
+          <div class="stat-label">安全检测维度</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">99%</div>
+          <div class="stat-label">漏洞检出率</div>
+        </div>
+      </div>
+
+      <!-- Scan preview mockup -->
+      <div class="scan-preview-wrap">
+        <div class="scan-preview">
+          <div class="preview-bar">
+            <div class="preview-dot" style="background:#ff5f57"></div>
+            <div class="preview-dot" style="background:#febc2e"></div>
+            <div class="preview-dot" style="background:#28c840"></div>
+            <div class="preview-url">🔒 appsec.ai · 扫描报告</div>
+          </div>
+          <div class="preview-body">
+            <div class="score-demo">
+              <div class="score-ring-demo">
+                <div class="score-val-demo">72</div>
+              </div>
+              <div class="demo-info">
+                <h4>非小号行情 · Android 3.3.2</h4>
+                <p>MobSF 综合安全评分 · 中等风险</p>
+                <div class="demo-badges">
+                  <span class="dbadge dbadge-warn">⚠️ 3 高危权限</span>
+                  <span class="dbadge dbadge-info">📡 2 追踪器</span>
+                  <span class="dbadge dbadge-ok">✅ 证书正常</span>
+                </div>
+              </div>
+            </div>
+            <div class="demo-grid">
+              <div class="demo-cell">
+                <div class="n n-red">0</div>
+                <div class="l">严重漏洞</div>
+              </div>
+              <div class="demo-cell">
+                <div class="n n-orange">6</div>
+                <div class="l">高危问题</div>
+              </div>
+              <div class="demo-cell">
+                <div class="n n-yellow">18</div>
+                <div class="l">中危告警</div>
+              </div>
+              <div class="demo-cell">
+                <div class="n n-blue">3</div>
+                <div class="l">追踪器</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TRUST BAR ══════════════════════════════════════════ -->
+<div class="trust-section">
+  <div class="trust-label">核心技术栈</div>
+  <div class="tech-logos">
+    <div class="tech-chip"><span>🔬</span> MobSF 静态分析</div>
+    <div class="tech-chip"><span>🤖</span> Gemini AI 摘要</div>
+    <div class="tech-chip"><span>🦠</span> Exodus 追踪器库</div>
+    <div class="tech-chip"><span>☕</span> jadx 反编译</div>
+    <div class="tech-chip"><span>🔐</span> APKiD 识别</div>
+  </div>
+</div>
+
+<!-- ═══ FEATURES ═══════════════════════════════════════════ -->
+<section id="features">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-eyebrow">核心功能</div>
+      <h2>全方位安全检测，<span class="gradient-text">一次扫描搞定</span></h2>
+      <p>从代码静态分析到 AI 智能解读，覆盖移动应用安全的每一个关键维度</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">🔍</div>
+        <h3>深度静态分析</h3>
+        <p>基于 MobSF 引擎，反编译 APK/IPA 源码，检测危险 API 调用、硬编码密钥、不安全的网络配置与 WebView 漏洞。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-purple">🤖</div>
+        <h3>AI 安全摘要</h3>
+        <p>Gemini AI 读取全量扫描数据，用通俗语言生成结构化安全分析报告，一键了解应用的核心风险与改进建议。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-orange">🦠</div>
+        <h3>追踪器 SDK 识别</h3>
+        <p>对接 Exodus Privacy 数据库，精确识别 Facebook、Google、Firebase 等第三方追踪 SDK，量化隐私风险。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green">🛡️</div>
+        <h3>权限安全审计</h3>
+        <p>分析所有申请权限的危险等级与实际用途，识别过度授权与权限滥用，保护用户隐私不被侵害。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-pink">📜</div>
+        <h3>清单文件检查</h3>
+        <p>解析 AndroidManifest.xml / Info.plist，检测 Activity 导出风险、ATS 配置缺失、证书签名版本等关键安全项。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-yellow">📊</div>
+        <h3>可视化安全评分</h3>
+        <p>基于 MobSF 综合算法输出 0–100 安全评分，配合风险等级标签，直观呈现应用整体安全状况。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ════════════════════════════════════════ -->
+<section id="how">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-eyebrow">使用流程</div>
+      <h2>三步完成<span class="gradient-text">专业安全检测</span></h2>
+      <p>无需安装任何工具，上传文件即可开始分析</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <h3>上传应用文件</h3>
+        <p>支持 Android APK 和 iOS IPA，拖拽或点击上传，最大 500 MB，传输全程加密。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <h3>AI 引擎自动分析</h3>
+        <p>MobSF 深度反编译分析，Gemini AI 同步生成安全摘要，过程全自动无需手动干预。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">③</div>
+        <h3>获取专业安全报告</h3>
+        <p>报告包含评分、风险项、权限列表、追踪器及 AI 建议，支持下载 HTML 报告存档。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DETECTION ═══════════════════════════════════════════ -->
+<section id="detection">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-eyebrow">检测维度</div>
+      <h2>覆盖 <span class="gradient-text">50+ 安全检测项</span></h2>
+      <p>从代码到配置，从权限到网络，全面覆盖移动安全最佳实践</p>
+    </div>
+    <div class="detection-grid">
+      <div class="detect-item"><span class="detect-icon">🔑</span><span class="detect-text">硬编码 API 密钥</span></div>
+      <div class="detect-item"><span class="detect-icon">🌐</span><span class="detect-text">不安全 HTTP 通信</span></div>
+      <div class="detect-item"><span class="detect-icon">📱</span><span class="detect-text">危险权限申请</span></div>
+      <div class="detect-item"><span class="detect-icon">🦠</span><span class="detect-text">第三方追踪 SDK</span></div>
+      <div class="detect-item"><span class="detect-icon">🪟</span><span class="detect-text">WebView 注入风险</span></div>
+      <div class="detect-item"><span class="detect-icon">📜</span><span class="detect-text">Activity 导出风险</span></div>
+      <div class="detect-item"><span class="detect-icon">🔐</span><span class="detect-text">弱加密算法使用</span></div>
+      <div class="detect-item"><span class="detect-icon">📡</span><span class="detect-text">动态代码加载</span></div>
+      <div class="detect-item"><span class="detect-icon">🗃️</span><span class="detect-text">敏感数据明文存储</span></div>
+      <div class="detect-item"><span class="detect-icon">🛂</span><span class="detect-text">证书校验绕过</span></div>
+      <div class="detect-item"><span class="detect-icon">📦</span><span class="detect-text">调试模式开启</span></div>
+      <div class="detect-item"><span class="detect-icon">🔏</span><span class="detect-text">签名证书分析</span></div>
+      <div class="detect-item"><span class="detect-icon">🍎</span><span class="detect-text">ATS 配置缺失（iOS）</span></div>
+      <div class="detect-item"><span class="detect-icon">📋</span><span class="detect-text">清单文件漏洞</span></div>
+      <div class="detect-item"><span class="detect-icon">⚙️</span><span class="detect-text">Native 库安全分析</span></div>
+      <div class="detect-item"><span class="detect-icon">🧬</span><span class="detect-text">APK 指纹识别</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRICING ═════════════════════════════════════════════ -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-eyebrow">灵活定价</div>
+      <h2>按需购买，<span class="gradient-text">无订阅负担</span></h2>
+      <p>购买扫描次数，按实际使用量付费，Credits 永久有效</p>
+    </div>
+    <div class="pricing-grid">
+
+      <div class="price-card">
+        <div class="price-name">入门包</div>
+        <div class="price-credits">10</div>
+        <div class="price-credits-sub">次扫描</div>
+        <div class="price-amount">$1.5</div>
+        <div class="price-amount-sub">≈ ¥10.8 · USDT 支付</div>
+        <ul class="price-features">
+          <li>Android APK 检测</li>
+          <li>iOS IPA 检测</li>
+          <li>AI 安全摘要</li>
+          <li>报告下载</li>
+        </ul>
+        <a href="/app" class="price-btn price-btn-outline">立即购买</a>
+      </div>
+
+      <div class="price-card featured">
+        <div class="price-badge">最受欢迎</div>
+        <div class="price-name">专业包</div>
+        <div class="price-credits">50</div>
+        <div class="price-credits-sub">次扫描</div>
+        <div class="price-amount">$5.5</div>
+        <div class="price-amount-sub">≈ ¥39.6 · 节省 27%</div>
+        <ul class="price-features">
+          <li>Android APK 检测</li>
+          <li>iOS IPA 检测</li>
+          <li>AI 安全摘要</li>
+          <li>报告下载</li>
+        </ul>
+        <a href="/app" class="price-btn price-btn-primary">立即购买</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-name">团队包</div>
+        <div class="price-credits">100</div>
+        <div class="price-credits-sub">次扫描</div>
+        <div class="price-amount">$10</div>
+        <div class="price-amount-sub">≈ ¥72 · 节省 33%</div>
+        <ul class="price-features">
+          <li>Android APK 检测</li>
+          <li>iOS IPA 检测</li>
+          <li>AI 安全摘要</li>
+          <li>报告下载</li>
+        </ul>
+        <a href="/app" class="price-btn price-btn-outline">立即购买</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-name">企业包</div>
+        <div class="price-credits">200</div>
+        <div class="price-credits-sub">次扫描</div>
+        <div class="price-amount">$18</div>
+        <div class="price-amount-sub">≈ ¥130 · 节省 40%</div>
+        <ul class="price-features">
+          <li>Android APK 检测</li>
+          <li>iOS IPA 检测</li>
+          <li>AI 安全摘要</li>
+          <li>报告下载</li>
+        </ul>
+        <a href="/app" class="price-btn price-btn-outline">立即购买</a>
+      </div>
+
+    </div>
+
+    <p style="text-align:center;margin-top:24px;font-size:.82em;color:var(--muted)">
+      支持 USDT (TRC20) 支付 · Credits 永不过期 · 首次注册可使用兑换码
+    </p>
+  </div>
+</section>
+
+<!-- ═══ FAQ ════════════════════════════════════════════════ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-eyebrow">常见问题</div>
+      <h2>你可能想知道的<span class="gradient-text">一切</span></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item open">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          上传的 APK / IPA 文件安全吗？会被存储吗？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          上传的文件仅用于本次安全分析，分析完成后临时文件立即删除，不会长期保存您的应用文件。扫描报告仅存储在服务器内存中，随服务重启清除。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          支持哪些文件格式？文件大小限制是多少？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          支持 Android APK 和 iOS IPA 格式，最大支持 500 MB 的文件上传。分析时间根据文件大小和复杂度在 2–20 分钟不等。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Credits 会过期吗？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          不会。购买的 Credits 永久有效，不设任何过期时间，按实际使用量扣减，不使用不收费。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          分析报告包含哪些内容？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          报告包含：安全评分、危险权限列表、第三方追踪器、代码安全问题（Critical/High/Warning 分级）、清单文件漏洞、AI 生成的专业安全摘要与改进建议。支持下载 HTML 格式报告。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          如何使用兑换码？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          注册账号后，在控制台点击「兑换码」按钮，输入格式为 XXXX-XXXX-XXXX 的兑换码即可兑换对应 Credits。兑换码由平台管理员发放，可关注官方渠道获取优惠。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA BANNER ═════════════════════════════════════════ -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-inner">
+      <h2>立即开始保护<br><span class="gradient-text">您的移动应用</span></h2>
+      <p>注册即可体验，专业安全报告触手可及</p>
+      <div class="cta-actions">
+        <a href="/app" class="btn-hero-primary">🚀 免费注册，立即扫描</a>
+        <a href="/app" class="btn-hero-ghost">已有账号？直接登录</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-brand">🛡️ AppSec AI</div>
+  <div class="footer-links">
+    <a href="#features">功能</a>
+    <a href="#pricing">定价</a>
+    <a href="#faq">FAQ</a>
+    <a href="/app">控制台</a>
+  </div>
+  <div class="footer-copy">© 2026 AppSec AI · 专业移动安全检测</div>
+</footer>
+
+<script>
+// ── FAQ toggle ─────────────────────────────────────────────
+function toggleFaq(btn) {
+  const item = btn.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// ── Smooth nav active state on scroll ─────────────────────
+const sections = document.querySelectorAll('section[id]');
+const navLinks  = document.querySelectorAll('.nav-links a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => {
+        a.style.color = a.getAttribute('href') === '#' + e.target.id
+          ? 'var(--blue-l)' : '';
+      });
+    }
+  });
+}, { threshold: 0.35 });
+sections.forEach(s => observer.observe(s));
+
+// ── Animate stats on scroll ────────────────────────────────
+function animateNum(el, target, suffix, duration = 1200) {
+  const isFloat = target % 1 !== 0;
+  let start = null;
+  const step = ts => {
+    if (!start) start = ts;
+    const prog = Math.min((ts - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - prog, 3);
+    const cur  = isFloat ? (target * ease).toFixed(1) : Math.floor(target * ease);
+    el.textContent = cur + suffix;
+    if (prog < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+const statNums = document.querySelectorAll('.stat-num');
+const statsObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting || e.target.dataset.animated) return;
+    e.target.dataset.animated = '1';
+    const raw = e.target.textContent;
+    const m = raw.match(/^([\d.]+)(.*)$/);
+    if (m) animateNum(e.target, parseFloat(m[1]), m[2]);
+  });
+}, { threshold: 0.5 });
+statNums.forEach(el => statsObserver.observe(el));
+</script>
+</body>
+</html>

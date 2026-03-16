@@ -910,6 +910,14 @@ async def favicon():
 
 
 @app.get("/", response_class=HTMLResponse)
+async def landing():
+    html_path = os.path.join(os.path.dirname(__file__), "static", "landing.html")
+    with open(html_path, encoding="utf-8") as f:
+        content = f.read()
+    return HTMLResponse(content=content, headers={"Cache-Control": "no-store"})
+
+
+@app.get("/app", response_class=HTMLResponse)
 async def index():
     html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     with open(html_path, encoding="utf-8") as f:
