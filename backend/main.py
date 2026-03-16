@@ -999,6 +999,7 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
     """Run MobSF scan. tmp_path is a temp file on disk; deleted when done."""
     mobsf_url = os.getenv("MOBSF_URL", "http://localhost:8000")
     headers = _mobsf_headers()
+    scan_id: str | None = None   # set after upload; used in finally to delete from MobSF
     try:
         # 1. Upload file to MobSF
         _tasks[task_id]["status"] = "uploading"
@@ -1175,11 +1176,24 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
     except Exception as e:
         _tasks[task_id].update({"status": "error", "error": str(e)})
     finally:
-        # Always clean up the temp file regardless of outcome
+        # 1. Delete the local temp file
         try:
             os.unlink(tmp_path)
         except OSError:
             pass
+        # 2. Delete the file from MobSF storage (protects user privacy, frees disk)
+        if scan_id:
+            try:
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(connect=10, read=30, write=10, pool=10)
+                ) as client:
+                    await client.post(
+                        f"{mobsf_url}/api/v1/delete_scan",
+                        data={"hash": scan_id},
+                        headers=headers,
+                    )
+            except Exception:
+                pass  # deletion failure is non-fatal
 
 
 @app.get("/scan/status/{task_id}")
