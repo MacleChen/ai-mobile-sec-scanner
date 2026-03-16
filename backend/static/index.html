@@ -952,7 +952,8 @@ const LANG = {
     feat4Desc:  '支持 Android APK 与 iOS IPA，快速完成扫描',
     btnScan:      '开始扫描',
     btnCopy:      '复制',
-    scoreDesc:    '综合危险权限、清单问题与追踪器数量计算',
+    scoreTitle:   '安全评分',
+    scoreDesc:    '基于 MobSF 综合评估（权限、漏洞、追踪器等）',
     scoreLabels:  { safe:'安全', medium:'中等风险', high:'高风险', critical:'严重风险' },
     payUsdt:      'USDT 支付（TRC20）',
     buyTitle:     '💳 购买扫描次数',
@@ -1029,7 +1030,8 @@ const LANG = {
     feat4Desc:  'Supports Android APK and iOS IPA for fast scanning',
     btnScan:      'Start Scan',
     btnCopy:      'Copy',
-    scoreDesc:    'Calculated from dangerous permissions, manifest issues & trackers',
+    scoreTitle:   'Security Score',
+    scoreDesc:    'MobSF comprehensive assessment (permissions, vulnerabilities, trackers)',
     scoreLabels:  { safe:'Secure', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' },
     payUsdt:      'Pay with USDT (TRC20)',
     buyTitle:     '💳 Buy Scan Credits',
@@ -1709,30 +1711,40 @@ function copyText(elId, btn) {
 
 // ── Security score ──────────────────────────────────────────
 function renderScore(d) {
-  const critical = d.risk_counts?.critical || 0;
-  const high     = d.risk_counts?.high     || 0;
-  const warning  = d.risk_counts?.warning  || 0;
-  const trackers = d.tracker_count         || 0;
-  const perms    = (d.dangerous_permissions || []).length;
-  let score = 100 - critical * 20 - high * 8 - warning * 3 - trackers * 2 - perms * 1;
-  score = Math.max(0, Math.min(100, score));
-  const arc = document.getElementById('score-arc');
-  const num = document.getElementById('score-num');
+  const l = L();
+  let score;
+  // Prefer MobSF's own security_score (0-100, higher = safer)
+  const mobsfScore = parseFloat(d.security_score);
+  if (!isNaN(mobsfScore) && mobsfScore > 0) {
+    score = Math.round(mobsfScore);
+  } else {
+    // Fallback: calculate from risk factors
+    const critical = d.risk_counts?.critical || 0;
+    const high     = d.risk_counts?.high     || 0;
+    const warning  = d.risk_counts?.warning  || 0;
+    const trackers = d.tracker_count         || 0;
+    const perms    = (d.dangerous_permissions || []).length;
+    score = 100 - critical * 15 - high * 6 - warning * 2 - trackers * 2 - Math.min(perms, 20);
+    score = Math.max(5, Math.min(100, score));
+  }
+  const arc   = document.getElementById('score-arc');
+  const num   = document.getElementById('score-num');
   const title = document.getElementById('score-title');
   const circumference = 289;
   const offset = circumference - (score / 100) * circumference;
   let color, label;
-  if (score >= 80)      { color = '#16a34a'; label = '安全'; }
-  else if (score >= 60) { color = '#d97706'; label = '中等风险'; }
-  else if (score >= 40) { color = '#ea580c'; label = '高风险'; }
-  else                  { color = '#dc2626'; label = '严重风险'; }
+  const sl = l.scoreLabels || {};
+  if (score >= 80)      { color = '#16a34a'; label = sl.safe     || 'Secure'; }
+  else if (score >= 60) { color = '#d97706'; label = sl.medium   || 'Medium Risk'; }
+  else if (score >= 40) { color = '#ea580c'; label = sl.high     || 'High Risk'; }
+  else                  { color = '#dc2626'; label = sl.critical  || 'Critical Risk'; }
   setTimeout(() => {
     arc.style.stroke = color;
     arc.style.strokeDashoffset = offset;
     num.style.color = color;
   }, 100);
   num.textContent = score;
-  title.textContent = `安全评分 · ${label}`;
+  title.textContent = `${l.scoreTitle} · ${label}`;
 }
 
 // ── File preview ────────────────────────────────────────────
