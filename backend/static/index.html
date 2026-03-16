@@ -476,7 +476,63 @@
       .lang-btn  { position: relative; top: auto; right: auto; transform: none; }
       .header { flex-wrap: wrap; height: auto; padding: 10px 5%; gap: 8px; justify-content: space-between; }
       .header h1 { order: 1; font-size: 1em; }
+      .home-btn span { display: none; }
+      .feat-card { padding: 18px 14px; }
     }
+
+    /* ── Home back button ───────────────────── */
+    .home-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--muted); text-decoration: none; font-size: .82em; font-weight: 600;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 14px; transition: all .2s; white-space: nowrap;
+    }
+    .home-btn:hover { color: var(--text); border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
+    .home-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Feature cards (frosted glass) ─────── */
+    .features-strip { padding: 40px 20px; }
+    .feat-card {
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 18px;
+      text-align: center;
+      backdrop-filter: blur(14px);
+      transition: all .25s;
+      position: relative; overflow: hidden;
+    }
+    .feat-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(59,130,246,.07), rgba(139,92,246,.04));
+      opacity: 0; transition: opacity .3s;
+    }
+    .feat-card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.35); }
+    .feat-card:hover::before { opacity: 1; }
+    .feat-icon-box {
+      width: 54px; height: 54px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5em; margin: 0 auto 16px;
+      position: relative; z-index: 1;
+      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    }
+    .fi-blue   { background: linear-gradient(135deg, rgba(59,130,246,.25), rgba(59,130,246,.12)); border: 1px solid rgba(59,130,246,.25); }
+    .fi-purple { background: linear-gradient(135deg, rgba(139,92,246,.25), rgba(139,92,246,.12)); border: 1px solid rgba(139,92,246,.25); }
+    .fi-green  { background: linear-gradient(135deg, rgba(16,185,129,.25), rgba(16,185,129,.12)); border: 1px solid rgba(16,185,129,.25); }
+    .fi-orange { background: linear-gradient(135deg, rgba(249,115,22,.25), rgba(249,115,22,.12)); border: 1px solid rgba(249,115,22,.25); }
+    .feat-title { font-weight: 700; font-size: .95em; color: var(--text); margin-bottom: 8px; position: relative; z-index: 1; }
+    .feat-desc  { font-size: .82em; color: var(--muted); line-height: 1.6; position: relative; z-index: 1; }
+
+    /* ── Telegram badge ──────────────────────── */
+    .tg-link {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(0,136,204,.12); border: 1px solid rgba(0,136,204,.28);
+      border-radius: 8px; padding: 5px 14px;
+      color: #38bdf8; text-decoration: none; font-size: .85em; font-weight: 600;
+      transition: all .2s;
+    }
+    .tg-link:hover { background: rgba(0,136,204,.22); color: #7dd3fc; border-color: rgba(0,136,204,.45); }
+    .tg-link svg { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -493,6 +549,10 @@
 <div class="header">
   <!-- Auth area (top-left) -->
   <div class="auth-area" id="auth-area">
+    <a href="/" class="home-btn">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h4a1 1 0 001-1v-3h2v3a1 1 0 001 1h4a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      <span>首页</span>
+    </a>
     <!-- Not logged in -->
     <button id="login-btn" class="auth-btn" onclick="openLoginModal()">登录 / 注册</button>
     <!-- Logged in (hidden until auth) -->
@@ -669,22 +729,22 @@
 <div id="features-strip" class="features-strip">
   <div class="feat-grid">
     <div class="feat-card">
-      <div class="feat-icon">🔍</div>
+      <div class="feat-icon-box fi-blue">🔍</div>
       <div class="feat-title" id="feat1-title">深度静态分析</div>
       <div class="feat-desc"  id="feat1-desc">基于 MobSF 引擎，检测权限滥用、代码漏洞与不安全配置</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🤖</div>
+      <div class="feat-icon-box fi-purple">🤖</div>
       <div class="feat-title" id="feat2-title">AI 智能报告</div>
       <div class="feat-desc"  id="feat2-desc">Gemini AI 自动分析风险，生成中英文安全摘要</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">📄</div>
+      <div class="feat-icon-box fi-green">📄</div>
       <div class="feat-title" id="feat3-title">一键导出报告</div>
       <div class="feat-desc"  id="feat3-desc">完整 HTML 报告，可提交团队审查或合规审计</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">⚡</div>
+      <div class="feat-icon-box fi-orange">⚡</div>
       <div class="feat-title" id="feat4-title">分钟级出结果</div>
       <div class="feat-desc"  id="feat4-desc">支持 Android APK 与 iOS IPA，快速完成扫描</div>
     </div>
@@ -872,7 +932,10 @@
     <span>·</span>
     <span id="footer-support">支持 Android APK / iOS IPA</span>
     <span>·</span>
-    <a href="https://t.me/ChenSirLite" target="_blank" rel="noopener">💬 Telegram: @ChenSirLite</a>
+    <a href="https://t.me/ChenSirLite" target="_blank" rel="noopener" class="tg-link">
+      <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      @ChenSirLite
+    </a>
   </div>
   <div id="footer-copy">© 2026 maclechen.top &nbsp;·&nbsp; Powered by MobSF &amp; Gemini AI</div>
 </footer>
