@@ -103,11 +103,10 @@
     /* ── Hero title banner ─────────────────── */
     .hero-title-banner {
       position: relative;
-      display: inline-block;
-      max-width: 760px;
+      display: block;
       width: 100%;
-      margin: 0 auto 36px;
-      padding: 36px 48px 40px;
+      margin: 0 0 36px;
+      padding: 36px 44px 40px;
       border-radius: 28px;
       background: rgba(255,255,255,.022);
       border: 1px solid rgba(59,130,246,.22);
@@ -116,7 +115,7 @@
         0 0 0 1px rgba(255,255,255,.04),
         0 0 80px rgba(59,130,246,.14),
         0 24px 80px rgba(0,0,0,.4);
-      text-align: center;
+      text-align: left;
     }
     .hero-title-banner::before {
       content: ''; position: absolute; inset: 0; border-radius: inherit;
@@ -134,7 +133,7 @@
     }
     .hero-title-banner h1 { margin-bottom: 0; position: relative; z-index: 1; }
     .hero-badge-row {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
+      display: flex; align-items: center; justify-content: flex-start; gap: 12px;
       margin-bottom: 20px; position: relative; z-index: 1;
     }
     .hero-badge-label {
@@ -142,7 +141,8 @@
       color: var(--muted);
     }
     @media (max-width: 680px) {
-      .hero-title-banner { padding: 28px 24px 32px; }
+      .hero-title-banner { padding: 28px 24px 32px; text-align: center; }
+      .hero-badge-row { justify-content: center; }
     }
 
     /* ── Section wrapper ───────────────────── */
@@ -153,10 +153,21 @@
     /* ── Hero ──────────────────────────────── */
     #hero {
       min-height: 100vh; display: flex; align-items: center;
-      padding: 96px 5% 72px;
-      text-align: center;
+      padding: 96px 0 72px;
     }
-    .hero-inner { max-width: 800px; margin: 0 auto; }
+    .hero-split {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; width: 100%;
+    }
+    .hero-left { }
+    .hero-right { position: relative; }
+    @media (max-width: 960px) {
+      .hero-split { grid-template-columns: 1fr; gap: 48px; }
+      .hero-left { text-align: center; }
+      .hero-title-banner { text-align: center; }
+      .hero-badge-row { justify-content: center; }
+      .hero-actions { justify-content: center; }
+      .stats-strip { justify-content: center; }
+    }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 7px;
       background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3);
@@ -181,10 +192,10 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     .hero-sub {
-      font-size: clamp(1em, 2.2vw, 1.2em); color: var(--muted);
-      max-width: 580px; margin: 0 auto 40px; line-height: 1.7;
+      font-size: clamp(1em, 2.2vw, 1.15em); color: var(--muted);
+      margin: 0 0 40px; line-height: 1.7;
     }
-    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .hero-actions { display: flex; gap: 14px; justify-content: flex-start; flex-wrap: wrap; }
     .btn-hero-primary {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 14px 32px;
@@ -206,8 +217,8 @@
 
     /* ── Stats strip ───────────────────────── */
     .stats-strip {
-      display: flex; justify-content: center; gap: 48px;
-      margin-top: 64px; flex-wrap: wrap;
+      display: flex; justify-content: flex-start; gap: 40px;
+      margin-top: 48px; flex-wrap: wrap;
     }
     .stat-item { text-align: center; }
     .stat-num {
@@ -219,13 +230,25 @@
 
     /* ── Scan preview ──────────────────────── */
     .scan-preview-wrap {
-      margin-top: 72px; position: relative;
+      position: relative;
+    }
+    .scan-preview-wrap::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: rgba(59,130,246,.12);
+      filter: blur(80px); pointer-events: none;
+    }
+    .scan-preview-wrap::after {
+      content: ''; position: absolute; bottom: -40px; left: -40px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(139,92,246,.1);
+      filter: blur(60px); pointer-events: none;
     }
     .scan-preview {
       background: var(--bg2); border: 1px solid var(--border);
       border-radius: 20px; overflow: hidden;
       box-shadow: 0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05);
-      max-width: 860px; margin: 0 auto;
+      position: relative; z-index: 1;
     }
     .preview-bar {
       background: rgba(255,255,255,.04); padding: 12px 20px;
@@ -375,21 +398,33 @@
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; position: relative; }
     @media (max-width: 680px) { .steps { grid-template-columns: 1fr; } }
     .steps::before {
-      content: ''; position: absolute; top: 48px; left: 16.66%;
-      width: 66.66%; height: 1px;
-      background: linear-gradient(90deg, var(--blue), var(--purple));
-      opacity: .35;
+      content: ''; position: absolute; top: 60px; left: 16.66%;
+      width: 66.66%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--blue), var(--purple), transparent);
+      opacity: .4;
     }
     @media (max-width: 680px) { .steps::before { display: none; } }
-    .step { text-align: center; padding: 0 24px; }
+    .step { text-align: center; padding: 0 20px; }
     .step-num {
-      width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 28px;
-      background: linear-gradient(135deg, var(--blue), var(--purple));
+      width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 32px;
+      background: linear-gradient(135deg, var(--blue) 0%, #6366f1 60%, var(--purple) 100%);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.2em; font-weight: 900; position: relative; z-index: 1;
-      box-shadow: 0 0 0 10px rgba(59,130,246,.1), 0 12px 40px rgba(59,130,246,.35);
+      font-size: 3em; font-weight: 900; letter-spacing: -.04em;
+      color: #fff; position: relative; z-index: 1;
+      box-shadow:
+        0 0 0 12px rgba(59,130,246,.12),
+        0 0 0 24px rgba(59,130,246,.05),
+        0 16px 48px rgba(59,130,246,.45);
+      transition: transform .25s, box-shadow .25s;
     }
-    .step h3 { font-size: 1em; font-weight: 800; margin-bottom: 10px; }
+    .step:hover .step-num {
+      transform: translateY(-4px) scale(1.04);
+      box-shadow:
+        0 0 0 14px rgba(59,130,246,.14),
+        0 0 0 28px rgba(59,130,246,.06),
+        0 20px 56px rgba(59,130,246,.55);
+    }
+    .step h3 { font-size: 1.05em; font-weight: 800; margin-bottom: 10px; }
     .step p   { font-size: .84em; color: var(--muted); line-height: 1.65; }
 
     /* ── Detection ─────────────────────────── */
@@ -562,57 +597,62 @@
 <!-- ═══ HERO ═══════════════════════════════════════════════ -->
 <section id="hero">
   <div class="container">
-    <div class="hero-inner">
-      <div class="hero-title-banner">
-        <div class="hero-badge-row">
-          <div class="hero-badge" style="margin-bottom:0">
-            <span class="dot"></span>
-            AI 驱动 · 实时分析 · 专业报告
+    <div class="hero-split">
+
+      <!-- Left column: text + CTA + stats -->
+      <div class="hero-left">
+        <div class="hero-title-banner">
+          <div class="hero-badge-row">
+            <div class="hero-badge" style="margin-bottom:0">
+              <span class="dot"></span>
+              AI 驱动 · 实时分析 · 专业报告
+            </div>
+          </div>
+          <h1>
+            移动应用安全<br>
+            <span class="gradient-text">深度检测平台</span>
+          </h1>
+        </div>
+
+        <p class="hero-sub">
+          上传 APK / IPA，MobSF 引擎秒级深度扫描，AI 自动生成专业安全报告。
+          识别权限滥用、代码漏洞、追踪器与证书配置问题，守护每一位用户的隐私与数据安全。
+        </p>
+
+        <div class="hero-actions">
+          <a href="/app" class="btn-hero-primary">
+            🚀 立即免费体验
+          </a>
+          <a href="#how" class="btn-hero-ghost">
+            了解工作原理 ↓
+          </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-strip">
+          <div class="stat-item">
+            <div class="stat-num">500MB</div>
+            <div class="stat-label">最大文件支持</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">2 分钟</div>
+            <div class="stat-label">平均出报告时间</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">50+</div>
+            <div class="stat-label">安全检测维度</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">99%</div>
+            <div class="stat-label">漏洞检出率</div>
           </div>
         </div>
-        <h1>
-          移动应用安全<br>
-          <span class="gradient-text">深度检测平台</span>
-        </h1>
       </div>
 
-      <p class="hero-sub">
-        上传 APK / IPA，MobSF 引擎秒级深度扫描，AI 自动生成专业安全报告。
-        识别权限滥用、代码漏洞、追踪器与证书配置问题，守护每一位用户的隐私与数据安全。
-      </p>
-
-      <div class="hero-actions">
-        <a href="/app" class="btn-hero-primary">
-          🚀 立即免费体验
-        </a>
-        <a href="#how" class="btn-hero-ghost">
-          了解工作原理 ↓
-        </a>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-strip">
-        <div class="stat-item">
-          <div class="stat-num">500MB</div>
-          <div class="stat-label">最大文件支持</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">2 分钟</div>
-          <div class="stat-label">平均出报告时间</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">50+</div>
-          <div class="stat-label">安全检测维度</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">99%</div>
-          <div class="stat-label">漏洞检出率</div>
-        </div>
-      </div>
-
-      <!-- Scan preview mockup -->
-      <div class="scan-preview-wrap">
-        <div class="scan-preview">
+      <!-- Right column: scan preview mockup -->
+      <div class="hero-right">
+        <div class="scan-preview-wrap">
+          <div class="scan-preview">
           <div class="preview-bar">
             <div class="preview-dot" style="background:#ff5f57"></div>
             <div class="preview-dot" style="background:#febc2e"></div>
@@ -655,8 +695,9 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
+      </div><!-- /hero-right -->
+    </div><!-- /hero-split -->
+  </div><!-- /container -->
 </section>
 
 <!-- ═══ TRUST BAR ══════════════════════════════════════════ -->
@@ -794,17 +835,17 @@
     </div>
     <div class="steps">
       <div class="step">
-        <div class="step-num">①</div>
+        <div class="step-num">1</div>
         <h3>上传应用文件</h3>
         <p>支持 Android APK 和 iOS IPA，拖拽或点击上传，最大 500 MB，传输全程加密。</p>
       </div>
       <div class="step">
-        <div class="step-num">②</div>
+        <div class="step-num">2</div>
         <h3>AI 引擎自动分析</h3>
         <p>MobSF 深度反编译分析，Gemini AI 同步生成安全摘要，过程全自动无需手动干预。</p>
       </div>
       <div class="step">
-        <div class="step-num">③</div>
+        <div class="step-num">3</div>
         <h3>获取专业安全报告</h3>
         <p>报告包含评分、风险项、权限列表、追踪器及 AI 建议，支持下载 HTML 报告存档。</p>
       </div>
