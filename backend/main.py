@@ -906,7 +906,50 @@ async def health():
 async def favicon():
     svg_path = os.path.join(os.path.dirname(__file__), "static", "favicon.svg")
     with open(svg_path, encoding="utf-8") as f:
-        return Response(content=f.read(), media_type="image/svg+xml")
+        return Response(content=f.read(), media_type="image/svg+xml",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/robots.txt")
+async def robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /app\n"
+        "Disallow: /admin\n"
+        "Disallow: /auth/\n"
+        "Disallow: /orders/\n"
+        "Disallow: /scan/\n"
+        "Disallow: /payment/\n"
+        "\n"
+        "Sitemap: https://maclechen.top/sitemap.xml\n"
+    )
+    return Response(content=content, media_type="text/plain",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+        '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+        '  <url>\n'
+        '    <loc>https://maclechen.top/</loc>\n'
+        '    <lastmod>2026-03-17</lastmod>\n'
+        '    <changefreq>weekly</changefreq>\n'
+        '    <priority>1.0</priority>\n'
+        '  </url>\n'
+        '  <url>\n'
+        '    <loc>https://maclechen.top/app</loc>\n'
+        '    <lastmod>2026-03-17</lastmod>\n'
+        '    <changefreq>monthly</changefreq>\n'
+        '    <priority>0.5</priority>\n'
+        '  </url>\n'
+        '</urlset>\n'
+    )
+    return Response(content=content, media_type="application/xml",
+                    headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -914,7 +957,8 @@ async def landing():
     html_path = os.path.join(os.path.dirname(__file__), "static", "landing.html")
     with open(html_path, encoding="utf-8") as f:
         content = f.read()
-    return HTMLResponse(content=content, headers={"Cache-Control": "no-store"})
+    # Allow crawlers to cache landing page for 1 hour
+    return HTMLResponse(content=content, headers={"Cache-Control": "public, max-age=3600"})
 
 
 @app.get("/app", response_class=HTMLResponse)
