@@ -1127,12 +1127,30 @@ async def dist_upload(
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
     if ext not in ("apk", "ipa"):
         raise HTTPException(400, "只支持 APK 或 IPA 文件")
-    # Generate unique slug
-    for _ in range(10):
-        slug = _gen_slug()
-        with _db() as c:
-            if not c.execute("SELECT 1 FROM app_releases WHERE slug=?", (slug,)).fetchone():
-                break
+
+    resolved_name = app_name.strip() or (file.filename or "未命名").rsplit(".", 1)[0]
+
+    # ── Deduplication: same user + app_name + file_type → update existing ──
+    with _db() as c:
+        existing = c.execute(
+            "SELECT slug FROM app_releases WHERE user_id=? AND app_name=? AND file_type=?",
+            (user["id"], resolved_name, ext),
+        ).fetchone()
+
+    if existing:
+        slug = existing["slug"]
+        old_file = DIST_DIR / f"{slug}.{ext}"
+        if old_file.exists():
+            old_file.unlink()
+        is_update = True
+    else:
+        for _ in range(10):
+            slug = _gen_slug()
+            with _db() as c:
+                if not c.execute("SELECT 1 FROM app_releases WHERE slug=?", (slug,)).fetchone():
+                    break
+        is_update = False
+
     # Save file
     dest = DIST_DIR / f"{slug}.{ext}"
     size = 0
@@ -1140,21 +1158,35 @@ async def dist_upload(
         while chunk := await file.read(1024 * 256):
             f.write(chunk)
             size += len(chunk)
+
     # Compute expiry
     expires_at = None
     if expires_days and expires_days > 0:
         expires_at = (datetime.now() + timedelta(days=expires_days)).strftime("%Y-%m-%d %H:%M:%S")
+
     with _db() as c:
-        c.execute(
-            """INSERT INTO app_releases
-               (slug, user_id, app_name, version, file_type, file_size,
-                description, expires_at, max_downloads)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
-            (slug, user["id"], app_name.strip() or file.filename or "未命名",
-             version.strip(), ext, size, description.strip(), expires_at, max(0, max_downloads)),
-        )
+        if is_update:
+            c.execute(
+                """UPDATE app_releases SET
+                   version=?, file_size=?, description=?, expires_at=?,
+                   max_downloads=?, download_count=0, is_active=1,
+                   created_at=datetime('now')
+                   WHERE slug=?""",
+                (version.strip(), size, description.strip(), expires_at,
+                 max(0, max_downloads), slug),
+            )
+        else:
+            c.execute(
+                """INSERT INTO app_releases
+                   (slug, user_id, app_name, version, file_type, file_size,
+                    description, expires_at, max_downloads)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (slug, user["id"], resolved_name, version.strip(), ext, size,
+                 description.strip(), expires_at, max(0, max_downloads)),
+            )
+
     site = os.getenv("SITE_URL", "https://maclechen.top")
-    return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}"}
+    return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}", "updated": is_update}
 
 
 @app.get("/dist/list")

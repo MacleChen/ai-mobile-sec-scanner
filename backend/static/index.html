@@ -592,6 +592,23 @@
     .dist-del-btn:hover { color: #f87171; background: rgba(239,68,68,.1); }
     .dist-status-ok  { color: var(--green); font-size: .78em; font-weight: 700; }
     .dist-status-exp { color: #f87171;      font-size: .78em; font-weight: 700; }
+    /* Progress bar */
+    .dist-progress-wrap {
+      margin-top: 14px; display: none;
+    }
+    .dist-progress-bar {
+      width: 100%; height: 6px; background: rgba(255,255,255,.08);
+      border-radius: 6px; overflow: hidden;
+    }
+    .dist-progress-fill {
+      height: 100%; width: 0%; border-radius: 6px;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      transition: width .2s ease;
+    }
+    .dist-progress-label {
+      display: flex; justify-content: space-between;
+      font-size: .78em; color: var(--muted); margin-top: 6px;
+    }
     .dist-qr-pop {
       position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
       display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px;
@@ -1175,6 +1192,16 @@
         </svg>
         <span id="dist-submit-text">上传并生成分发链接</span>
       </button>
+      <!-- Upload progress -->
+      <div class="dist-progress-wrap" id="dist-progress-wrap">
+        <div class="dist-progress-bar">
+          <div class="dist-progress-fill" id="dist-progress-fill"></div>
+        </div>
+        <div class="dist-progress-label">
+          <span id="dist-progress-text">上传中...</span>
+          <span id="dist-progress-pct">0%</span>
+        </div>
+      </div>
     </div>
 
     <!-- My releases card -->
@@ -1365,8 +1392,9 @@ const LANG = {
     distQrHint:      '扫码下载',
     distCopyLink:    '复制链接',
     distClose:       '关闭',
-    distUploading:   '上传中，请稍候...',
+    distUploading:   '上传中…',
     distSuccess:     '✅ 上传成功，分发链接已生成',
+    distUpdated:     '✅ 已更新，分发链接不变',
     distErrNoFile:   '请先选择要上传的 APK 或 IPA 文件',
     distErrLogin:    '请先登录后再上传',
     distErrUpload:   '上传失败：',
@@ -1522,8 +1550,9 @@ const LANG = {
     distQrHint:      'Scan to download',
     distCopyLink:    'Copy Link',
     distClose:       'Close',
-    distUploading:   'Uploading, please wait...',
+    distUploading:   'Uploading…',
     distSuccess:     '✅ Upload successful, link generated',
+    distUpdated:     '✅ App updated — link unchanged',
     distErrNoFile:   'Please select an APK or IPA file first',
     distErrLogin:    'Please sign in before uploading',
     distErrUpload:   'Upload failed: ',
@@ -2398,32 +2427,63 @@ function setDistFile(file) {
   nameEl.style.display = 'block';
 }
 
-// ── Distribution: upload ────────────────────────────────────
-async function distUpload() {
+// ── Distribution: upload (XHR with real-time progress) ──────
+function distUpload() {
   const l = L();
   if (!userInfo) { showToast(l.distErrLogin); openLoginModal(); return; }
   const file = distFileInput.files[0];
   if (!file) { showToast(l.distErrNoFile); return; }
-  const msg = document.getElementById('dist-upload-msg');
-  const btn = document.getElementById('dist-submit-btn');
+
+  const msg      = document.getElementById('dist-upload-msg');
+  const btn      = document.getElementById('dist-submit-btn');
+  const progWrap = document.getElementById('dist-progress-wrap');
+  const progFill = document.getElementById('dist-progress-fill');
+  const progText = document.getElementById('dist-progress-text');
+  const progPct  = document.getElementById('dist-progress-pct');
+
   btn.disabled = true;
-  msg.className = 'form-msg'; msg.textContent = l.distUploading;
+  msg.className = 'form-msg'; msg.textContent = '';
+  progWrap.style.display = 'block';
+  progFill.style.width = '0%';
+  progText.textContent = lang === 'en' ? 'Uploading…' : '上传中…';
+  progPct.textContent  = '0%';
+
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('file',          file);
   fd.append('app_name',      document.getElementById('dist-appname').value.trim());
   fd.append('version',       document.getElementById('dist-version').value.trim());
   fd.append('description',   document.getElementById('dist-desc').value.trim());
-  fd.append('expires_days',  document.getElementById('dist-expiry').value || '');
+  fd.append('expires_days',  document.getElementById('dist-expiry').value || '0');
   fd.append('max_downloads', document.getElementById('dist-maxdl').value || '0');
-  try {
-    const resp = await fetch('/dist/upload', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${jwt}` },
-      body: fd,
-    });
-    const d = await resp.json();
-    if (resp.ok) {
-      msg.className = 'form-msg ok'; msg.textContent = l.distSuccess;
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/dist/upload');
+  xhr.setRequestHeader('Authorization', `Bearer ${jwt}`);
+  xhr.timeout = 15 * 60 * 1000; // 15 min
+
+  xhr.upload.onprogress = e => {
+    if (!e.lengthComputable) return;
+    const pct = Math.round(e.loaded / e.total * 100);
+    progFill.style.width = pct + '%';
+    progPct.textContent  = pct + '%';
+    const sent = (e.loaded / 1024 / 1024).toFixed(1);
+    const total = (e.total  / 1024 / 1024).toFixed(1);
+    progText.textContent = lang === 'en'
+      ? `Uploading… ${sent} / ${total} MB`
+      : `上传中… ${sent} / ${total} MB`;
+  };
+
+  xhr.onload = () => {
+    progWrap.style.display = 'none';
+    btn.disabled = false;
+    let d = {};
+    try { d = JSON.parse(xhr.responseText); } catch(_) {}
+    if (xhr.status === 200) {
+      const isUpdate = d.updated;
+      msg.className = 'form-msg ok';
+      msg.textContent = isUpdate
+        ? (lang === 'en' ? '✅ App updated — link unchanged' : '✅ 已更新，分发链接不变')
+        : (lang === 'en' ? '✅ Upload successful, link generated' : '✅ 上传成功，分发链接已生成');
       // Reset form
       distFileInput.value = '';
       document.getElementById('dist-file-name').style.display = 'none';
@@ -2433,15 +2493,17 @@ async function distUpload() {
       document.getElementById('dist-desc').value = '';
       document.getElementById('dist-expiry').value = '';
       document.getElementById('dist-maxdl').value = '0';
-      // Show releases
-      setTimeout(() => { msg.textContent = ''; loadDistList(); }, 1500);
+      setTimeout(() => { msg.textContent = ''; loadDistList(); }, 1800);
     } else {
-      msg.className = 'form-msg err'; msg.textContent = l.distErrUpload + (d.detail || resp.status);
+      msg.className = 'form-msg err';
+      msg.textContent = (lang === 'en' ? 'Upload failed: ' : '上传失败：') + (d.detail || xhr.status);
     }
-  } catch(e) {
-    msg.className = 'form-msg err'; msg.textContent = l.distErrUpload + e.message;
-  }
-  btn.disabled = false;
+  };
+
+  xhr.onerror   = () => { progWrap.style.display='none'; btn.disabled=false; msg.className='form-msg err'; msg.textContent=lang==='en'?'Network error':'网络错误，请重试'; };
+  xhr.ontimeout = () => { progWrap.style.display='none'; btn.disabled=false; msg.className='form-msg err'; msg.textContent=lang==='en'?'Upload timed out':'上传超时，请重试'; };
+
+  xhr.send(fd);
 }
 
 // ── Distribution: list ──────────────────────────────────────
