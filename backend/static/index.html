@@ -599,36 +599,36 @@
   <div class="auth-area" id="auth-area">
     <a href="/" class="home-btn">
       <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h4a1 1 0 001-1v-3h2v3a1 1 0 001 1h4a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
-      <span>首页</span>
+      <span id="home-btn-text">首页</span>
     </a>
     <!-- Not logged in -->
-    <button id="login-btn" class="auth-btn" onclick="openLoginModal()">登录 / 注册</button>
+    <button id="login-btn" class="auth-btn" onclick="openLoginModal()"><span id="login-btn-text">登录 / 注册</span></button>
     <!-- Logged in (hidden until auth) -->
     <div id="user-logged-in" class="hidden" style="display:flex;align-items:center;gap:8px">
       <div class="credits-badge" id="credits-badge">
-        🔑 <span id="credits-num">0</span> 次
+        🔑 <span id="credits-num">0</span> <span id="credits-unit">次</span>
       </div>
-      <button class="buy-btn" onclick="openBuyModal()">购买</button>
+      <button class="buy-btn" id="buy-btn-text" onclick="openBuyModal()">购买</button>
       <div class="user-menu-wrap">
         <div class="user-chip" id="user-chip" onclick="toggleUserDropdown()">
           <span id="user-email-chip">...</span> ▾
         </div>
         <div class="user-dropdown hidden" id="user-dropdown">
-          <div onclick="openOrderHistory()">📋 订单历史</div>
+          <div id="dd-orders" onclick="openOrderHistory()">📋 订单历史</div>
           <div class="divider"></div>
-          <div onclick="doLogout()" style="color:#f87171">退出登录</div>
+          <div id="dd-logout" onclick="doLogout()" style="color:#f87171">退出登录</div>
         </div>
       </div>
     </div>
   </div>
   <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
-  <h1 id="hdr-title">
+  <h1>
     <div class="header-logo-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
       </svg>
     </div>
-    AI 移动安全扫描器
+    <span id="hdr-title">AI 移动安全扫描器</span>
   </h1>
   <p id="hdr-subtitle">上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
 </div>
@@ -638,23 +638,23 @@
   <div class="modal">
     <div class="modal-head">
       <button class="modal-close" onclick="closeLoginModal()">✕</button>
-      <h2>🔐 登录</h2>
-      <p>使用邮箱和密码登录您的账号</p>
+      <h2 id="login-modal-title">🔐 登录</h2>
+      <p id="login-modal-sub">使用邮箱和密码登录您的账号</p>
     </div>
     <div class="modal-body">
       <div class="form-field">
-        <label>邮箱地址</label>
+        <label id="login-label-email">邮箱地址</label>
         <input class="form-input" id="login-email" type="email" placeholder="your@email.com" autocomplete="email">
       </div>
       <div class="form-field">
-        <label>密码</label>
-        <input class="form-input" id="login-password" type="password" placeholder="请输入密码" autocomplete="current-password"
+        <label id="login-label-pwd">密码</label>
+        <input class="form-input" id="login-password" type="password" placeholder="请输入密码" id="login-pwd-input" autocomplete="current-password"
                onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="form-msg" id="login-msg"></div>
       <button class="form-btn" id="login-submit-btn" onclick="doLogin()">登录</button>
       <div class="modal-alt">
-        没有账号？<span class="form-link" onclick="switchToRegister()">立即注册</span>
+        <span id="login-no-account">没有账号？</span><span class="form-link" id="login-reg-link" onclick="switchToRegister()">立即注册</span>
       </div>
     </div>
   </div>
@@ -665,23 +665,23 @@
   <div class="modal">
     <div class="modal-head">
       <button class="modal-close" onclick="closeRegisterModal()">✕</button>
-      <h2>✉️ 注册账号</h2>
-      <p>注册后即可获得扫描次数并查看订单</p>
+      <h2 id="reg-modal-title">✉️ 注册账号</h2>
+      <p id="reg-modal-sub">注册后即可获得扫描次数并查看订单</p>
     </div>
     <div class="modal-body">
       <div class="form-field">
-        <label>邮箱地址</label>
+        <label id="reg-label-email">邮箱地址</label>
         <input class="form-input" id="reg-email" type="email" placeholder="your@email.com" autocomplete="email">
       </div>
       <div class="form-field">
-        <label>密码（至少6位）</label>
+        <label id="reg-label-pwd">密码（至少6位）</label>
         <input class="form-input" id="reg-password" type="password" placeholder="请输入密码" autocomplete="new-password"
                onkeydown="if(event.key==='Enter')doRegister()">
       </div>
       <div class="form-msg" id="reg-msg"></div>
       <button class="form-btn" id="reg-submit-btn" onclick="doRegister()">发送验证码</button>
       <div class="modal-alt">
-        已有账号？<span class="form-link" onclick="switchToLogin()">立即登录</span>
+        <span id="reg-has-account">已有账号？</span><span class="form-link" id="reg-login-link" onclick="switchToLogin()">立即登录</span>
       </div>
     </div>
   </div>
@@ -692,21 +692,21 @@
   <div class="modal">
     <div class="modal-head">
       <button class="modal-close" onclick="hide('verify-modal');openRegisterModal()">✕</button>
-      <h2>📬 邮箱验证</h2>
+      <h2 id="verify-modal-title">📬 邮箱验证</h2>
       <p id="verify-email-hint">验证码已发送到您的邮箱</p>
     </div>
     <div class="modal-body">
       <div class="form-field">
-        <label>请输入6位验证码</label>
+        <label id="verify-code-label">请输入6位验证码</label>
         <input class="code-input" id="verify-code" type="text" maxlength="6"
                placeholder="000000" inputmode="numeric"
                oninput="this.value=this.value.replace(/\D/g,'')"
                onkeydown="if(event.key==='Enter')doVerify()">
       </div>
       <div class="form-msg" id="verify-msg"></div>
-      <button class="form-btn" onclick="doVerify()">验证</button>
+      <button class="form-btn" id="verify-submit-btn" onclick="doVerify()">验证</button>
       <div class="modal-alt">
-        没收到？<span class="form-link" id="resend-link" onclick="doResend()">重新发送</span>
+        <span id="verify-not-received">没收到？</span><span class="form-link" id="resend-link" onclick="doResend()">重新发送</span>
       </div>
     </div>
   </div>
@@ -751,7 +751,7 @@
       <div id="buy-msg" class="form-msg"></div>
       <!-- Redeem code -->
       <div class="redeem-divider">
-        <div class="redeem-label">已有兑换码？</div>
+        <div class="redeem-label" id="redeem-label">已有兑换码？</div>
         <div class="redeem-row">
           <input class="redeem-input" id="redeem-input" placeholder="XXXX-XXXX-XXXX"
                  maxlength="14" oninput="fmtRedeemInput(this)" onkeydown="if(event.key==='Enter')doRedeem()">
@@ -771,8 +771,8 @@
   <div class="modal" style="max-width:540px">
     <div class="modal-head">
       <button class="modal-close" onclick="closeOrderModal()">✕</button>
-      <h2>📋 订单历史</h2>
-      <p>最近50条订单记录</p>
+      <h2 id="order-modal-title">📋 订单历史</h2>
+      <p id="order-modal-sub">最近50条订单记录</p>
     </div>
     <div class="modal-body" style="max-height:400px;overflow-y:auto" id="order-list">
       <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
@@ -860,7 +860,7 @@
           <path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/>
           <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/>
         </svg>
-        选择文件上传
+        <span id="uz-btn-text">选择文件上传</span>
       </button>
     </div>
     <input type="file" id="file-input" accept=".apk,.ipa">
@@ -1108,6 +1108,49 @@ const LANG = {
     footerCopy:    '© 2026 maclechen.top · Powered by MobSF & Gemini AI',
     redeemPlaceholder: '输入兑换码',
     redeemLabel:  '已有兑换码？',
+    // Nav
+    btnHome:    '首页',
+    btnLogin:   '登录 / 注册',
+    btnBuy:     '购买',
+    ddOrders:   '📋 订单历史',
+    ddLogout:   '退出登录',
+    creditsUnit:'次',
+    // Login modal
+    loginTitle: '🔐 登录',
+    loginSub:   '使用邮箱和密码登录您的账号',
+    labelEmail: '邮箱地址',
+    labelPwd:   '密码',
+    labelPwdReg:'密码（至少6位）',
+    loginBtn:   '登录',
+    noAccount:  '没有账号？',
+    linkReg:    '立即注册',
+    // Register modal
+    regTitle:   '✉️ 注册账号',
+    regSub:     '注册后即可获得扫描次数并查看订单',
+    regBtn:     '发送验证码',
+    hasAccount: '已有账号？',
+    linkLogin:  '立即登录',
+    // Verify modal
+    verifyTitle:     '📬 邮箱验证',
+    verifyCodeLabel: '请输入6位验证码',
+    verifyBtn:       '验证',
+    notReceived:     '没收到？',
+    // Order modal
+    orderTitle:   '📋 订单历史',
+    orderSub:     '最近50条订单记录',
+    orderLoading: '加载中...',
+    orderEmpty:   '暂无订单记录',
+    orderError:   '加载失败，请重试',
+    scanUnit:     '次扫描',
+    // Gate card
+    gateLoginTitle: '请先登录',
+    gateLoginDesc:  '登录后购买扫描次数，即可使用 AI 安全扫描服务',
+    gateBuyTitle:   '扫描次数已用完',
+    gateBuyDesc:    '请购买次数包继续使用',
+    gateBtnLogin:   '登录 / 注册',
+    gateBtnBuy:     '立即购买次数包',
+    // Upload button
+    btnScanFile: '开始扫描',
   },
   en: {
     pageTitle:    'AI Mobile Security Scanner',
@@ -1186,6 +1229,49 @@ const LANG = {
     footerCopy:    '© 2026 maclechen.top · Powered by MobSF & Gemini AI',
     redeemPlaceholder: 'Enter redeem code',
     redeemLabel:  'Have a redeem code?',
+    // Nav
+    btnHome:    'Home',
+    btnLogin:   'Login / Sign Up',
+    btnBuy:     'Buy',
+    ddOrders:   '📋 Order History',
+    ddLogout:   'Sign Out',
+    creditsUnit:'scans',
+    // Login modal
+    loginTitle: '🔐 Sign In',
+    loginSub:   'Sign in with your email and password',
+    labelEmail: 'Email Address',
+    labelPwd:   'Password',
+    labelPwdReg:'Password (min 6 characters)',
+    loginBtn:   'Sign In',
+    noAccount:  "Don't have an account?",
+    linkReg:    'Sign Up',
+    // Register modal
+    regTitle:   '✉️ Create Account',
+    regSub:     'Register to get scan credits and track orders',
+    regBtn:     'Send Code',
+    hasAccount: 'Already have an account?',
+    linkLogin:  'Sign In',
+    // Verify modal
+    verifyTitle:     '📬 Email Verification',
+    verifyCodeLabel: 'Enter 6-digit code',
+    verifyBtn:       'Verify',
+    notReceived:     "Didn't receive it?",
+    // Order modal
+    orderTitle:   '📋 Order History',
+    orderSub:     'Last 50 orders',
+    orderLoading: 'Loading...',
+    orderEmpty:   'No orders yet',
+    orderError:   'Failed to load, please retry',
+    scanUnit:     'scans',
+    // Gate card
+    gateLoginTitle: 'Please Sign In',
+    gateLoginDesc:  'Sign in and purchase credits to use the AI security scanner',
+    gateBuyTitle:   'Credits Exhausted',
+    gateBuyDesc:    'Please purchase a credits package to continue',
+    gateBtnLogin:   'Login / Sign Up',
+    gateBtnBuy:     'Buy Credits',
+    // Upload button
+    btnScanFile: 'Start Scan',
   },
 };
 
@@ -1252,22 +1338,25 @@ function renderAuthState() {
 
 function renderGate() {
   if (taskId || lastReport) return;  // scan in progress — don't show gate
+  const l = L();
   const loggedIn  = !!userInfo;
   const hasCredits = loggedIn && (userInfo.credits ?? 0) > 0;
   if (!loggedIn) {
     show('gate-card');
     hide('upload-card');
-    setText('gate-icon', '🔒');
-    setText('gate-title', '请先登录');
-    setText('gate-desc', '登录后购买扫描次数，即可使用 AI 安全扫描服务');
+    setText('gate-icon',      '🔒');
+    setText('gate-title',     l.gateLoginTitle);
+    setText('gate-desc',      l.gateLoginDesc);
+    setText('gate-login-btn', l.gateBtnLogin);
     show('gate-login-btn');
     hide('gate-buy-btn');
   } else if (!hasCredits) {
     show('gate-card');
     hide('upload-card');
-    setText('gate-icon', '💳');
-    setText('gate-title', '扫描次数已用完');
-    setText('gate-desc', '请购买次数包继续使用');
+    setText('gate-icon',    '💳');
+    setText('gate-title',   l.gateBuyTitle);
+    setText('gate-desc',    l.gateBuyDesc);
+    setText('gate-buy-btn', l.gateBtnBuy);
     hide('gate-login-btn');
     show('gate-buy-btn');
   } else {
@@ -1540,20 +1629,21 @@ async function openOrderHistory() {
   hide('user-dropdown');
   show('order-modal');
   const list = document.getElementById('order-list');
-  list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">加载中...</div>';
+  const l = L();
+  list.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:20px">${l.orderLoading}</div>`;
   try {
     const resp = await fetch('/orders/list', { headers: { Authorization: `Bearer ${jwt}` } });
     const d = await resp.json();
     if (!d.orders || d.orders.length === 0) {
-      list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">暂无订单记录</div>';
+      list.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:20px">${l.orderEmpty}</div>`;
       return;
     }
     list.innerHTML = d.orders.map(o => `
       <div class="order-row">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-weight:700">${o.credits} 次扫描</span>
+          <span style="font-weight:700">${o.credits} ${l.scanUnit}</span>
           <span class="${o.status==='paid' ? 'order-status-paid' : 'order-status-pending'}">
-            ${o.status === 'paid' ? '✅ 已支付' : '⏳ 待支付'}
+            ${o.status === 'paid' ? l.orderPaid : l.orderPending}
           </span>
         </div>
         <div style="margin-top:4px;color:#64748b;font-size:.85em">
@@ -1562,7 +1652,7 @@ async function openOrderHistory() {
         <div class="order-no">${o.order_no}</div>
       </div>`).join('');
   } catch(_) {
-    list.innerHTML = '<div style="text-align:center;color:#dc2626;padding:20px">加载失败，请重试</div>';
+    list.innerHTML = `<div style="text-align:center;color:#dc2626;padding:20px">${l.orderError}</div>`;
   }
 }
 
@@ -1571,14 +1661,24 @@ function applyI18n() {
   const l = L();
   document.title = l.pageTitle;
   document.documentElement.lang = l.htmlLang;
-  setText('hdr-title',    '🔍 ' + l.pageTitle);
+  setText('hdr-title',    l.pageTitle);
   setText('hdr-subtitle', l.pageSubtitle);
   setText('lang-btn',     l.langBtn);
+  // Nav
+  setText('home-btn-text',  l.btnHome);
+  setText('login-btn-text', l.btnLogin);
+  setText('buy-btn-text',   l.btnBuy);
+  setText('dd-orders',      l.ddOrders);
+  setText('dd-logout',      l.ddLogout);
+  setText('credits-unit',   l.creditsUnit);
+  // Upload zone
   setText('uz-title',     l.uzTitle);
   setText('uz-subtitle',  l.uzSubtitle);
-  setText('uz-btn',       l.uzBtn);
+  setText('uz-btn-text',  l.uzBtn);
+  // Progress
   setText('proc-title',   l.procTitle);
   l.sl.forEach((s, i) => setText(`sl-${i}`, s));
+  // Report sections
   setText('sec-appinfo',    l.secAppInfo);
   setText('sec-risk',       l.secRisk);
   setText('sec-ai',         l.secAI);
@@ -1605,23 +1705,48 @@ function applyI18n() {
   setText('feat4-title', l.feat4Title); setText('feat4-desc', l.feat4Desc);
   // Score
   setText('score-desc-text', l.scoreDesc);
+  // Login modal
+  setText('login-modal-title', l.loginTitle);
+  setText('login-modal-sub',   l.loginSub);
+  setText('login-label-email', l.labelEmail);
+  setText('login-label-pwd',   l.labelPwd);
+  setText('login-submit-btn',  l.loginBtn);
+  setText('login-no-account',  l.noAccount);
+  setText('login-reg-link',    l.linkReg);
+  // Register modal
+  setText('reg-modal-title',  l.regTitle);
+  setText('reg-modal-sub',    l.regSub);
+  setText('reg-label-email',  l.labelEmail);
+  setText('reg-label-pwd',    l.labelPwdReg);
+  setText('reg-submit-btn',   l.regBtn);
+  setText('reg-has-account',  l.hasAccount);
+  setText('reg-login-link',   l.linkLogin);
+  // Verify modal
+  setText('verify-modal-title',  l.verifyTitle);
+  setText('verify-code-label',   l.verifyCodeLabel);
+  setText('verify-submit-btn',   l.verifyBtn);
+  setText('verify-not-received', l.notReceived);
+  // Order modal
+  setText('order-modal-title', l.orderTitle);
+  setText('order-modal-sub',   l.orderSub);
   // Buy modal
   setText('buy-modal-title',  l.buyTitle);
   setText('buy-modal-sub',    l.buySub);
   setText('pay-usdt-label',   l.payUsdt);
   setText('buy-modal-footer', l.buyFooter);
+  setText('redeem-label',     l.redeemLabel);
   // Footer
   setText('footer-product', l.footerProduct);
   setText('footer-support', l.footerSupport);
   setText('footer-copy',    l.footerCopy);
-  // Redeem
+  // Redeem input placeholder
   const ri = document.getElementById('redeem-input');
   if (ri) ri.placeholder = l.redeemPlaceholder;
   // Copy buttons (reset state)
   document.querySelectorAll('.copy-btn:not(.copied)').forEach(b => { b.textContent = l.btnCopy; });
-  // Scan button (if file selected)
-  const uzBtn = document.getElementById('uz-btn');
-  if (uzBtn && selectedFile) uzBtn.textContent = l.btnScan;
+  // Upload button text (if file selected, show "scan" label)
+  const uzBtnText = document.getElementById('uz-btn-text');
+  if (uzBtnText && selectedFile) uzBtnText.textContent = l.btnScanFile;
   const dlBtn = document.getElementById('btn-download');
   if (taskId && dlBtn) dlBtn.href = `/scan/report/${taskId}/download?lang=${lang}`;
   if (lastReport) { renderTables(lastReport); renderScore(lastReport); }
@@ -1847,7 +1972,7 @@ function copyText(elId, btn) {
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '✅';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(() => { btn.textContent = L().btnCopy; btn.classList.remove('copied'); }, 2000);
   });
 }
 
@@ -1899,8 +2024,9 @@ function showFilePreview(file) {
   document.getElementById('file-preview-size').textContent = `${mb} MB`;
   show('file-preview');
   hide('upload-error');
-  // Show upload button in zone
-  document.getElementById('uz-btn').textContent = '开始扫描';
+  // Update button text (target span to preserve SVG icon)
+  const uzBtnText = document.getElementById('uz-btn-text');
+  if (uzBtnText) uzBtnText.textContent = L().btnScanFile;
   document.getElementById('uz-btn').onclick = () => selectedFile && handleFile(selectedFile);
 }
 
@@ -1908,7 +2034,8 @@ function clearFileSelection() {
   selectedFile = null;
   fileInput.value = '';
   hide('file-preview');
-  document.getElementById('uz-btn').textContent = L().uzBtn;
+  const uzBtnText = document.getElementById('uz-btn-text');
+  if (uzBtnText) uzBtnText.textContent = L().uzBtn;
   document.getElementById('uz-btn').onclick = () => document.getElementById('file-input').click();
 }
 
