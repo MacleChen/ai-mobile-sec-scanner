@@ -27,6 +27,33 @@ from email.mime.text import MIMEText
 load_dotenv()
 app = FastAPI(title="AI Mobile Sec Scanner")
 
+
+# ── Baidu Active Push ────────────────────────────────────────
+_BAIDU_PUSH_TOKEN = os.getenv("BAIDU_PUSH_TOKEN", "ZFlLGrlXeVX5FYFZ")
+_BAIDU_PUSH_SITE  = os.getenv("BAIDU_PUSH_SITE",  "https://www.maclechen.top")
+_BAIDU_PUSH_URLS  = [
+    "https://www.maclechen.top/",
+    "https://www.maclechen.top/app",
+    "https://www.maclechen.top/sitemap.xml",
+]
+
+async def _baidu_push():
+    """Push all site URLs to Baidu on startup to accelerate indexing."""
+    url = f"http://data.zz.baidu.com/urls?site={_BAIDU_PUSH_SITE}&token={_BAIDU_PUSH_TOKEN}"
+    body = "\n".join(_BAIDU_PUSH_URLS)
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(url, content=body,
+                                  headers={"Content-Type": "text/plain"})
+            print(f"[Baidu Push] {r.text}")
+    except Exception as e:
+        print(f"[Baidu Push] failed: {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(_baidu_push())
+
 _tasks: dict = {}
 
 # ── Auth helpers ────────────────────────────────────────────
@@ -942,13 +969,13 @@ async def sitemap_xml():
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
         '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
         '  <url>\n'
-        '    <loc>https://maclechen.top/</loc>\n'
+        '    <loc>https://www.maclechen.top/</loc>\n'
         '    <lastmod>2026-03-17</lastmod>\n'
         '    <changefreq>weekly</changefreq>\n'
         '    <priority>1.0</priority>\n'
         '  </url>\n'
         '  <url>\n'
-        '    <loc>https://maclechen.top/app</loc>\n'
+        '    <loc>https://www.maclechen.top/app</loc>\n'
         '    <lastmod>2026-03-17</lastmod>\n'
         '    <changefreq>monthly</changefreq>\n'
         '    <priority>0.5</priority>\n'
