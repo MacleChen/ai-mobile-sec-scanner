@@ -19,6 +19,9 @@ import smtplib
 import random
 import hashlib
 import time
+import base64
+import plistlib
+import zipfile as _zipfile
 import string as _str_mod
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -163,6 +166,9 @@ def _init_db():
                 max_downloads  INTEGER DEFAULT 0,
                 download_count INTEGER DEFAULT 0,
                 is_active      INTEGER DEFAULT 1,
+                pkg_name       TEXT DEFAULT '',
+                display_name   TEXT DEFAULT '',
+                icon_b64       TEXT DEFAULT '',
                 FOREIGN KEY(user_id) REFERENCES users_v2(id)
             );
         """)
@@ -174,6 +180,9 @@ def _migrate_db():
         "ALTER TABLE codes ADD COLUMN max_uses    INTEGER DEFAULT 1",
         "ALTER TABLE codes ADD COLUMN uses_count  INTEGER DEFAULT 0",
         "ALTER TABLE codes ADD COLUMN is_revoked  INTEGER DEFAULT 0",
+        "ALTER TABLE app_releases ADD COLUMN pkg_name     TEXT DEFAULT ''",
+        "ALTER TABLE app_releases ADD COLUMN display_name TEXT DEFAULT ''",
+        "ALTER TABLE app_releases ADD COLUMN icon_b64     TEXT DEFAULT ''",
     ]
     with _db() as c:
         for sql in migrations:
@@ -970,6 +979,87 @@ DIST_DIR = Path("/app/data/releases")
 DIST_DIR.mkdir(parents=True, exist_ok=True)
 _SLUG_ABC = _str_mod.ascii_lowercase + _str_mod.digits
 
+
+def _resize_icon(data: bytes, size: int = 128) -> bytes:
+    """Resize icon PNG to `size x size` using Pillow; return original on failure."""
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(data)).convert("RGBA")
+        img = img.resize((size, size), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", optimize=True)
+        return buf.getvalue()
+    except Exception:
+        return data
+
+
+def _extract_app_info(path: Path, ext: str) -> dict:
+    """Extract pkg_name, display_name, icon_b64 from APK or IPA."""
+    info = {"pkg_name": "", "display_name": "", "icon_b64": ""}
+    try:
+        if ext == "apk":
+            # ── Metadata via pyaxmlparser ──────────────────────
+            try:
+                from pyaxmlparser import APK as _APK
+                apk = _APK(str(path))
+                info["pkg_name"]    = apk.get_package() or ""
+                info["display_name"] = apk.get_app_name() or ""
+            except Exception:
+                pass
+            # ── Icon: scan zip for highest-res mipmap/drawable launcher png ──
+            dpi_order = ["xxxhdpi", "xxhdpi", "xhdpi", "hdpi", "mdpi", "ldpi", ""]
+            try:
+                with _zipfile.ZipFile(str(path)) as z:
+                    names = z.namelist()
+                    candidates = [
+                        n for n in names
+                        if re.search(r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.png$', n, re.I)
+                    ]
+                    chosen = None
+                    for dpi in dpi_order:
+                        hits = [n for n in candidates if dpi in n] if dpi else candidates
+                        if hits:
+                            chosen = hits[0]; break
+                    if chosen:
+                        raw = z.read(chosen)
+                        info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+            except Exception:
+                pass
+
+        elif ext == "ipa":
+            try:
+                with _zipfile.ZipFile(str(path)) as z:
+                    names = z.namelist()
+                    # ── Info.plist ─────────────────────────────
+                    plists = [n for n in names
+                              if re.match(r'Payload/[^/]+\.app/Info\.plist$', n)]
+                    if plists:
+                        pdata = z.read(plists[0])
+                        pl = plistlib.loads(pdata)
+                        info["pkg_name"]    = pl.get("CFBundleIdentifier", "")
+                        info["display_name"] = (pl.get("CFBundleDisplayName")
+                                                or pl.get("CFBundleName", ""))
+                    # ── Icon: prefer 60x60@2x (120px) → largest match ──────
+                    app_dir = plists[0].rsplit("/", 1)[0] + "/" if plists else "Payload/"
+                    icons = sorted(
+                        [n for n in names
+                         if n.startswith(app_dir) and re.search(r'AppIcon.*\.png$', n, re.I)
+                         and "@3x" not in n],   # skip 3x, 2x is plenty
+                        key=lambda x: -len(x)
+                    )
+                    if not icons:
+                        icons = [n for n in names
+                                 if n.startswith(app_dir) and re.search(r'AppIcon.*\.png$', n, re.I)]
+                    if icons:
+                        raw = z.read(icons[0])
+                        info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return info
+
 def _gen_slug(n: int = 8) -> str:
     return ''.join(random.choices(_SLUG_ABC, k=n))
 
@@ -990,25 +1080,34 @@ def _dist_exhausted(r: dict) -> bool:
     return m > 0 and r.get('download_count', 0) >= m
 
 def _dist_preview_html(r: dict) -> str:
-    site        = os.getenv("SITE_URL", "https://maclechen.top")
-    slug        = r['slug']
-    app_name    = html_lib.escape(r.get('app_name') or '未命名应用')
-    version     = r.get('version') or ''
-    description = html_lib.escape(r.get('description') or '')
-    file_type   = r['file_type'].upper()
-    size_str    = _fmt_size(r.get('file_size', 0))
-    dl_count    = r.get('download_count', 0)
-    max_dl      = r.get('max_downloads', 0)
-    page_url    = f"{site}/dist/{slug}"
-    dl_url      = f"{site}/dist/{slug}/download"
-    logo_url    = f"{site}/favicon.svg"
-    qr_url      = f"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={urllib.parse.quote(page_url, safe='')}&ecc=H&margin=8"
-    apk         = file_type == 'APK'
-    badge_bg    = 'rgba(59,130,246,.2)'  if apk else 'rgba(139,92,246,.2)'
-    badge_col   = '#60a5fa'              if apk else '#a78bfa'
-    badge_brd   = 'rgba(59,130,246,.4)' if apk else 'rgba(139,92,246,.4)'
-    ver_html    = f'<div class="app-version">v{html_lib.escape(version)}</div>' if version else ''
-    desc_html   = f'<div class="app-desc">{description}</div>' if description else ''
+    site         = os.getenv("SITE_URL", "https://maclechen.top")
+    slug         = r['slug']
+    app_name     = html_lib.escape(r.get('app_name') or r.get('display_name') or '未命名应用')
+    display_name = html_lib.escape(r.get('display_name') or '')
+    pkg_name     = html_lib.escape(r.get('pkg_name') or '')
+    version      = r.get('version') or ''
+    description  = html_lib.escape(r.get('description') or '')
+    file_type    = r['file_type'].upper()
+    size_str     = _fmt_size(r.get('file_size', 0))
+    dl_count     = r.get('download_count', 0)
+    max_dl       = r.get('max_downloads', 0)
+    icon_b64     = r.get('icon_b64') or ''
+    page_url     = f"{site}/dist/{slug}"
+    dl_url       = f"{site}/dist/{slug}/download"
+    logo_url     = f"{site}/favicon.svg"
+    qr_url       = f"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={urllib.parse.quote(page_url, safe='')}&ecc=H&margin=8"
+    apk          = file_type == 'APK'
+    badge_bg     = 'rgba(59,130,246,.2)'  if apk else 'rgba(139,92,246,.2)'
+    badge_col    = '#60a5fa'              if apk else '#a78bfa'
+    badge_brd    = 'rgba(59,130,246,.4)' if apk else 'rgba(139,92,246,.4)'
+    # Icon html: base64 image or gradient placeholder
+    if icon_b64:
+        icon_html = f'<img src="data:image/png;base64,{icon_b64}" class="app-icon-img" alt="icon">'
+    else:
+        icon_html = '<div class="app-icon-placeholder">📱</div>'
+    ver_html     = f'<div class="app-version">v{html_lib.escape(version)}</div>' if version else ''
+    pkg_html     = f'<div class="app-pkg">{pkg_name}</div>' if pkg_name else ''
+    desc_html    = f'<div class="app-desc">{description}</div>' if description else ''
     expires_at  = r.get('expires_at')
     if expires_at:
         try:
@@ -1046,14 +1145,21 @@ def _dist_preview_html(r: dict) -> str:
     .card{{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);
            border-radius:24px;padding:40px 32px;max-width:420px;width:100%;
            box-shadow:0 24px 64px rgba(0,0,0,.5);backdrop-filter:blur(20px);text-align:center}}
-    .app-icon{{width:80px;height:80px;border-radius:20px;margin:0 auto 18px;
+    .app-icon-wrap{{margin:0 auto 18px;width:96px;height:96px}}
+    .app-icon-img{{width:96px;height:96px;border-radius:22px;
+                   box-shadow:0 8px 28px rgba(0,0,0,.5);display:block}}
+    .app-icon-placeholder{{width:96px;height:96px;border-radius:22px;
                background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(139,92,246,.35));
                border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;
-               justify-content:center;font-size:2.2em}}
-    .app-name{{font-size:1.45em;font-weight:800;
+               justify-content:center;font-size:2.8em}}
+    .app-name{{font-size:1.35em;font-weight:800;
                background:linear-gradient(135deg,#60a5fa,#a78bfa);
                -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
-    .app-version{{font-size:.88em;color:#64748b;margin-top:4px}}
+    .app-version{{font-size:.85em;color:#64748b;margin-top:4px}}
+    .app-pkg{{font-size:.75em;color:#475569;margin-top:5px;
+              font-family:monospace;word-break:break-all;
+              background:rgba(255,255,255,.04);border-radius:6px;
+              padding:3px 10px;display:inline-block;max-width:100%}}
     .badge{{display:inline-block;padding:3px 14px;border-radius:20px;font-size:.72em;
             font-weight:800;letter-spacing:.06em;margin:14px 0;
             background:{badge_bg};color:{badge_col};border:1px solid {badge_brd}}}
@@ -1091,9 +1197,10 @@ def _dist_preview_html(r: dict) -> str:
 </head>
 <body>
   <div class="card">
-    <div class="app-icon">📱</div>
+    <div class="app-icon-wrap">{icon_html}</div>
     <div class="app-name">{app_name}</div>
     {ver_html}
+    {pkg_html}
     <div class="badge">{file_type}</div>
     {desc_html}
     <div class="qr-wrap">
@@ -1170,6 +1277,16 @@ async def dist_upload(
             f.write(chunk)
             size += len(chunk)
 
+    # Extract metadata (icon, package name, display name) from the saved file
+    meta = _extract_app_info(dest, ext)
+
+    # Use extracted display_name to fill resolved_name if user left app_name blank
+    if not app_name.strip() and meta["display_name"]:
+        resolved_name = meta["display_name"]
+
+    # Use extracted version if user didn't provide one
+    resolved_version = version.strip()
+
     # Compute expiry
     expires_at = None
     if expires_days and expires_days > 0:
@@ -1181,19 +1298,22 @@ async def dist_upload(
                 """UPDATE app_releases SET
                    version=?, file_size=?, description=?, expires_at=?,
                    max_downloads=?, download_count=0, is_active=1,
-                   created_at=datetime('now')
+                   created_at=datetime('now'),
+                   pkg_name=?, display_name=?, icon_b64=?
                    WHERE slug=?""",
-                (version.strip(), size, description.strip(), expires_at,
-                 max(0, max_downloads), slug),
+                (resolved_version, size, description.strip(), expires_at,
+                 max(0, max_downloads),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], slug),
             )
         else:
             c.execute(
                 """INSERT INTO app_releases
                    (slug, user_id, app_name, version, file_type, file_size,
-                    description, expires_at, max_downloads)
-                   VALUES (?,?,?,?,?,?,?,?,?)""",
-                (slug, user["id"], resolved_name, version.strip(), ext, size,
-                 description.strip(), expires_at, max(0, max_downloads)),
+                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (slug, user["id"], resolved_name, resolved_version, ext, size,
+                 description.strip(), expires_at, max(0, max_downloads),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"]),
             )
 
     site = os.getenv("SITE_URL", "https://maclechen.top")
@@ -1205,7 +1325,8 @@ async def dist_list(user: dict = Depends(_current_user)):
     with _db() as c:
         rows = c.execute(
             """SELECT slug, app_name, version, file_type, file_size,
-                      created_at, expires_at, max_downloads, download_count, is_active
+                      created_at, expires_at, max_downloads, download_count, is_active,
+                      pkg_name, display_name, icon_b64
                FROM app_releases WHERE user_id=? ORDER BY created_at DESC""",
             (user["id"],),
         ).fetchall()
