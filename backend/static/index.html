@@ -59,11 +59,16 @@
       font-size: 1.15em; font-weight: 900; letter-spacing: -.02em;
       background: linear-gradient(135deg, var(--blue-l), var(--purple));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      margin: 0; display: flex; align-items: center; gap: 8px;
+      margin: 0; display: flex; align-items: center; gap: 10px;
     }
-    .header h1::before {
-      content: '🛡️'; font-size: .9em; -webkit-text-fill-color: initial;
+    .header-logo-icon {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(59,130,246,.4);
+      -webkit-text-fill-color: initial;
     }
+    .header-logo-icon svg { width: 18px; height: 18px; }
     .header p { display: none; }
 
     /* ── Auth area ─────────────────── */
@@ -510,16 +515,17 @@
     .feat-card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.35); }
     .feat-card:hover::before { opacity: 1; }
     .feat-icon-box {
-      width: 54px; height: 54px; border-radius: 14px;
+      width: 56px; height: 56px; border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.5em; margin: 0 auto 16px;
+      margin: 0 auto 18px;
       position: relative; z-index: 1;
-      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
     }
-    .fi-blue   { background: linear-gradient(135deg, rgba(59,130,246,.25), rgba(59,130,246,.12)); border: 1px solid rgba(59,130,246,.25); }
-    .fi-purple { background: linear-gradient(135deg, rgba(139,92,246,.25), rgba(139,92,246,.12)); border: 1px solid rgba(139,92,246,.25); }
-    .fi-green  { background: linear-gradient(135deg, rgba(16,185,129,.25), rgba(16,185,129,.12)); border: 1px solid rgba(16,185,129,.25); }
-    .fi-orange { background: linear-gradient(135deg, rgba(249,115,22,.25), rgba(249,115,22,.12)); border: 1px solid rgba(249,115,22,.25); }
+    .feat-icon-box svg { width: 24px; height: 24px; }
+    .fi-blue   { background: linear-gradient(135deg, rgba(59,130,246,.28), rgba(59,130,246,.12)); border: 1px solid rgba(59,130,246,.3); color: #60a5fa; }
+    .fi-purple { background: linear-gradient(135deg, rgba(139,92,246,.28), rgba(139,92,246,.12)); border: 1px solid rgba(139,92,246,.3); color: #a78bfa; }
+    .fi-green  { background: linear-gradient(135deg, rgba(16,185,129,.28), rgba(16,185,129,.12)); border: 1px solid rgba(16,185,129,.3); color: #34d399; }
+    .fi-orange { background: linear-gradient(135deg, rgba(249,115,22,.28), rgba(249,115,22,.12)); border: 1px solid rgba(249,115,22,.3); color: #fb923c; }
     .feat-title { font-weight: 700; font-size: .95em; color: var(--text); margin-bottom: 8px; position: relative; z-index: 1; }
     .feat-desc  { font-size: .82em; color: var(--muted); line-height: 1.6; position: relative; z-index: 1; }
 
@@ -574,7 +580,14 @@
     </div>
   </div>
   <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
-  <h1 id="hdr-title">🔍 AI 移动安全扫描器</h1>
+  <h1 id="hdr-title">
+    <div class="header-logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+      </svg>
+    </div>
+    AI 移动安全扫描器
+  </h1>
   <p id="hdr-subtitle">上传 APK 文件，自动进行静态安全分析并生成 AI 安全报告</p>
 </div>
 
@@ -729,22 +742,39 @@
 <div id="features-strip" class="features-strip">
   <div class="feat-grid">
     <div class="feat-card">
-      <div class="feat-icon-box fi-blue">🔍</div>
+      <div class="feat-icon-box fi-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+        </svg>
+      </div>
       <div class="feat-title" id="feat1-title">深度静态分析</div>
-      <div class="feat-desc"  id="feat1-desc">基于 MobSF 引擎，检测权限滥用、代码漏洞与不安全配置</div>
+      <div class="feat-desc"  id="feat1-desc">反编译检测权限滥用、代码漏洞与不安全配置</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon-box fi-purple">🤖</div>
+      <div class="feat-icon-box fi-purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+          <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/>
+        </svg>
+      </div>
       <div class="feat-title" id="feat2-title">AI 智能报告</div>
-      <div class="feat-desc"  id="feat2-desc">Gemini AI 自动分析风险，生成中英文安全摘要</div>
+      <div class="feat-desc"  id="feat2-desc">Gemini AI 自动分析风险，生成结构化安全摘要</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon-box fi-green">📄</div>
+      <div class="feat-icon-box fi-green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+        </svg>
+      </div>
       <div class="feat-title" id="feat3-title">一键导出报告</div>
       <div class="feat-desc"  id="feat3-desc">完整 HTML 报告，可提交团队审查或合规审计</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon-box fi-orange">⚡</div>
+      <div class="feat-icon-box fi-orange">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/>
+        </svg>
+      </div>
       <div class="feat-title" id="feat4-title">分钟级出结果</div>
       <div class="feat-desc"  id="feat4-desc">支持 Android APK 与 iOS IPA，快速完成扫描</div>
     </div>
@@ -1836,24 +1866,9 @@ function resetToUpload() {
   renderGate();
 }
 
-// ── MobSF Health Check ──────────────────────────────────────
+// ── MobSF Health Check (silent — banner hidden from users) ──
 async function checkMobSF() {
-  const banner = document.getElementById('mobsf-banner');
-  const text   = document.getElementById('mobsf-banner-text');
-  const l = L();
-  try {
-    const data = await fetch('/health').then(r => r.json());
-    if (data.mobsf === 'ok') {
-      banner.className = 'mobsf-banner ok';
-      text.textContent = l.mobsfOk;
-      banner.classList.remove('hidden');
-      setTimeout(() => banner.classList.add('hidden'), 4000);
-    } else {
-      banner.className = 'mobsf-banner warn';
-      text.innerHTML = `${l.mobsfDown} <a onclick="navigator.clipboard.writeText('${l.mobsfCmd}').then(()=>this.textContent='✅ copied!')" title="Click to copy"><code>${l.mobsfCmd}</code></a>`;
-      banner.classList.remove('hidden');
-    }
-  } catch (_) {}
+  // Banner intentionally not shown to end users
 }
 
 // ── Handle ?payment=success ──────────────────────────────────
