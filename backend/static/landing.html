@@ -274,22 +274,53 @@
     .n-yellow { color: #fbbf24; }
     .n-blue   { color: #93c5fd; }
 
-    /* ── Trust logos ───────────────────────── */
+    /* ── Tech stack section ─────────────────── */
     .trust-section {
-      padding: 48px 5%; text-align: center;
+      padding: 80px 5%;
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, transparent, rgba(59,130,246,.025), transparent);
+      text-align: center;
     }
-    .trust-label { font-size: .8em; color: var(--muted); font-weight: 600;
-                   text-transform: uppercase; letter-spacing: .1em; margin-bottom: 28px; }
-    .tech-logos  { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; align-items: center; }
-    .tech-chip {
-      display: flex; align-items: center; gap: 8px;
-      color: var(--muted); font-size: .88em; font-weight: 600;
-      padding: 8px 18px; border: 1px solid var(--border);
-      border-radius: 8px; background: var(--card);
+    .trust-eyebrow {
+      font-size: .74em; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
+      color: var(--blue-l); margin-bottom: 10px;
     }
-    .tech-chip span { font-size: 1.1em; }
+    .trust-title {
+      font-size: clamp(1.6em, 3vw, 2.2em); font-weight: 900; letter-spacing: -.03em;
+      margin-bottom: 12px;
+    }
+    .trust-sub {
+      color: var(--muted); font-size: .9em; margin-bottom: 48px;
+    }
+    .tech-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+      max-width: 1100px; margin: 0 auto;
+    }
+    @media (max-width: 900px) { .tech-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 520px)  { .tech-grid { grid-template-columns: repeat(2, 1fr); } }
+    .tech-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 16px 24px;
+      text-align: center; transition: all .25s;
+      position: relative; overflow: hidden;
+    }
+    .tech-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(59,130,246,.07), rgba(139,92,246,.04));
+      opacity: 0; transition: opacity .3s;
+    }
+    .tech-card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.3); }
+    .tech-card:hover::before { opacity: 1; }
+    .tech-icon-box {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      position: relative; z-index: 1;
+    }
+    .tech-icon-box svg { width: 24px; height: 24px; }
+    .tech-card h4 { font-size: .9em; font-weight: 800; margin-bottom: 6px; position: relative; z-index: 1; }
+    .tech-card p  { font-size: .76em; color: var(--muted); line-height: 1.5; position: relative; z-index: 1; }
 
     /* ── Section title ─────────────────────── */
     .section-title {
@@ -322,19 +353,20 @@
       background: linear-gradient(135deg, rgba(59,130,246,.06), rgba(139,92,246,.04));
       opacity: 0; transition: opacity .3s;
     }
-    .feature-card:hover { border-color: rgba(59,130,246,.35); transform: translateY(-3px); }
+    .feature-card:hover { border-color: rgba(59,130,246,.35); transform: translateY(-3px); box-shadow: 0 16px 48px rgba(0,0,0,.3); }
     .feature-card:hover::before { opacity: 1; }
     .feature-icon {
-      width: 48px; height: 48px; border-radius: 12px;
+      width: 52px; height: 52px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.4em; margin-bottom: 16px;
+      margin-bottom: 18px;
     }
-    .fi-blue   { background: rgba(59,130,246,.15); }
-    .fi-purple { background: rgba(139,92,246,.15); }
-    .fi-green  { background: rgba(16,185,129,.15); }
-    .fi-orange { background: rgba(249,115,22,.15); }
-    .fi-pink   { background: rgba(236,72,153,.15); }
-    .fi-yellow { background: rgba(234,179,8,.15); }
+    .feature-icon svg { width: 24px; height: 24px; }
+    .fi-blue   { background: linear-gradient(135deg,rgba(59,130,246,.22),rgba(59,130,246,.1)); border: 1px solid rgba(59,130,246,.28); color: #60a5fa; }
+    .fi-purple { background: linear-gradient(135deg,rgba(139,92,246,.22),rgba(139,92,246,.1)); border: 1px solid rgba(139,92,246,.28); color: #a78bfa; }
+    .fi-green  { background: linear-gradient(135deg,rgba(16,185,129,.22),rgba(16,185,129,.1)); border: 1px solid rgba(16,185,129,.28); color: #34d399; }
+    .fi-orange { background: linear-gradient(135deg,rgba(249,115,22,.22),rgba(249,115,22,.1)); border: 1px solid rgba(249,115,22,.28); color: #fb923c; }
+    .fi-pink   { background: linear-gradient(135deg,rgba(236,72,153,.22),rgba(236,72,153,.1)); border: 1px solid rgba(236,72,153,.28); color: #f472b6; }
+    .fi-yellow { background: linear-gradient(135deg,rgba(234,179,8,.22),rgba(234,179,8,.1));  border: 1px solid rgba(234,179,8,.28);  color: #fbbf24; }
     .feature-card h3 { font-size: .98em; font-weight: 800; margin-bottom: 8px; }
     .feature-card p  { font-size: .84em; color: var(--muted); line-height: 1.65; }
 
@@ -629,13 +661,58 @@
 
 <!-- ═══ TRUST BAR ══════════════════════════════════════════ -->
 <div class="trust-section">
-  <div class="trust-label">核心技术栈</div>
-  <div class="tech-logos">
-    <div class="tech-chip"><span>🔬</span> MobSF 静态分析</div>
-    <div class="tech-chip"><span>🤖</span> Gemini AI 摘要</div>
-    <div class="tech-chip"><span>🦠</span> Exodus 追踪器库</div>
-    <div class="tech-chip"><span>☕</span> jadx 反编译</div>
-    <div class="tech-chip"><span>🔐</span> APKiD 识别</div>
+  <div class="container">
+    <div class="trust-eyebrow">POWERED BY</div>
+    <h2 class="trust-title">核心技术栈</h2>
+    <p class="trust-sub">业界顶尖开源引擎 · 企业级 AI 能力 · 持续更新的威胁情报库</p>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(59,130,246,.1));border:1px solid rgba(59,130,246,.3);color:#60a5fa;margin:0 auto 16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+          </svg>
+        </div>
+        <h4>MobSF</h4>
+        <p>移动安全框架，APK/IPA 深度静态分析引擎</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(139,92,246,.1));border:1px solid rgba(139,92,246,.3);color:#a78bfa;margin:0 auto 16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+            <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/>
+          </svg>
+        </div>
+        <h4>Gemini AI</h4>
+        <p>Google 大语言模型，智能安全摘要与风险解读</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(16,185,129,.1));border:1px solid rgba(16,185,129,.3);color:#34d399;margin:0 auto 16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+          </svg>
+        </div>
+        <h4>Exodus Privacy</h4>
+        <p>追踪器 SDK 情报库，精确识别隐私风险组件</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(249,115,22,.1));border:1px solid rgba(249,115,22,.3);color:#fb923c;margin:0 auto 16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+          </svg>
+        </div>
+        <h4>jadx</h4>
+        <p>Android 反编译工具，还原 Java/Kotlin 源码</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(239,68,68,.1));border:1px solid rgba(239,68,68,.3);color:#f87171;margin:0 auto 16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7.864 4.243A7.5 7.5 0 0 1 19.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 0 0 4.5 10.5a7.464 7.464 0 0 1-1.15 3.993m1.989 3.559A11.209 11.209 0 0 0 8.25 10.5a3.75 3.75 0 1 1 7.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 0 1-3.6 9.75m6.633-4.596a18.666 18.666 0 0 1-2.485 5.33"/>
+          </svg>
+        </div>
+        <h4>APKiD</h4>
+        <p>APK 指纹识别，检测加固混淆与恶意特征</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -649,32 +726,57 @@
     </div>
     <div class="features-grid">
       <div class="feature-card">
-        <div class="feature-icon fi-blue">🔍</div>
+        <div class="feature-icon fi-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+          </svg>
+        </div>
         <h3>深度静态分析</h3>
         <p>基于 MobSF 引擎，反编译 APK/IPA 源码，检测危险 API 调用、硬编码密钥、不安全的网络配置与 WebView 漏洞。</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon fi-purple">🤖</div>
+        <div class="feature-icon fi-purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+            <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/>
+          </svg>
+        </div>
         <h3>AI 安全摘要</h3>
         <p>Gemini AI 读取全量扫描数据，用通俗语言生成结构化安全分析报告，一键了解应用的核心风险与改进建议。</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon fi-orange">🦠</div>
+        <div class="feature-icon fi-orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+          </svg>
+        </div>
         <h3>追踪器 SDK 识别</h3>
         <p>对接 Exodus Privacy 数据库，精确识别 Facebook、Google、Firebase 等第三方追踪 SDK，量化隐私风险。</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon fi-green">🛡️</div>
+        <div class="feature-icon fi-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+          </svg>
+        </div>
         <h3>权限安全审计</h3>
         <p>分析所有申请权限的危险等级与实际用途，识别过度授权与权限滥用，保护用户隐私不被侵害。</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon fi-pink">📜</div>
+        <div class="feature-icon fi-pink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+          </svg>
+        </div>
         <h3>清单文件检查</h3>
         <p>解析 AndroidManifest.xml / Info.plist，检测 Activity 导出风险、ATS 配置缺失、证书签名版本等关键安全项。</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon fi-yellow">📊</div>
+        <div class="feature-icon fi-yellow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/>
+          </svg>
+        </div>
         <h3>可视化安全评分</h3>
         <p>基于 MobSF 综合算法输出 0–100 安全评分，配合风险等级标签，直观呈现应用整体安全状况。</p>
       </div>
