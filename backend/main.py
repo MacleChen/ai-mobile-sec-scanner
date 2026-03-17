@@ -910,6 +910,13 @@ async def favicon():
                         headers={"Cache-Control": "public, max-age=86400"})
 
 
+@app.get("/baidu_verify_codeva-IaLOMzArPV.html")
+async def baidu_verify():
+    """Baidu HTML file verification (backup to meta tag)."""
+    return Response(content="codeva-IaLOMzArPV", media_type="text/html",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/robots.txt")
 async def robots_txt():
     content = (
