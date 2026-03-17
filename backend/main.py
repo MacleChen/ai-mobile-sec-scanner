@@ -989,7 +989,8 @@ def _dist_exhausted(r: dict) -> bool:
     m = r.get('max_downloads', 0)
     return m > 0 and r.get('download_count', 0) >= m
 
-def _dist_preview_html(r: dict, base_url: str) -> str:
+def _dist_preview_html(r: dict) -> str:
+    site        = os.getenv("SITE_URL", "https://maclechen.top")
     slug        = r['slug']
     app_name    = html_lib.escape(r.get('app_name') or '未命名应用')
     version     = r.get('version') or ''
@@ -998,9 +999,10 @@ def _dist_preview_html(r: dict, base_url: str) -> str:
     size_str    = _fmt_size(r.get('file_size', 0))
     dl_count    = r.get('download_count', 0)
     max_dl      = r.get('max_downloads', 0)
-    page_url    = f"{base_url}/dist/{slug}"
-    dl_url      = f"{base_url}/dist/{slug}/download"
-    qr_url      = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={urllib.parse.quote(page_url, safe='')}&bgcolor=050b18&color=60a5fa"
+    page_url    = f"{site}/dist/{slug}"
+    dl_url      = f"{site}/dist/{slug}/download"
+    logo_url    = f"{site}/favicon.svg"
+    qr_url      = f"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={urllib.parse.quote(page_url, safe='')}&ecc=H&margin=8"
     apk         = file_type == 'APK'
     badge_bg    = 'rgba(59,130,246,.2)'  if apk else 'rgba(139,92,246,.2)'
     badge_col   = '#60a5fa'              if apk else '#a78bfa'
@@ -1026,7 +1028,7 @@ def _dist_preview_html(r: dict, base_url: str) -> str:
     btn_html   = (
         '<div class="dl-btn disabled">⚠️ 链接已失效</div>'
         if unavail else
-        f'<a class="dl-btn" href="{dl_url}">⬇️ 点击下载 {file_type}</a>'
+        f'<a class="dl-btn" href="{dl_url}" download>⬇️ 点击下载 {file_type}</a>'
     )
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1059,7 +1061,13 @@ def _dist_preview_html(r: dict, base_url: str) -> str:
                white-space:pre-wrap;text-align:left}}
     .qr-wrap{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
               border-radius:14px;padding:18px;display:inline-block;margin-bottom:20px}}
-    .qr-wrap img{{width:180px;height:180px;border-radius:6px;display:block}}
+    .qr-container{{position:relative;display:inline-block}}
+    .qr-container img.qr-img{{width:200px;height:200px;border-radius:10px;display:block}}
+    .qr-logo{{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+              width:46px;height:46px;background:white;border-radius:10px;padding:4px;
+              display:flex;align-items:center;justify-content:center;
+              box-shadow:0 2px 8px rgba(0,0,0,.3)}}
+    .qr-logo img{{width:38px;height:38px}}
     .qr-hint{{font-size:.72em;color:#475569;margin-top:8px}}
     .dl-btn{{display:block;width:100%;
              background:linear-gradient(135deg,#3b82f6,#8b5cf6);
@@ -1089,7 +1097,10 @@ def _dist_preview_html(r: dict, base_url: str) -> str:
     <div class="badge">{file_type}</div>
     {desc_html}
     <div class="qr-wrap">
-      <img src="{qr_url}" alt="扫码下载" loading="lazy">
+      <div class="qr-container">
+        <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
+        <div class="qr-logo"><img src="{logo_url}" alt="logo"></div>
+      </div>
       <div class="qr-hint">📱 手机扫码访问</div>
     </div>
     {btn_html}
@@ -1238,22 +1249,24 @@ async def dist_download(slug: str):
     # Increment counter
     with _db() as c:
         c.execute("UPDATE app_releases SET download_count=download_count+1 WHERE slug=?", (slug,))
-    app_name = r.get("app_name") or slug
-    filename = f"{app_name}.{r['file_type']}"
-    media = "application/vnd.android.package-archive" if r["file_type"] == "apk" else "application/octet-stream"
+    ext      = r['file_type']   # 'apk' or 'ipa'
+    app_name = (r.get("app_name") or slug).strip()
+    # ASCII fallback + UTF-8 encoded filename (RFC 5987)
+    ascii_name  = f"{slug}.{ext}"
+    utf8_name   = urllib.parse.quote(f"{app_name}.{ext}", safe="")
+    disp        = f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{utf8_name}'
+    media       = "application/vnd.android.package-archive" if ext == "apk" else "application/octet-stream"
     return FileResponse(str(file_path), media_type=media,
-                        filename=filename,
-                        headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+                        headers={"Content-Disposition": disp})
 
 
 @app.get("/dist/{slug}", response_class=HTMLResponse)
-async def dist_preview(slug: str, request: Request):
+async def dist_preview(slug: str):
     with _db() as c:
         row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
     if not row:
         raise HTTPException(404, "链接不存在")
-    base = str(request.base_url).rstrip("/")
-    return HTMLResponse(_dist_preview_html(dict(row), base))
+    return HTMLResponse(_dist_preview_html(dict(row)))
 
 
 @app.get("/robots.txt")

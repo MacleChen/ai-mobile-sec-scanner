@@ -617,7 +617,18 @@
       background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
       padding: 28px; text-align: center; max-width: 340px; width: 100%;
     }
-    .dist-qr-card img { width: 180px; height: 180px; border-radius: 10px; margin: 12px auto; display: block; }
+    /* QR container with logo overlay — shared by popup & preview page */
+    .dist-qr-container { position: relative; display: inline-block; margin: 12px auto; }
+    .dist-qr-container img.dist-qr-img {
+      width: 200px; height: 200px; border-radius: 10px; display: block;
+    }
+    .dist-qr-logo {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 46px; height: 46px; background: white; border-radius: 10px; padding: 4px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    }
+    .dist-qr-logo img { width: 38px; height: 38px; display: block; }
     .dist-qr-url {
       font-size: .78em; color: var(--muted); word-break: break-all;
       background: rgba(255,255,255,.05); border-radius: 8px; padding: 8px 12px; margin: 12px 0;
@@ -1222,8 +1233,13 @@
 <div class="dist-qr-pop hidden" id="dist-qr-pop" onclick="hideDistQR()">
   <div class="dist-qr-card" onclick="event.stopPropagation()">
     <h3 id="dist-qr-name" style="font-size:1em;font-weight:700;margin-bottom:4px"></h3>
-    <div style="font-size:.8em;color:var(--muted);margin-bottom:4px" id="dist-qr-hint">扫码下载</div>
-    <img id="dist-qr-img" src="" alt="QR">
+    <div style="font-size:.8em;color:var(--muted);margin-bottom:8px" id="dist-qr-hint">扫码下载</div>
+    <div class="dist-qr-container">
+      <img class="dist-qr-img" id="dist-qr-img" src="" alt="QR">
+      <div class="dist-qr-logo">
+        <img src="/favicon.svg" alt="logo">
+      </div>
+    </div>
     <div class="dist-qr-url" id="dist-qr-url"></div>
     <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
       <button class="dist-link" id="dist-qr-copy-btn" onclick="copyDistLink(document.getElementById('dist-qr-url').textContent, this)">
@@ -2586,8 +2602,7 @@ async function deleteRelease(slug, btn) {
 
 // ── Distribution: QR popup ──────────────────────────────────
 function showDistQR(url, name) {
-  const qrSize = 200;
-  const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(url)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}&ecc=H&margin=8`;
   document.getElementById('dist-qr-img').src = qrUrl;
   document.getElementById('dist-qr-name').textContent = name;
   document.getElementById('dist-qr-url').textContent = url;
