@@ -1007,22 +1007,35 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                 info["display_name"] = apk.get_app_name() or ""
             except Exception:
                 pass
-            # ── Icon: scan zip for highest-res mipmap/drawable launcher png ──
-            dpi_order = ["xxxhdpi", "xxhdpi", "xhdpi", "hdpi", "mdpi", "ldpi", ""]
+            # ── Icon: scan zip for highest-res mipmap/drawable launcher icon ──
+            # Modern APKs (Android 8+) use WebP; older ones use PNG
+            _DPI_RANK = {"xxxhdpi": 0, "xxhdpi": 1, "xhdpi": 2,
+                         "hdpi": 3, "mdpi": 4, "ldpi": 5}
+            def _dpi_key(name):
+                for dpi, rank in _DPI_RANK.items():
+                    if dpi in name:
+                        return rank
+                return 9
+
             try:
                 with _zipfile.ZipFile(str(path)) as z:
                     names = z.namelist()
+                    # Primary: ic_launcher or ic_launcher_round (png or webp)
                     candidates = [
                         n for n in names
-                        if re.search(r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.png$', n, re.I)
+                        if re.search(r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.(png|webp)$', n, re.I)
                     ]
-                    chosen = None
-                    for dpi in dpi_order:
-                        hits = [n for n in candidates if dpi in n] if dpi else candidates
-                        if hits:
-                            chosen = hits[0]; break
-                    if chosen:
-                        raw = z.read(chosen)
+                    # Prefer non-round over round, then sort by DPI descending
+                    candidates.sort(key=lambda n: (1 if "_round" in n else 0, _dpi_key(n)))
+                    # Fallback: any image in mipmap folder
+                    if not candidates:
+                        candidates = sorted(
+                            [n for n in names
+                             if re.search(r'mipmap[^/]+/\w+\.(png|webp)$', n, re.I)],
+                            key=_dpi_key,
+                        )
+                    if candidates:
+                        raw = z.read(candidates[0])
                         info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
             except Exception:
                 pass
