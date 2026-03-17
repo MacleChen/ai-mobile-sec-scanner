@@ -680,6 +680,48 @@
     .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; }
 
     /* ── FAQ ───────────────────────────────── */
+    #dist-marketing { padding: 88px 5%; background: linear-gradient(180deg, transparent, rgba(139,92,246,.04), transparent); }
+    .dist-mkt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 48px; }
+    @media (max-width: 860px) { .dist-mkt-grid { grid-template-columns: 1fr; gap: 36px; } }
+    .dist-mkt-steps { display: flex; flex-direction: column; gap: 22px; }
+    .dist-mkt-step { display: flex; gap: 16px; align-items: flex-start; }
+    .dist-mkt-num {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85em; font-weight: 800; color: white;
+      box-shadow: 0 4px 14px rgba(139,92,246,.4);
+    }
+    .dist-mkt-step h4 { font-size: .96em; font-weight: 700; margin-bottom: 4px; }
+    .dist-mkt-step p { font-size: .85em; color: var(--muted); line-height: 1.6; }
+    .dist-mkt-card {
+      background: rgba(255,255,255,.045); border: 1px solid rgba(139,92,246,.25);
+      border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
+    }
+    .dist-mkt-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(139,92,246,.08), rgba(59,130,246,.04));
+      pointer-events: none;
+    }
+    .dist-mkt-mock {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px; padding: 20px; margin-bottom: 18px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .dist-mkt-qr-placeholder {
+      width: 80px; height: 80px; border-radius: 10px;
+      background: repeating-conic-gradient(rgba(139,92,246,.3) 0% 25%, transparent 0% 50%) 0 0 / 8px 8px;
+      border: 2px solid rgba(139,92,246,.3);
+    }
+    .dist-mkt-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .dist-mkt-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px; font-size: .78em; font-weight: 700;
+    }
+    .dist-mkt-badge.purple { background: rgba(139,92,246,.15); border: 1px solid rgba(139,92,246,.3); color: #c4b5fd; }
+    .dist-mkt-badge.blue   { background: rgba(59,130,246,.15);  border: 1px solid rgba(59,130,246,.3);  color: var(--blue-l); }
+    .dist-mkt-badge.green  { background: rgba(16,185,129,.15);  border: 1px solid rgba(16,185,129,.3);  color: #34d399; }
+
     #faq { padding: 72px 5%; }
     .faq-list { max-width: 680px; margin: 0 auto; }
     .faq-item {
@@ -853,6 +895,7 @@
     <a href="#features">功能</a>
     <a href="#how">使用流程</a>
     <a href="#detection">检测项目</a>
+    <a href="#dist-marketing">应用分发</a>
     <a href="#pricing">定价</a>
     <a href="#faq">FAQ</a>
   </div>
@@ -872,6 +915,7 @@
   <a href="#features" onclick="closeMobileMenu()">功能</a>
   <a href="#how" onclick="closeMobileMenu()">使用流程</a>
   <a href="#detection" onclick="closeMobileMenu()">检测项目</a>
+  <a href="#dist-marketing" onclick="closeMobileMenu()">应用分发</a>
   <a href="#pricing" onclick="closeMobileMenu()">定价</a>
   <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
   <div class="mobile-menu-divider"></div>
@@ -1392,6 +1436,77 @@
   </div>
 </section>
 
+<!-- ═══ APP DISTRIBUTION ═══════════════════════════════════ -->
+<section id="dist-marketing">
+  <div class="container">
+    <div class="section-title fade-in">
+      <div class="section-eyebrow">NEW · 应用分发平台</div>
+      <h2>一键生成<span class="gradient-text">应用下载页</span></h2>
+      <p>上传 APK / IPA，自动生成含二维码的专属下载页面，轻松分享给测试人员或内测用户</p>
+    </div>
+    <div class="dist-mkt-grid">
+      <div class="dist-mkt-steps">
+        <div class="dist-mkt-step">
+          <div class="dist-mkt-num">1</div>
+          <div>
+            <h4>上传应用文件</h4>
+            <p>支持 Android APK 和 iOS IPA，最大 500 MB，填写版本号与说明后一键上传。</p>
+          </div>
+        </div>
+        <div class="dist-mkt-step">
+          <div class="dist-mkt-num">2</div>
+          <div>
+            <h4>获得专属下载页</h4>
+            <p>平台自动生成包含二维码的下载页面，扫一扫或点链接即可下载，无需上架应用市场。</p>
+          </div>
+        </div>
+        <div class="dist-mkt-step">
+          <div class="dist-mkt-num">3</div>
+          <div>
+            <h4>管控分发权限</h4>
+            <p>可设置有效天数（1/3/7/30/90 天或永久）和最大下载次数，到期自动失效，精准控制分发范围。</p>
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <a href="/app" class="btn-hero-primary" style="display:inline-flex">
+            📦 立即使用应用分发 →
+          </a>
+        </div>
+      </div>
+      <div class="dist-mkt-card">
+        <div class="dist-mkt-mock">
+          <div class="dist-mkt-qr-placeholder"></div>
+          <div style="font-size:.82em;color:var(--muted);font-weight:600">扫码下载 / 点击访问</div>
+          <div style="font-size:.78em;color:#a78bfa;background:rgba(139,92,246,.1);border-radius:8px;padding:4px 12px;font-family:monospace">
+            https://maclechen.top/dist/xxxx
+          </div>
+        </div>
+        <div class="dist-mkt-badges">
+          <span class="dist-mkt-badge purple">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd"/></svg>
+            设置下载次数
+          </span>
+          <span class="dist-mkt-badge blue">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd"/></svg>
+            设置有效期
+          </span>
+          <span class="dist-mkt-badge green">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/></svg>
+            APK & IPA 双支持
+          </span>
+          <span class="dist-mkt-badge purple">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M3.505 2.365A41.369 41.369 0 0 1 9 2c1.863 0 3.697.124 5.495.365 1.247.167 2.18 1.108 2.435 2.268a4.45 4.45 0 0 0-.577-.069 43.141 43.141 0 0 0-4.706 0C9.229 4.696 7.5 6.727 7.5 8.998v2.24c0 1.413.67 2.735 1.76 3.562l-2.98 2.98A.75.75 0 0 1 5 17.25v-3.443c-.501-.048-1-.106-1.495-.172C2.033 13.438 1 12.162 1 10.72V5.28c0-1.441 1.033-2.717 2.505-2.914Z"/><path d="M14 6c-.762 0-1.52.02-2.271.062C10.157 6.148 9 7.472 9 8.998v2.24c0 1.519 1.141 2.841 2.693 2.952a43.18 43.18 0 0 0 4.614 0C17.855 14.08 19 12.758 19 11.238V8.998c0-1.526-1.157-2.85-2.729-2.936A41.645 41.645 0 0 0 14 6Z"/></svg>
+            二维码即时生成
+          </span>
+        </div>
+        <p style="text-align:center;font-size:.8em;color:var(--muted);margin-top:16px">
+          适用于：内测分发 · 灰度发布 · 企业内网 · 演示包分享
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ FAQ ════════════════════════════════════════════════ -->
 <section id="faq">
   <div class="container">
@@ -1521,6 +1636,7 @@
       <a href="#features">核心功能</a>
       <a href="#detection">检测项目</a>
       <a href="#how">使用流程</a>
+      <a href="#dist-marketing">应用分发</a>
       <a href="#pricing">定价方案</a>
     </div>
     <div class="footer-col">

@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, BackgroundTasks, Header, Depends, HTTPException, Request
+from fastapi import FastAPI, UploadFile, BackgroundTasks, Header, Depends, HTTPException, Request, Form
+from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse, Response, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -18,6 +19,7 @@ import smtplib
 import random
 import hashlib
 import time
+import string as _str_mod
 from pathlib import Path
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -146,6 +148,22 @@ def _init_db():
                 password_hash TEXT NOT NULL,
                 is_super      INTEGER DEFAULT 0,
                 created_at    TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS app_releases (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug           TEXT UNIQUE NOT NULL,
+                user_id        INTEGER NOT NULL,
+                app_name       TEXT NOT NULL DEFAULT '',
+                version        TEXT NOT NULL DEFAULT '',
+                file_type      TEXT NOT NULL,
+                file_size      INTEGER DEFAULT 0,
+                description    TEXT DEFAULT '',
+                created_at     TEXT DEFAULT (datetime('now')),
+                expires_at     TEXT,
+                max_downloads  INTEGER DEFAULT 0,
+                download_count INTEGER DEFAULT 0,
+                is_active      INTEGER DEFAULT 1,
+                FOREIGN KEY(user_id) REFERENCES users_v2(id)
             );
         """)
 
@@ -944,6 +962,268 @@ async def baidu_verify():
                     headers={"Cache-Control": "public, max-age=86400"})
 
 
+# ══════════════════════════════════════════════════════════════
+# ── App Distribution Platform ────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+
+DIST_DIR = Path("/app/data/releases")
+DIST_DIR.mkdir(parents=True, exist_ok=True)
+_SLUG_ABC = _str_mod.ascii_lowercase + _str_mod.digits
+
+def _gen_slug(n: int = 8) -> str:
+    return ''.join(random.choices(_SLUG_ABC, k=n))
+
+def _fmt_size(n: int) -> str:
+    if n >= 1024**2: return f"{n/1024**2:.1f} MB"
+    if n >= 1024:    return f"{n/1024:.1f} KB"
+    return f"{n} B"
+
+def _dist_expired(r: dict) -> bool:
+    if not r.get('expires_at'): return False
+    try:
+        return datetime.fromisoformat(r['expires_at']) < datetime.now()
+    except Exception:
+        return False
+
+def _dist_exhausted(r: dict) -> bool:
+    m = r.get('max_downloads', 0)
+    return m > 0 and r.get('download_count', 0) >= m
+
+def _dist_preview_html(r: dict, base_url: str) -> str:
+    slug        = r['slug']
+    app_name    = html_lib.escape(r.get('app_name') or '未命名应用')
+    version     = r.get('version') or ''
+    description = html_lib.escape(r.get('description') or '')
+    file_type   = r['file_type'].upper()
+    size_str    = _fmt_size(r.get('file_size', 0))
+    dl_count    = r.get('download_count', 0)
+    max_dl      = r.get('max_downloads', 0)
+    page_url    = f"{base_url}/dist/{slug}"
+    dl_url      = f"{base_url}/dist/{slug}/download"
+    qr_url      = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={urllib.parse.quote(page_url, safe='')}&bgcolor=050b18&color=60a5fa"
+    apk         = file_type == 'APK'
+    badge_bg    = 'rgba(59,130,246,.2)'  if apk else 'rgba(139,92,246,.2)'
+    badge_col   = '#60a5fa'              if apk else '#a78bfa'
+    badge_brd   = 'rgba(59,130,246,.4)' if apk else 'rgba(139,92,246,.4)'
+    ver_html    = f'<div class="app-version">v{html_lib.escape(version)}</div>' if version else ''
+    desc_html   = f'<div class="app-desc">{description}</div>' if description else ''
+    expires_at  = r.get('expires_at')
+    if expires_at:
+        try:
+            exp = datetime.fromisoformat(expires_at)
+            remaining = (exp - datetime.now()).days
+            if remaining < 0:   exp_html = '<span style="color:#f87171">已过期</span>'
+            elif remaining == 0: exp_html = '<span style="color:#fbbf24">今天过期</span>'
+            else:                exp_html = f'<span style="color:#34d399">{remaining} 天后过期</span>'
+        except Exception:
+            exp_html = html_lib.escape(expires_at[:10])
+    else:
+        exp_html = '<span style="color:#34d399">永不过期</span>'
+    dl_html = f'{dl_count} / {max_dl} 次' if max_dl > 0 else f'{dl_count} 次'
+    expired    = _dist_expired(r)
+    exhausted  = _dist_exhausted(r)
+    unavail    = expired or exhausted or not r.get('is_active', 1)
+    btn_html   = (
+        '<div class="dl-btn disabled">⚠️ 链接已失效</div>'
+        if unavail else
+        f'<a class="dl-btn" href="{dl_url}">⬇️ 点击下载 {file_type}</a>'
+    )
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>{app_name}{' v'+html_lib.escape(version) if version else ''} — 应用下载</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>
+    *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
+    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          background:#050b18;color:#f1f5f9;min-height:100vh;
+          display:flex;flex-direction:column;align-items:center;
+          justify-content:center;padding:24px}}
+    .card{{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);
+           border-radius:24px;padding:40px 32px;max-width:420px;width:100%;
+           box-shadow:0 24px 64px rgba(0,0,0,.5);backdrop-filter:blur(20px);text-align:center}}
+    .app-icon{{width:80px;height:80px;border-radius:20px;margin:0 auto 18px;
+               background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(139,92,246,.35));
+               border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;
+               justify-content:center;font-size:2.2em}}
+    .app-name{{font-size:1.45em;font-weight:800;
+               background:linear-gradient(135deg,#60a5fa,#a78bfa);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+    .app-version{{font-size:.88em;color:#64748b;margin-top:4px}}
+    .badge{{display:inline-block;padding:3px 14px;border-radius:20px;font-size:.72em;
+            font-weight:800;letter-spacing:.06em;margin:14px 0;
+            background:{badge_bg};color:{badge_col};border:1px solid {badge_brd}}}
+    .app-desc{{font-size:.85em;color:#94a3b8;line-height:1.6;margin-bottom:18px;
+               white-space:pre-wrap;text-align:left}}
+    .qr-wrap{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+              border-radius:14px;padding:18px;display:inline-block;margin-bottom:20px}}
+    .qr-wrap img{{width:180px;height:180px;border-radius:6px;display:block}}
+    .qr-hint{{font-size:.72em;color:#475569;margin-top:8px}}
+    .dl-btn{{display:block;width:100%;
+             background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+             color:white;border:none;padding:15px;border-radius:12px;
+             font-size:1em;font-weight:800;cursor:pointer;text-decoration:none;
+             margin-bottom:12px;box-shadow:0 6px 24px rgba(59,130,246,.35)}}
+    .dl-btn.disabled{{background:rgba(255,255,255,.08);color:#64748b;
+                      box-shadow:none;cursor:default}}
+    .copy-btn{{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+               color:#94a3b8;border-radius:8px;padding:9px 14px;font-size:.78em;cursor:pointer;
+               overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:18px;
+               text-align:left}}
+    .copy-btn:hover{{background:rgba(255,255,255,.1)}}
+    .meta{{border-top:1px solid rgba(255,255,255,.07);margin-top:4px}}
+    .meta-row{{display:flex;justify-content:space-between;padding:9px 0;
+               border-bottom:1px solid rgba(255,255,255,.04);font-size:.8em}}
+    .meta-key{{color:#475569}}
+    .footer{{margin-top:28px;font-size:.72em;color:#1e293b}}
+    .footer a{{color:#3b82f6;text-decoration:none}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="app-icon">📱</div>
+    <div class="app-name">{app_name}</div>
+    {ver_html}
+    <div class="badge">{file_type}</div>
+    {desc_html}
+    <div class="qr-wrap">
+      <img src="{qr_url}" alt="扫码下载" loading="lazy">
+      <div class="qr-hint">📱 手机扫码访问</div>
+    </div>
+    {btn_html}
+    <button class="copy-btn" onclick="copyLink()" id="lnk">{page_url}</button>
+    <div class="meta">
+      <div class="meta-row"><span class="meta-key">文件大小</span><span>{size_str}</span></div>
+      <div class="meta-row"><span class="meta-key">下载次数</span><span>{dl_html}</span></div>
+      <div class="meta-row"><span class="meta-key">有效期</span><span>{exp_html}</span></div>
+    </div>
+  </div>
+  <div class="footer">Powered by <a href="https://maclechen.top">AppSec AI</a></div>
+  <script>
+  function copyLink(){{
+    navigator.clipboard.writeText('{page_url}').then(()=>{{
+      const b=document.getElementById('lnk');
+      b.textContent='✅ 已复制链接！';
+      setTimeout(()=>b.textContent='{page_url}',2000);
+    }});
+  }}
+  </script>
+</body>
+</html>"""
+
+
+@app.post("/dist/upload")
+async def dist_upload(
+    file: UploadFile,
+    app_name:      str = Form(""),
+    version:       str = Form(""),
+    description:   str = Form(""),
+    expires_days:  int = Form(0),
+    max_downloads: int = Form(0),
+    user: dict = Depends(_current_user),
+):
+    ext = (file.filename or "").rsplit(".", 1)[-1].lower()
+    if ext not in ("apk", "ipa"):
+        raise HTTPException(400, "只支持 APK 或 IPA 文件")
+    # Generate unique slug
+    for _ in range(10):
+        slug = _gen_slug()
+        with _db() as c:
+            if not c.execute("SELECT 1 FROM app_releases WHERE slug=?", (slug,)).fetchone():
+                break
+    # Save file
+    dest = DIST_DIR / f"{slug}.{ext}"
+    size = 0
+    with dest.open("wb") as f:
+        while chunk := await file.read(1024 * 256):
+            f.write(chunk)
+            size += len(chunk)
+    # Compute expiry
+    expires_at = None
+    if expires_days and expires_days > 0:
+        expires_at = (datetime.now() + timedelta(days=expires_days)).strftime("%Y-%m-%d %H:%M:%S")
+    with _db() as c:
+        c.execute(
+            """INSERT INTO app_releases
+               (slug, user_id, app_name, version, file_type, file_size,
+                description, expires_at, max_downloads)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (slug, user["id"], app_name.strip() or file.filename or "未命名",
+             version.strip(), ext, size, description.strip(), expires_at, max(0, max_downloads)),
+        )
+    site = os.getenv("SITE_URL", "https://maclechen.top")
+    return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}"}
+
+
+@app.get("/dist/list")
+async def dist_list(user: dict = Depends(_current_user)):
+    with _db() as c:
+        rows = c.execute(
+            """SELECT slug, app_name, version, file_type, file_size,
+                      created_at, expires_at, max_downloads, download_count, is_active
+               FROM app_releases WHERE user_id=? ORDER BY created_at DESC""",
+            (user["id"],),
+        ).fetchall()
+    return {"releases": [dict(r) for r in rows]}
+
+
+@app.delete("/dist/{slug}")
+async def dist_delete(slug: str, user: dict = Depends(_current_user)):
+    with _db() as c:
+        row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
+        if not row:
+            raise HTTPException(404, "不存在")
+        if dict(row)["user_id"] != user["id"]:
+            raise HTTPException(403, "无权限")
+        c.execute("UPDATE app_releases SET is_active=0 WHERE slug=?", (slug,))
+    # Delete file
+    for ext in ("apk", "ipa"):
+        p = DIST_DIR / f"{slug}.{ext}"
+        if p.exists():
+            p.unlink()
+    return {"ok": True}
+
+
+@app.get("/dist/{slug}/download")
+async def dist_download(slug: str):
+    with _db() as c:
+        row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
+    if not row:
+        raise HTTPException(404, "链接不存在")
+    r = dict(row)
+    if not r.get("is_active", 1):
+        raise HTTPException(410, "链接已停用")
+    if _dist_expired(r):
+        raise HTTPException(410, "链接已过期")
+    if _dist_exhausted(r):
+        raise HTTPException(410, "下载次数已达上限")
+    # Find file
+    file_path = DIST_DIR / f"{slug}.{r['file_type']}"
+    if not file_path.exists():
+        raise HTTPException(404, "文件不存在")
+    # Increment counter
+    with _db() as c:
+        c.execute("UPDATE app_releases SET download_count=download_count+1 WHERE slug=?", (slug,))
+    app_name = r.get("app_name") or slug
+    filename = f"{app_name}.{r['file_type']}"
+    media = "application/vnd.android.package-archive" if r["file_type"] == "apk" else "application/octet-stream"
+    return FileResponse(str(file_path), media_type=media,
+                        filename=filename,
+                        headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.get("/dist/{slug}", response_class=HTMLResponse)
+async def dist_preview(slug: str, request: Request):
+    with _db() as c:
+        row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
+    if not row:
+        raise HTTPException(404, "链接不存在")
+    base = str(request.base_url).rstrip("/")
+    return HTMLResponse(_dist_preview_html(dict(row), base))
+
+
 @app.get("/robots.txt")
 async def robots_txt():
     content = (
@@ -955,6 +1235,8 @@ async def robots_txt():
         "Disallow: /orders/\n"
         "Disallow: /scan/\n"
         "Disallow: /payment/\n"
+        "Disallow: /dist/list\n"
+        "Disallow: /dist/upload\n"
         "\n"
         "Sitemap: https://maclechen.top/sitemap.xml\n"
     )

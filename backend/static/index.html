@@ -529,6 +529,86 @@
       .feat-card { padding: 18px 14px; }
     }
 
+    /* ── Page Tab bar ───────────────────────── */
+    .tab-bar {
+      display: flex; gap: 6px; padding: 10px 5%; position: relative; z-index: 1;
+      background: rgba(5,11,24,.6); border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .tab-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 18px; border-radius: 8px; font-size: .85em; font-weight: 700;
+      border: 1px solid transparent; cursor: pointer; transition: all .2s;
+      color: var(--muted); background: none;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,.06); color: var(--text); }
+    .tab-btn.active {
+      background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.35);
+      color: var(--blue-l);
+    }
+    .tab-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* ── Distribution panel ─────────────────── */
+    .dist-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .dist-form-grid .form-field.full { grid-column: 1/-1; }
+    .dist-select {
+      width: 100%; background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; font-size: .95em; outline: none;
+      color: var(--text); transition: border .15s; appearance: none;
+    }
+    .dist-select:focus { border-color: var(--blue); background: rgba(59,130,246,.08); }
+    .dist-upload-zone {
+      border: 2px dashed rgba(139,92,246,.3); border-radius: 14px;
+      padding: 36px 24px; text-align: center; cursor: pointer;
+      transition: all .25s; background: rgba(139,92,246,.03);
+    }
+    .dist-upload-zone:hover, .dist-upload-zone.drag-over {
+      border-color: var(--purple); background: rgba(139,92,246,.07);
+      box-shadow: 0 0 0 4px rgba(139,92,246,.08);
+    }
+    .dist-upload-zone svg { width: 40px; height: 40px; color: #a78bfa; margin-bottom: 12px; }
+    .dist-upload-zone h3 { font-size: 1em; font-weight: 700; margin-bottom: 6px; }
+    .dist-upload-zone p { font-size: .83em; color: var(--muted); }
+    .dist-releases-table { width: 100%; border-collapse: collapse; font-size: .87em; margin-top: 4px; }
+    .dist-releases-table th {
+      text-align: left; padding: 9px 12px; background: rgba(255,255,255,.03);
+      color: var(--muted); font-size: .75em; text-transform: uppercase; letter-spacing: .05em;
+      border-bottom: 1px solid var(--border);
+    }
+    .dist-releases-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+    .dist-releases-table tr:last-child td { border-bottom: none; }
+    .dist-releases-table tr:hover td { background: rgba(255,255,255,.02); }
+    .dist-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.28);
+      color: var(--blue-l); border-radius: 6px; padding: 3px 10px;
+      font-size: .78em; font-weight: 700; text-decoration: none; cursor: pointer;
+    }
+    .dist-link:hover { background: rgba(59,130,246,.22); }
+    .dist-del-btn {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      padding: 4px 8px; border-radius: 6px; transition: all .15s;
+    }
+    .dist-del-btn:hover { color: #f87171; background: rgba(239,68,68,.1); }
+    .dist-status-ok  { color: var(--green); font-size: .78em; font-weight: 700; }
+    .dist-status-exp { color: #f87171;      font-size: .78em; font-weight: 700; }
+    .dist-qr-pop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px;
+    }
+    .dist-qr-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+      padding: 28px; text-align: center; max-width: 340px; width: 100%;
+    }
+    .dist-qr-card img { width: 180px; height: 180px; border-radius: 10px; margin: 12px auto; display: block; }
+    .dist-qr-url {
+      font-size: .78em; color: var(--muted); word-break: break-all;
+      background: rgba(255,255,255,.05); border-radius: 8px; padding: 8px 12px; margin: 12px 0;
+    }
+    @media (max-width: 640px) {
+      .dist-form-grid { grid-template-columns: 1fr; }
+    }
+
     /* ── Home back button ───────────────────── */
     .home-btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -831,6 +911,23 @@
   <span id="mobsf-banner-text"></span>
 </div>
 
+<!-- Tab bar -->
+<div class="tab-bar" id="main-tab-bar">
+  <button class="tab-btn active" id="tab-scan-btn" onclick="switchTab('scan')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+    </svg>
+    <span id="tab-scan-text">安全扫描</span>
+  </button>
+  <button class="tab-btn" id="tab-dist-btn" onclick="switchTab('dist')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/>
+    </svg>
+    <span id="tab-dist-text">应用分发</span>
+  </button>
+</div>
+
+<div id="scan-tab">
 <div class="page">
 
   <!-- ① Gate (not logged in / no credits) -->
@@ -1015,6 +1112,101 @@
 
   </div><!-- #results -->
 </div><!-- .page -->
+</div><!-- #scan-tab -->
+
+<!-- ── Distribution Platform Tab ──────────────────────────── -->
+<div id="dist-tab" class="hidden">
+  <div class="page">
+
+    <!-- Upload card -->
+    <div class="card">
+      <h2 class="st" id="dist-upload-title">📦 上传应用</h2>
+      <p id="dist-upload-sub" style="margin-bottom:16px;font-size:.9em;color:var(--muted)">将 APK/IPA 托管到平台，生成专属下载页面与二维码</p>
+      <div class="dist-upload-zone" id="dist-upload-zone" onclick="document.getElementById('dist-file-input').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"/>
+        </svg>
+        <h3 id="dist-zone-title">点击或拖拽 APK / IPA 到这里</h3>
+        <p id="dist-zone-sub">支持 Android APK · iOS IPA · 最大 500 MB</p>
+        <div id="dist-file-name" style="margin-top:12px;font-size:.85em;color:var(--blue-l);font-weight:700;display:none"></div>
+      </div>
+      <input type="file" id="dist-file-input" accept=".apk,.ipa" style="display:none">
+      <div class="dist-form-grid" style="margin-top:18px">
+        <div class="form-field">
+          <label class="form-label" id="dist-label-appname">应用名称</label>
+          <input class="form-input" id="dist-appname" type="text" placeholder="My App">
+        </div>
+        <div class="form-field">
+          <label class="form-label" id="dist-label-version">版本号</label>
+          <input class="form-input" id="dist-version" type="text" placeholder="1.0.0">
+        </div>
+        <div class="form-field">
+          <label class="form-label" id="dist-label-expiry">有效天数</label>
+          <select class="dist-select" id="dist-expiry">
+            <option value="">永久有效</option>
+            <option value="1">1 天</option>
+            <option value="3">3 天</option>
+            <option value="7">7 天</option>
+            <option value="30">30 天</option>
+            <option value="90">90 天</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" id="dist-label-maxdl">最大下载次数</label>
+          <select class="dist-select" id="dist-maxdl">
+            <option value="0">不限次数</option>
+            <option value="1">1 次</option>
+            <option value="5">5 次</option>
+            <option value="10">10 次</option>
+            <option value="50">50 次</option>
+            <option value="100">100 次</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label class="form-label" id="dist-label-desc">备注说明</label>
+          <input class="form-input" id="dist-desc" type="text" placeholder="版本更新说明...">
+        </div>
+      </div>
+      <div id="dist-upload-msg" class="form-msg" style="margin-top:10px"></div>
+      <button class="upload-btn" id="dist-submit-btn" onclick="distUpload()" style="margin-top:16px;width:100%;justify-content:center">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+          <path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/>
+          <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/>
+        </svg>
+        <span id="dist-submit-text">上传并生成分发链接</span>
+      </button>
+    </div>
+
+    <!-- My releases card -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 class="st" id="dist-releases-title" style="margin:0">📋 我的分发</h2>
+        <button class="auth-btn" onclick="loadDistList()" style="font-size:.8em;padding:5px 12px" id="dist-refresh-btn">↻ 刷新</button>
+      </div>
+      <div id="dist-releases-wrap">
+        <div style="text-align:center;color:var(--muted);padding:30px" id="dist-releases-placeholder">暂无分发记录</div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- #dist-tab -->
+
+<!-- QR popup -->
+<div class="dist-qr-pop hidden" id="dist-qr-pop" onclick="hideDistQR()">
+  <div class="dist-qr-card" onclick="event.stopPropagation()">
+    <h3 id="dist-qr-name" style="font-size:1em;font-weight:700;margin-bottom:4px"></h3>
+    <div style="font-size:.8em;color:var(--muted);margin-bottom:4px" id="dist-qr-hint">扫码下载</div>
+    <img id="dist-qr-img" src="" alt="QR">
+    <div class="dist-qr-url" id="dist-qr-url"></div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+      <button class="dist-link" id="dist-qr-copy-btn" onclick="copyDistLink(document.getElementById('dist-qr-url').textContent, this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5h-1v-3.379a3 3 0 0 0-.879-2.121L10.5 5.379A3 3 0 0 0 8.379 4.5H7v-1Z"/><path d="M4.5 6A1.5 1.5 0 0 0 3 7.5v9A1.5 1.5 0 0 0 4.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L9.44 6.439A1.5 1.5 0 0 0 8.378 6H4.5Z"/></svg>
+        <span id="dist-qr-copy-text">复制链接</span>
+      </button>
+      <button class="dist-link" onclick="hideDistQR()" style="background:rgba(255,255,255,.07);border-color:var(--border);color:var(--muted)" id="dist-qr-close-btn">关闭</button>
+    </div>
+  </div>
+</div>
 
 <footer class="footer">
   <div class="footer-links">
@@ -1153,6 +1345,42 @@ const LANG = {
     gateBtnBuy:     '立即购买次数包',
     // Upload button
     btnScanFile: '开始扫描',
+    // Tabs
+    tabScan: '安全扫描',
+    tabDist: '应用分发',
+    // Distribution
+    distUploadTitle: '📦 上传应用',
+    distUploadSub:   '将 APK/IPA 托管到平台，生成专属下载页面与二维码',
+    distZoneTitle:   '点击或拖拽 APK / IPA 到这里',
+    distZoneSub:     '支持 Android APK · iOS IPA · 最大 500 MB',
+    distLabelAppname:'应用名称',
+    distLabelVersion:'版本号',
+    distLabelExpiry: '有效天数',
+    distLabelMaxdl:  '最大下载次数',
+    distLabelDesc:   '备注说明',
+    distSubmitText:  '上传并生成分发链接',
+    distReleasesTitle:'📋 我的分发',
+    distRefreshBtn:  '↻ 刷新',
+    distNoReleases:  '暂无分发记录，先上传一个应用吧',
+    distQrHint:      '扫码下载',
+    distCopyLink:    '复制链接',
+    distClose:       '关闭',
+    distUploading:   '上传中，请稍候...',
+    distSuccess:     '✅ 上传成功，分发链接已生成',
+    distErrNoFile:   '请先选择要上传的 APK 或 IPA 文件',
+    distErrLogin:    '请先登录后再上传',
+    distErrUpload:   '上传失败：',
+    distColApp:      '应用',
+    distColStatus:   '状态',
+    distColDownloads:'下载',
+    distColExpiry:   '有效期',
+    distColActions:  '操作',
+    distStatusOk:    '有效',
+    distStatusExp:   '已过期',
+    distStatusExh:   '已用尽',
+    distDelConfirm:  '确定要删除这个分发链接吗？',
+    distPermanent:   '永久',
+    distUnlimited:   '不限次',
   },
   en: {
     pageTitle:    'AI Mobile Security Scanner',
@@ -1274,6 +1502,42 @@ const LANG = {
     gateBtnBuy:     'Buy Credits',
     // Upload button
     btnScanFile: 'Start Scan',
+    // Tabs
+    tabScan: 'Security Scan',
+    tabDist: 'App Distribution',
+    // Distribution
+    distUploadTitle: '📦 Upload App',
+    distUploadSub:   'Host your APK/IPA on the platform and generate a download page with QR code',
+    distZoneTitle:   'Click or drag APK / IPA here',
+    distZoneSub:     'Supports Android APK · iOS IPA · Max 500 MB',
+    distLabelAppname:'App Name',
+    distLabelVersion:'Version',
+    distLabelExpiry: 'Expiry (days)',
+    distLabelMaxdl:  'Max Downloads',
+    distLabelDesc:   'Description',
+    distSubmitText:  'Upload & Generate Link',
+    distReleasesTitle:'📋 My Releases',
+    distRefreshBtn:  '↻ Refresh',
+    distNoReleases:  'No releases yet — upload your first app',
+    distQrHint:      'Scan to download',
+    distCopyLink:    'Copy Link',
+    distClose:       'Close',
+    distUploading:   'Uploading, please wait...',
+    distSuccess:     '✅ Upload successful, link generated',
+    distErrNoFile:   'Please select an APK or IPA file first',
+    distErrLogin:    'Please sign in before uploading',
+    distErrUpload:   'Upload failed: ',
+    distColApp:      'App',
+    distColStatus:   'Status',
+    distColDownloads:'Downloads',
+    distColExpiry:   'Expiry',
+    distColActions:  'Actions',
+    distStatusOk:    'Active',
+    distStatusExp:   'Expired',
+    distStatusExh:   'Exhausted',
+    distDelConfirm:  'Delete this distribution link?',
+    distPermanent:   'Permanent',
+    distUnlimited:   'Unlimited',
   },
 };
 
@@ -1741,6 +2005,25 @@ function applyI18n() {
   setText('footer-product', l.footerProduct);
   setText('footer-support', l.footerSupport);
   setText('footer-copy',    l.footerCopy);
+  // Tabs
+  setText('tab-scan-text', l.tabScan);
+  setText('tab-dist-text', l.tabDist);
+  // Distribution
+  setText('dist-upload-title',  l.distUploadTitle);
+  setText('dist-upload-sub',    l.distUploadSub);
+  setText('dist-zone-title',    l.distZoneTitle);
+  setText('dist-zone-sub',      l.distZoneSub);
+  setText('dist-label-appname', l.distLabelAppname);
+  setText('dist-label-version', l.distLabelVersion);
+  setText('dist-label-expiry',  l.distLabelExpiry);
+  setText('dist-label-maxdl',   l.distLabelMaxdl);
+  setText('dist-label-desc',    l.distLabelDesc);
+  setText('dist-submit-text',   l.distSubmitText);
+  setText('dist-releases-title',l.distReleasesTitle);
+  setText('dist-refresh-btn',   l.distRefreshBtn);
+  setText('dist-qr-hint',       l.distQrHint);
+  setText('dist-qr-copy-text',  l.distCopyLink);
+  setText('dist-qr-close-btn',  l.distClose);
   // Redeem input placeholder
   const ri = document.getElementById('redeem-input');
   if (ri) ri.placeholder = l.redeemPlaceholder;
@@ -2069,6 +2352,198 @@ async function checkMobSF() {
     fetchMe();
   }
 })();
+
+// ── Tab switching ──────────────────────────────────────────
+let currentTab = 'scan';
+
+function switchTab(tab) {
+  currentTab = tab;
+  const scanBtn = document.getElementById('tab-scan-btn');
+  const distBtn = document.getElementById('tab-dist-btn');
+  const scanTab = document.getElementById('scan-tab');
+  const distTab = document.getElementById('dist-tab');
+  if (tab === 'scan') {
+    scanBtn.classList.add('active');
+    distBtn.classList.remove('active');
+    scanTab.classList.remove('hidden');
+    distTab.classList.add('hidden');
+  } else {
+    distBtn.classList.add('active');
+    scanBtn.classList.remove('active');
+    distTab.classList.remove('hidden');
+    scanTab.classList.add('hidden');
+    if (userInfo) loadDistList();
+  }
+}
+
+// ── Distribution: file pick ─────────────────────────────────
+const distFileInput = document.getElementById('dist-file-input');
+const distUploadZone = document.getElementById('dist-upload-zone');
+
+distUploadZone.addEventListener('dragover', e => { e.preventDefault(); distUploadZone.classList.add('drag-over'); });
+distUploadZone.addEventListener('dragleave', () => distUploadZone.classList.remove('drag-over'));
+distUploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  distUploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) setDistFile(f);
+});
+distFileInput.addEventListener('change', () => {
+  if (distFileInput.files[0]) setDistFile(distFileInput.files[0]);
+});
+
+function setDistFile(file) {
+  const nameEl = document.getElementById('dist-file-name');
+  nameEl.textContent = `✓ ${file.name}  (${(file.size/1024/1024).toFixed(1)} MB)`;
+  nameEl.style.display = 'block';
+}
+
+// ── Distribution: upload ────────────────────────────────────
+async function distUpload() {
+  const l = L();
+  if (!userInfo) { showToast(l.distErrLogin); openLoginModal(); return; }
+  const file = distFileInput.files[0];
+  if (!file) { showToast(l.distErrNoFile); return; }
+  const msg = document.getElementById('dist-upload-msg');
+  const btn = document.getElementById('dist-submit-btn');
+  btn.disabled = true;
+  msg.className = 'form-msg'; msg.textContent = l.distUploading;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('app_name',      document.getElementById('dist-appname').value.trim());
+  fd.append('version',       document.getElementById('dist-version').value.trim());
+  fd.append('description',   document.getElementById('dist-desc').value.trim());
+  fd.append('expires_days',  document.getElementById('dist-expiry').value || '');
+  fd.append('max_downloads', document.getElementById('dist-maxdl').value || '0');
+  try {
+    const resp = await fetch('/dist/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwt}` },
+      body: fd,
+    });
+    const d = await resp.json();
+    if (resp.ok) {
+      msg.className = 'form-msg ok'; msg.textContent = l.distSuccess;
+      // Reset form
+      distFileInput.value = '';
+      document.getElementById('dist-file-name').style.display = 'none';
+      document.getElementById('dist-file-name').textContent = '';
+      document.getElementById('dist-appname').value = '';
+      document.getElementById('dist-version').value = '';
+      document.getElementById('dist-desc').value = '';
+      document.getElementById('dist-expiry').value = '';
+      document.getElementById('dist-maxdl').value = '0';
+      // Show releases
+      setTimeout(() => { msg.textContent = ''; loadDistList(); }, 1500);
+    } else {
+      msg.className = 'form-msg err'; msg.textContent = l.distErrUpload + (d.detail || resp.status);
+    }
+  } catch(e) {
+    msg.className = 'form-msg err'; msg.textContent = l.distErrUpload + e.message;
+  }
+  btn.disabled = false;
+}
+
+// ── Distribution: list ──────────────────────────────────────
+async function loadDistList() {
+  if (!userInfo) return;
+  const l = L();
+  const wrap = document.getElementById('dist-releases-wrap');
+  wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>`;
+  try {
+    const resp = await fetch('/dist/list', { headers: { Authorization: `Bearer ${jwt}` } });
+    const d = await resp.json();
+    const list = d.releases || [];
+    if (!list.length) {
+      wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:30px">${l.distNoReleases}</div>`;
+      return;
+    }
+    const now = new Date();
+    wrap.innerHTML = `<table class="dist-releases-table">
+      <thead><tr>
+        <th>${l.distColApp}</th>
+        <th>${l.distColStatus}</th>
+        <th>${l.distColDownloads}</th>
+        <th>${l.distColExpiry}</th>
+        <th>${l.distColActions}</th>
+      </tr></thead>
+      <tbody>` + list.map(r => {
+        const previewUrl = `${location.origin}/dist/${r.slug}`;
+        const expired = r.expires_at && new Date(r.expires_at) < now;
+        const exhausted = r.max_downloads > 0 && r.download_count >= r.max_downloads;
+        const statusCls = (!expired && !exhausted) ? 'dist-status-ok' : 'dist-status-exp';
+        const statusTxt = expired ? l.distStatusExp : exhausted ? l.distStatusExh : l.distStatusOk;
+        const expiryTxt = r.expires_at ? r.expires_at.slice(0,10) : l.distPermanent;
+        const dlTxt = r.max_downloads > 0 ? `${r.download_count}/${r.max_downloads}` : `${r.download_count} (${l.distUnlimited})`;
+        const apkBadge = r.file_type === 'apk'
+          ? '<span class="upload-badge apk-badge" style="font-size:.72em;padding:2px 7px">APK</span>'
+          : '<span class="upload-badge ipa-badge" style="font-size:.72em;padding:2px 7px">IPA</span>';
+        return `<tr>
+          <td>
+            <div style="font-weight:700;font-size:.92em">${esc(r.app_name||r.slug)}</div>
+            <div style="color:var(--muted);font-size:.78em">${esc(r.version||'')} ${apkBadge}</div>
+          </td>
+          <td><span class="${statusCls}">${statusTxt}</span></td>
+          <td style="color:var(--muted)">${dlTxt}</td>
+          <td style="color:var(--muted);font-size:.82em">${expiryTxt}</td>
+          <td>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <button class="dist-link" onclick="showDistQR('${previewUrl}','${esc(r.app_name||r.slug)}')">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M3 4a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Zm8-5a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2h-3a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2h-3a1 1 0 0 1-1-1Zm-8 5a1 1 0 0 1 1-1h12a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/></svg>
+                QR
+              </button>
+              <button class="dist-link" onclick="copyDistLink('${previewUrl}',this)">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5h-1v-3.379a3 3 0 0 0-.879-2.121L10.5 5.379A3 3 0 0 0 8.379 4.5H7v-1Z"/><path d="M4.5 6A1.5 1.5 0 0 0 3 7.5v9A1.5 1.5 0 0 0 4.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L9.44 6.439A1.5 1.5 0 0 0 8.378 6H4.5Z"/></svg>
+                ${l.distCopyLink}
+              </button>
+              <button class="dist-del-btn" onclick="deleteRelease('${r.slug}',this)" title="${l.distDelConfirm}">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('') + `</tbody></table>`;
+  } catch(e) {
+    wrap.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px">加载失败，请重试</div>`;
+  }
+}
+
+// ── Distribution: delete ────────────────────────────────────
+async function deleteRelease(slug, btn) {
+  if (!confirm(L().distDelConfirm)) return;
+  btn.disabled = true;
+  try {
+    const resp = await fetch(`/dist/${slug}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    if (resp.ok) { showToast('已删除'); loadDistList(); }
+    else { const d = await resp.json(); showToast(d.detail || '删除失败'); btn.disabled = false; }
+  } catch(e) { showToast('网络错误'); btn.disabled = false; }
+}
+
+// ── Distribution: QR popup ──────────────────────────────────
+function showDistQR(url, name) {
+  const qrSize = 200;
+  const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(url)}`;
+  document.getElementById('dist-qr-img').src = qrUrl;
+  document.getElementById('dist-qr-name').textContent = name;
+  document.getElementById('dist-qr-url').textContent = url;
+  document.getElementById('dist-qr-pop').classList.remove('hidden');
+}
+
+function hideDistQR() {
+  document.getElementById('dist-qr-pop').classList.add('hidden');
+}
+
+// ── Distribution: copy link ─────────────────────────────────
+function copyDistLink(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.innerHTML;
+    btn.textContent = '✅';
+    setTimeout(() => { btn.innerHTML = orig; }, 2000);
+  });
+}
 
 // ── Init ───────────────────────────────────────────────────
 applyI18n();
