@@ -1327,7 +1327,7 @@ async def dist_list(user: dict = Depends(_current_user)):
             """SELECT slug, app_name, version, file_type, file_size,
                       created_at, expires_at, max_downloads, download_count, is_active,
                       pkg_name, display_name, icon_b64
-               FROM app_releases WHERE user_id=? ORDER BY created_at DESC""",
+               FROM app_releases WHERE user_id=? AND is_active=1 ORDER BY created_at DESC""",
             (user["id"],),
         ).fetchall()
     return {"releases": [dict(r) for r in rows]}

@@ -2622,7 +2622,7 @@ async function deleteRelease(slug, btn) {
       headers: { Authorization: `Bearer ${jwt}` },
     });
     if (resp.ok) { showToast('已删除'); loadDistList(); }
-    else { const d = await resp.json(); showToast(d.detail || '删除失败'); btn.disabled = false; }
+    else { let msg = '删除失败'; try { const d = await resp.json(); msg = d.detail || msg; } catch(_) {} showToast(msg); btn.disabled = false; }
   } catch(e) { showToast('网络错误'); btn.disabled = false; }
 }
 
