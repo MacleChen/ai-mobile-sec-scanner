@@ -317,8 +317,12 @@
       padding: 4px 14px; border-radius: 7px; font-size: .78em; font-weight: 800;
       letter-spacing: .04em;
     }
-    .apk-badge { background: rgba(59,130,246,.14); color: #60a5fa; border: 1px solid rgba(59,130,246,.28); }
-    .ipa-badge { background: rgba(139,92,246,.14); color: #a78bfa; border: 1px solid rgba(139,92,246,.28); }
+    .apk-badge   { background: rgba(59,130,246,.14); color: #60a5fa; border: 1px solid rgba(59,130,246,.28); }
+    .ipa-badge   { background: rgba(139,92,246,.14); color: #a78bfa; border: 1px solid rgba(139,92,246,.28); }
+    .win-badge   { background: rgba(56,189,248,.14); color: #38bdf8; border: 1px solid rgba(56,189,248,.28); }
+    .mac-badge   { background: rgba(52,211,153,.14); color: #34d399; border: 1px solid rgba(52,211,153,.28); }
+    .linux-badge { background: rgba(251,146,60,.14);  color: #fb923c; border: 1px solid rgba(251,146,60,.28); }
+    .other-badge { background: rgba(148,163,184,.14); color: #94a3b8; border: 1px solid rgba(148,163,184,.28); }
     .upload-zone h3 { font-size: 1.15em; font-weight: 800; margin-bottom: 8px; color: var(--text); position: relative; z-index: 1; }
     .upload-zone p { color: var(--muted); font-size: .87em; position: relative; z-index: 1; }
     .upload-btn {
@@ -1169,16 +1173,16 @@
     <!-- Upload card -->
     <div class="card">
       <h2 class="st" id="dist-upload-title">📦 上传应用</h2>
-      <p id="dist-upload-sub" style="margin-bottom:16px;font-size:.9em;color:var(--muted)">将 APK/IPA 托管到平台，生成专属下载页面与二维码</p>
+      <p id="dist-upload-sub" style="margin-bottom:16px;font-size:.9em;color:var(--muted)">将应用文件托管到平台，生成专属下载页面与二维码</p>
       <div class="dist-upload-zone" id="dist-upload-zone" onclick="document.getElementById('dist-file-input').click()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"/>
         </svg>
-        <h3 id="dist-zone-title">点击或拖拽 APK / IPA 到这里</h3>
-        <p id="dist-zone-sub">支持 Android APK · iOS IPA · 最大 500 MB</p>
+        <h3 id="dist-zone-title">点击或拖拽应用文件到这里</h3>
+        <p id="dist-zone-sub">支持 Android · iOS · Windows · macOS · Linux · 最大 500 MB</p>
         <div id="dist-file-name" style="margin-top:12px;font-size:.85em;color:var(--blue-l);font-weight:700;display:none"></div>
       </div>
-      <input type="file" id="dist-file-input" accept=".apk,.ipa" style="display:none">
+      <input type="file" id="dist-file-input" accept=".apk,.ipa,.exe,.msi,.dmg,.pkg,.deb,.rpm,.AppImage,.zip" style="display:none">
       <div class="dist-form-grid" style="margin-top:18px">
         <div class="form-field">
           <label class="form-label" id="dist-label-appname">应用名称</label>
@@ -1413,9 +1417,9 @@ const LANG = {
     tabDist: '应用分发',
     // Distribution
     distUploadTitle: '📦 上传应用',
-    distUploadSub:   '将 APK/IPA 托管到平台，生成专属下载页面与二维码',
-    distZoneTitle:   '点击或拖拽 APK / IPA 到这里',
-    distZoneSub:     '支持 Android APK · iOS IPA · 最大 500 MB',
+    distUploadSub:   '将应用文件托管到平台，生成专属下载页面与二维码',
+    distZoneTitle:   '点击或拖拽应用文件到这里',
+    distZoneSub:     '支持 Android · iOS · Windows · macOS · Linux · 最大 500 MB',
     distLabelAppname:'应用名称',
     distLabelVersion:'版本号',
     distLabelExpiry: '有效天数',
@@ -1431,7 +1435,7 @@ const LANG = {
     distUploading:   '上传中…',
     distSuccess:     '✅ 上传成功，分发链接已生成',
     distUpdated:     '✅ 已更新，分发链接不变',
-    distErrNoFile:   '请先选择要上传的 APK 或 IPA 文件',
+    distErrNoFile:   '请先选择要上传的应用文件',
     distErrLogin:    '请先登录后再上传',
     distErrUpload:   '上传失败：',
     distColApp:      '应用',
@@ -1571,9 +1575,9 @@ const LANG = {
     tabDist: 'App Distribution',
     // Distribution
     distUploadTitle: '📦 Upload App',
-    distUploadSub:   'Host your APK/IPA on the platform and generate a download page with QR code',
-    distZoneTitle:   'Click or drag APK / IPA here',
-    distZoneSub:     'Supports Android APK · iOS IPA · Max 500 MB',
+    distUploadSub:   'Host your app on the platform and generate a download page with QR code',
+    distZoneTitle:   'Click or drag app file here',
+    distZoneSub:     'Android · iOS · Windows · macOS · Linux · Max 500 MB',
     distLabelAppname:'App Name',
     distLabelVersion:'Version',
     distLabelExpiry: 'Expiry (days)',
@@ -1589,7 +1593,7 @@ const LANG = {
     distUploading:   'Uploading…',
     distSuccess:     '✅ Upload successful, link generated',
     distUpdated:     '✅ App updated — link unchanged',
-    distErrNoFile:   'Please select an APK or IPA file first',
+    distErrNoFile:   'Please select an app file first',
     distErrLogin:    'Please sign in before uploading',
     distErrUpload:   'Upload failed: ',
     distColApp:      'App',
@@ -2584,9 +2588,13 @@ async function loadDistList() {
           ? `${r.download_count} / ${r.max_downloads}`
           : `${r.download_count}`;
         const uploadTxt  = r.created_at ? r.created_at.slice(0,16).replace('T',' ') : '';
-        const apkBadge   = r.file_type === 'apk'
-          ? '<span class="upload-badge apk-badge" style="font-size:.7em;padding:1px 7px;margin-left:4px">APK</span>'
-          : '<span class="upload-badge ipa-badge" style="font-size:.7em;padding:1px 7px;margin-left:4px">IPA</span>';
+        const _PLAT_BADGE = {android:'apk-badge',ios:'ipa-badge',windows:'win-badge',macos:'mac-badge',linux:'linux-badge'};
+        const _PLAT_LABEL = {android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
+        const plat = r.platform || (r.file_type==='apk'?'android':r.file_type==='ipa'?'ios':'other');
+        const platCls = _PLAT_BADGE[plat] || 'other-badge';
+        const platLabel = _PLAT_LABEL[plat] || r.file_type.toUpperCase();
+        const apkBadge   = `<span class="upload-badge ${platCls}" style="font-size:.7em;padding:1px 7px;margin-left:4px">${platLabel}</span>`;
+        const isPublic   = r.is_public ? true : false;
         const iconHtml   = r.icon_b64
           ? `<img src="data:image/png;base64,${r.icon_b64}" class="dist-app-icon" alt="">`
           : `<div class="dist-app-icon dist-app-icon-ph">📱</div>`;
@@ -2619,6 +2627,9 @@ async function loadDistList() {
               <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M6.194 12.753a.75.75 0 0 0 1.06.053L16.5 4.44v2.81a.75.75 0 0 0 1.5 0v-4.5a.75.75 0 0 0-.75-.75h-4.5a.75.75 0 0 0 0 1.5h2.553l-9.056 8.194a.75.75 0 0 0-.053 1.06Z" clip-rule="evenodd"/></svg>
               ${lang === 'en' ? 'Open' : '打开'}
             </a>
+            <button class="dist-link" onclick="togglePublic('${r.slug}',this)" title="${isPublic?(lang==='en'?'Remove from market':'从市场下架'):(lang==='en'?'Publish to market':'上架到市场')}" style="${isPublic?'background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.4);color:#34d399':''}">
+              ${isPublic?'🌐':'🔒'}
+            </button>
             <button class="dist-del-btn" onclick="deleteRelease('${r.slug}',this)" title="${l.distDelConfirm}">
               <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"/></svg>
             </button>
@@ -2641,6 +2652,25 @@ async function deleteRelease(slug, btn) {
     });
     if (resp.ok) { showToast('已删除'); loadDistList(); }
     else { let msg = '删除失败'; try { const d = await resp.json(); msg = d.detail || msg; } catch(_) {} showToast(msg); btn.disabled = false; }
+  } catch(e) { showToast('网络错误'); btn.disabled = false; }
+}
+
+// ── Distribution: toggle public ─────────────────────────────
+async function togglePublic(slug, btn) {
+  btn.disabled = true;
+  try {
+    const resp = await fetch(`/dist/${slug}/toggle-public`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    const d = await resp.json();
+    if (resp.ok) {
+      showToast(d.is_public ? (lang==='en'?'Published to market':'已上架到应用市场') : (lang==='en'?'Removed from market':'已从市场下架'));
+      loadDistList();
+    } else {
+      showToast(d.detail || '操作失败');
+      btn.disabled = false;
+    }
   } catch(e) { showToast('网络错误'); btn.disabled = false; }
 }
 

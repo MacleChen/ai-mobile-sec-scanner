@@ -81,6 +81,21 @@ PACKAGES = {
     "p200": {"credits": 200, "amount": 129.9, "usdt": "18.00"},
 }
 
+# ── Distribution file support ────────────────────────────────
+_ALLOWED_EXTS = {"apk", "ipa", "exe", "msi", "dmg", "pkg", "deb", "rpm", "appimage", "zip"}
+_PLATFORM_MAP = {
+    "apk":      "android",
+    "ipa":      "ios",
+    "exe":      "windows",
+    "msi":      "windows",
+    "dmg":      "macos",
+    "pkg":      "macos",
+    "deb":      "linux",
+    "rpm":      "linux",
+    "appimage": "linux",
+    "zip":      "other",
+}
+
 # ── SQLite database ────────────────────────────────────────────
 _DB_PATH = Path(os.getenv("DB_PATH", "/app/data/scanner.db"))
 
@@ -169,6 +184,8 @@ def _init_db():
                 pkg_name       TEXT DEFAULT '',
                 display_name   TEXT DEFAULT '',
                 icon_b64       TEXT DEFAULT '',
+                platform       TEXT DEFAULT '',
+                is_public      INTEGER DEFAULT 0,
                 FOREIGN KEY(user_id) REFERENCES users_v2(id)
             );
         """)
@@ -183,6 +200,8 @@ def _migrate_db():
         "ALTER TABLE app_releases ADD COLUMN pkg_name     TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN display_name TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN icon_b64     TEXT DEFAULT ''",
+        "ALTER TABLE app_releases ADD COLUMN platform     TEXT DEFAULT ''",
+        "ALTER TABLE app_releases ADD COLUMN is_public    INTEGER DEFAULT 0",
     ]
     with _db() as c:
         for sql in migrations:
@@ -1114,166 +1133,183 @@ def _resize_icon(data: bytes, size: int = 128) -> bytes:
 
 
 def _extract_app_info(path: Path, ext: str) -> dict:
-    """Extract pkg_name, display_name, icon_b64 from APK or IPA."""
-    info = {"pkg_name": "", "display_name": "", "icon_b64": ""}
-    try:
-        if ext == "apk":
-            # ── Metadata via pyaxmlparser ──────────────────────
+    """Extract pkg_name, display_name, version, icon_b64 from APK or IPA."""
+    info = {"pkg_name": "", "display_name": "", "version": "", "icon_b64": ""}
+    if ext == "apk":
+        # ── Metadata via pyaxmlparser (each field in its own try/except) ──
+        apk = None
+        try:
+            from pyaxmlparser import APK as _APK
+            apk = _APK(str(path))
+        except Exception:
+            pass
+        if apk is not None:
             try:
-                from pyaxmlparser import APK as _APK
-                apk = _APK(str(path))
-                info["pkg_name"]    = apk.get_package() or ""
+                info["pkg_name"] = apk.get_package() or ""
+            except Exception:
+                pass
+            try:
                 info["display_name"] = apk.get_app_name() or ""
             except Exception:
                 pass
-            # ── Icon extraction ──────────────────────────────────────────
-            # DPI rank: lower = better quality
-            _DPI_RANK = {"xxxhdpi": 0, "xxhdpi": 1, "xhdpi": 2, "hdpi": 3, "mdpi": 4, "ldpi": 5}
-            def _dpi_cfg_rank(cfg_str):
-                s = str(cfg_str)
-                for dpi, rank in _DPI_RANK.items():
-                    if dpi in s:
-                        return rank
-                return 9
-            def _dpi_name_rank(name):
-                for dpi, rank in _DPI_RANK.items():
-                    if dpi in name:
-                        return rank
-                return 9
-
             try:
-                import struct as _struct
-                with _zipfile.ZipFile(str(path)) as z:
-                    names_set = set(z.namelist())
-                    chosen = None
+                info["version"] = apk.get_androidversion_name() or ""
+            except Exception:
+                pass
 
-                    # ── Step 1: use pyaxmlparser icon path ──────────────────
-                    icon_path = None
+        # ── Icon extraction ──────────────────────────────────────────
+        _DPI_RANK = {"xxxhdpi": 0, "xxhdpi": 1, "xhdpi": 2, "hdpi": 3, "mdpi": 4, "ldpi": 5}
+
+        def _dpi_cfg_rank(cfg_str):
+            s = str(cfg_str)
+            for dpi, rank in _DPI_RANK.items():
+                if dpi in s:
+                    return rank
+            return 9
+
+        def _dpi_name_rank(name):
+            for dpi, rank in _DPI_RANK.items():
+                if dpi in name:
+                    return rank
+            return 9
+
+        try:
+            import struct as _struct
+            with _zipfile.ZipFile(str(path)) as z:
+                names_set = set(z.namelist())
+                chosen = None
+
+                # ── Step 1: use pyaxmlparser icon path ──────────────────
+                icon_path = None
+                if apk is not None:
                     try:
                         icon_path = apk.get_app_icon()
                     except Exception:
                         pass
 
-                    if icon_path and icon_path.lower().endswith(('.png', '.webp')) \
-                            and icon_path in names_set:
-                        # Direct bitmap icon — use it
-                        chosen = icon_path
+                if icon_path and icon_path.lower().endswith(('.png', '.webp')) \
+                        and icon_path in names_set:
+                    chosen = icon_path
 
-                    elif icon_path and icon_path.lower().endswith('.xml') \
-                            and icon_path in names_set:
-                        # Adaptive icon XML — resolve via resources.arsc
-                        try:
-                            xml_data = z.read(icon_path)
-                            # Extract all 0x7Fxxxxxx resource ID references from binary XML
-                            res_ids = set()
-                            for i in range(0, len(xml_data) - 3, 4):
-                                val = _struct.unpack_from("<I", xml_data, i)[0]
-                                if 0x7F000000 <= val <= 0x7FFFFFFF:
-                                    res_ids.add(val)
-                            arsc = apk.get_android_resources()
-                            best_rank = 99
-                            for rid in res_ids:
-                                try:
-                                    for cfg, fname in arsc.get_resolved_res_configs(rid):
-                                        if fname.lower().endswith(('.png', '.webp')) \
-                                                and fname in names_set:
-                                            rank = _dpi_cfg_rank(cfg)
-                                            if rank < best_rank:
-                                                best_rank = rank
-                                                chosen = fname
-                                except Exception:
-                                    pass
-                        except Exception:
-                            pass
+                elif icon_path and icon_path.lower().endswith('.xml') \
+                        and icon_path in names_set:
+                    # Adaptive icon XML — resolve via resources.arsc
+                    try:
+                        xml_data = z.read(icon_path)
+                        res_ids = set()
+                        for i in range(0, len(xml_data) - 3, 4):
+                            val = _struct.unpack_from("<I", xml_data, i)[0]
+                            if 0x7F000000 <= val <= 0x7FFFFFFF:
+                                res_ids.add(val)
+                        arsc = apk.get_android_resources()
+                        best_rank = 99
+                        for rid in res_ids:
+                            try:
+                                for cfg, fname in arsc.get_resolved_res_configs(rid):
+                                    if fname.lower().endswith(('.png', '.webp')) \
+                                            and fname in names_set:
+                                        rank = _dpi_cfg_rank(cfg)
+                                        if rank < best_rank:
+                                            best_rank = rank
+                                            chosen = fname
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
 
-                    # ── Step 2: fallback — standard mipmap/drawable folder scan ──
-                    if not chosen:
-                        candidates = [
-                            n for n in names_set
-                            if re.search(
-                                r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.(png|webp)$',
-                                n, re.I)
-                        ]
-                        candidates.sort(
-                            key=lambda n: (1 if "_round" in n else 0, _dpi_name_rank(n)))
-                        if not candidates:
-                            candidates = sorted(
-                                [n for n in names_set
-                                 if re.search(r'mipmap[^/]+/\w+\.(png|webp)$', n, re.I)],
-                                key=_dpi_name_rank,
-                            )
-                        if candidates:
-                            chosen = candidates[0]
+                # ── Step 2: fallback — standard mipmap/drawable folder scan ──
+                if not chosen:
+                    candidates = [
+                        n for n in names_set
+                        if re.search(
+                            r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.(png|webp)$',
+                            n, re.I)
+                    ]
+                    candidates.sort(
+                        key=lambda n: (1 if "_round" in n else 0, _dpi_name_rank(n)))
+                    if not candidates:
+                        candidates = sorted(
+                            [n for n in names_set
+                             if re.search(r'mipmap[^/]+/\w+\.(png|webp)$', n, re.I)],
+                            key=_dpi_name_rank,
+                        )
+                    if candidates:
+                        chosen = candidates[0]
 
-                    if chosen:
-                        raw = z.read(chosen)
-                        info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
-            except Exception:
-                pass
+                # ── Step 3: size-based heuristic fallback ─────────────────
+                if not chosen:
+                    size_candidates = [
+                        (z.getinfo(n).file_size, n) for n in names_set
+                        if n.startswith("res/") and n.lower().endswith((".png", ".webp"))
+                        and 3 * 1024 <= z.getinfo(n).file_size <= 200 * 1024
+                    ]
+                    if size_candidates:
+                        chosen = sorted(size_candidates, reverse=True)[0][1]
 
-        elif ext == "ipa":
-            try:
-                with _zipfile.ZipFile(str(path)) as z:
-                    names = z.namelist()
-                    # ── Info.plist ─────────────────────────────
-                    plists = [n for n in names
-                              if re.match(r'Payload/[^/]+\.app/Info\.plist$', n)]
-                    if plists:
-                        pdata = z.read(plists[0])
-                        pl = plistlib.loads(pdata)
-                        info["pkg_name"]    = pl.get("CFBundleIdentifier", "")
-                        info["display_name"] = (pl.get("CFBundleDisplayName")
-                                                or pl.get("CFBundleName", ""))
-                    # ── Icon ────────────────────────────────────────────────
-                    app_dir = plists[0].rsplit("/", 1)[0] + "/" if plists else "Payload/"
-                    names_set = set(names)
+                if chosen:
+                    raw = z.read(chosen)
+                    info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+        except Exception:
+            pass
 
-                    def _ipa_res_rank(name):
-                        if "@3x" in name: return 0
-                        if "@2x" in name: return 1
-                        return 2
+    elif ext == "ipa":
+        try:
+            with _zipfile.ZipFile(str(path)) as z:
+                names = z.namelist()
+                pl = {}
+                plists = [n for n in names
+                          if re.match(r'Payload/[^/]+\.app/Info\.plist$', n)]
+                if plists:
+                    pdata = z.read(plists[0])
+                    pl = plistlib.loads(pdata)
+                    info["pkg_name"]    = pl.get("CFBundleIdentifier", "")
+                    info["display_name"] = (pl.get("CFBundleDisplayName")
+                                            or pl.get("CFBundleName", ""))
+                    info["version"] = (pl.get("CFBundleShortVersionString")
+                                       or pl.get("CFBundleVersion", ""))
 
-                    # Step 1: resolve from CFBundleIconFiles (direct or nested)
-                    icon_file_names = []
-                    if plists:
-                        for key in ("CFBundleIcons", "CFBundleIcons~ipad"):
-                            bi = pl.get(key, {})
-                            if isinstance(bi, dict):
-                                pi = bi.get("CFBundlePrimaryIcon", {})
-                                if isinstance(pi, dict):
-                                    icon_file_names.extend(pi.get("CFBundleIconFiles", []))
-                        icon_file_names.extend(pl.get("CFBundleIconFiles", []))
+                # ── Icon ────────────────────────────────────────────────
+                app_dir = plists[0].rsplit("/", 1)[0] + "/" if plists else "Payload/"
+                names_set = set(names)
 
-                    # Step 1: enumerate base names × resolution suffixes, pick best
-                    # iOS stores base name in CFBundleIconFiles (e.g. "AppIcon60x60")
-                    # and appends @2x/@3x + .png at runtime — we must try all combos.
-                    suffix_ranks = [("@3x.png", 0), ("@2x.png", 1), (".png", 2), ("", 3)]
-                    candidates = []
-                    for base_name in set(icon_file_names):
-                        for suffix, rank in suffix_ranks:
-                            full = app_dir + base_name + suffix
-                            if full in names_set:
-                                candidates.append((rank, full))
-                    chosen = sorted(candidates)[0][1] if candidates else None
+                def _ipa_res_rank(name):
+                    if "@3x" in name: return 0
+                    if "@2x" in name: return 1
+                    return 2
 
-                    # Step 2: fallback — scan for AppIcon*.png directly in app_dir
-                    if not chosen:
-                        app_icons = [
-                            n for n in names_set
-                            if n.startswith(app_dir)
-                            and re.search(r'AppIcon.*\.png$', n, re.I)
-                            and "/PlugIns/" not in n
-                        ]
-                        if app_icons:
-                            chosen = sorted(app_icons, key=_ipa_res_rank)[0]
+                icon_file_names = []
+                for key in ("CFBundleIcons", "CFBundleIcons~ipad"):
+                    bi = pl.get(key, {})
+                    if isinstance(bi, dict):
+                        pi = bi.get("CFBundlePrimaryIcon", {})
+                        if isinstance(pi, dict):
+                            icon_file_names.extend(pi.get("CFBundleIconFiles", []))
+                icon_file_names.extend(pl.get("CFBundleIconFiles", []))
 
-                    if chosen:
-                        raw = z.read(chosen)
-                        info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
-            except Exception:
-                pass
-    except Exception:
-        pass
+                suffix_ranks = [("@3x.png", 0), ("@2x.png", 1), (".png", 2), ("", 3)]
+                candidates = []
+                for base_name in set(icon_file_names):
+                    for suffix, rank in suffix_ranks:
+                        full = app_dir + base_name + suffix
+                        if full in names_set:
+                            candidates.append((rank, full))
+                chosen = sorted(candidates)[0][1] if candidates else None
+
+                if not chosen:
+                    app_icons = [
+                        n for n in names_set
+                        if n.startswith(app_dir)
+                        and re.search(r'AppIcon.*\.png$', n, re.I)
+                        and "/PlugIns/" not in n
+                    ]
+                    if app_icons:
+                        chosen = sorted(app_icons, key=_ipa_res_rank)[0]
+
+                if chosen:
+                    raw = z.read(chosen)
+                    info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+        except Exception:
+            pass
     return info
 
 def _gen_slug(n: int = 8) -> str:
@@ -1304,6 +1340,7 @@ def _dist_preview_html(r: dict) -> str:
     version      = r.get('version') or ''
     description  = html_lib.escape(r.get('description') or '')
     file_type    = r['file_type'].upper()
+    platform     = r.get('platform') or _PLATFORM_MAP.get(r['file_type'].lower(), 'other')
     size_str     = _fmt_size(r.get('file_size', 0))
     dl_count     = r.get('download_count', 0)
     max_dl       = r.get('max_downloads', 0)
@@ -1311,10 +1348,14 @@ def _dist_preview_html(r: dict) -> str:
     page_url     = f"{site}/dist/{slug}"
     dl_url       = f"{site}/dist/{slug}/download"
     qr_url       = f"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={urllib.parse.quote(page_url, safe='')}&ecc=H&margin=8"
-    apk          = file_type == 'APK'
-    badge_bg     = 'rgba(59,130,246,.2)'  if apk else 'rgba(139,92,246,.2)'
-    badge_col    = '#60a5fa'              if apk else '#a78bfa'
-    badge_brd    = 'rgba(59,130,246,.4)' if apk else 'rgba(139,92,246,.4)'
+    _BADGE_COLORS = {
+        "android": ("#3b82f6", "rgba(59,130,246,.2)", "rgba(59,130,246,.4)"),
+        "ios":     ("#a78bfa", "rgba(139,92,246,.2)", "rgba(139,92,246,.4)"),
+        "windows": ("#38bdf8", "rgba(56,189,248,.2)", "rgba(56,189,248,.4)"),
+        "macos":   ("#34d399", "rgba(52,211,153,.2)", "rgba(52,211,153,.4)"),
+        "linux":   ("#fb923c", "rgba(251,146,60,.2)",  "rgba(251,146,60,.4)"),
+    }
+    badge_col, badge_bg, badge_brd = _BADGE_COLORS.get(platform, ("#94a3b8", "rgba(148,163,184,.2)", "rgba(148,163,184,.4)"))
     # Icon html: base64 image or gradient placeholder
     if icon_b64:
         icon_html = f'<img src="data:image/png;base64,{icon_b64}" class="app-icon-img" alt="icon">'
@@ -1471,8 +1512,8 @@ async def dist_upload(
     user: dict = Depends(_current_user),
 ):
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
-    if ext not in ("apk", "ipa"):
-        raise HTTPException(400, "只支持 APK 或 IPA 文件")
+    if ext not in _ALLOWED_EXTS:
+        raise HTTPException(400, "不支持的文件格式")
 
     # ── Credits check ────────────────────────────────────────────
     with _db() as c:
@@ -1519,13 +1560,14 @@ async def dist_upload(
         resolved_name = meta["display_name"]
 
     # Use extracted version if user didn't provide one
-    resolved_version = version.strip()
+    resolved_version = version.strip() or meta.get("version", "")
 
     # Compute expiry
     expires_at = None
     if expires_days and expires_days > 0:
         expires_at = (datetime.now() + timedelta(days=expires_days)).strftime("%Y-%m-%d %H:%M:%S")
 
+    platform = _PLATFORM_MAP.get(ext, "other")
     with _db() as c:
         if is_update:
             c.execute(
@@ -1533,21 +1575,21 @@ async def dist_upload(
                    version=?, file_size=?, description=?, expires_at=?,
                    max_downloads=?, download_count=0, is_active=1,
                    created_at=datetime('now'),
-                   pkg_name=?, display_name=?, icon_b64=?
+                   pkg_name=?, display_name=?, icon_b64=?, platform=?
                    WHERE slug=?""",
                 (resolved_version, size, description.strip(), expires_at,
                  max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], slug),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, slug),
             )
         else:
             c.execute(
                 """INSERT INTO app_releases
                    (slug, user_id, app_name, version, file_type, file_size,
-                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (slug, user["id"], resolved_name, resolved_version, ext, size,
                  description.strip(), expires_at, max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"]),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform),
             )
 
     # ── Deduct 1 credit ─────────────────────────────────────────
@@ -1571,7 +1613,7 @@ async def dist_list(user: dict = Depends(_current_user)):
         rows = c.execute(
             """SELECT slug, app_name, version, file_type, file_size,
                       created_at, expires_at, max_downloads, download_count, is_active,
-                      pkg_name, display_name, icon_b64
+                      pkg_name, display_name, icon_b64, platform, is_public
                FROM app_releases WHERE user_id=? AND is_active=1 ORDER BY created_at DESC""",
             (user["id"],),
         ).fetchall()
@@ -1588,7 +1630,7 @@ async def dist_delete(slug: str, user: dict = Depends(_current_user)):
             raise HTTPException(403, "无权限")
         c.execute("UPDATE app_releases SET is_active=0 WHERE slug=?", (slug,))
     # Delete file
-    for ext in ("apk", "ipa"):
+    for ext in _ALLOWED_EXTS:
         p = DIST_DIR / f"{slug}.{ext}"
         if p.exists():
             p.unlink()
@@ -1633,6 +1675,168 @@ async def dist_preview(slug: str):
     if not row:
         raise HTTPException(404, "链接不存在")
     return HTMLResponse(_dist_preview_html(dict(row)))
+
+
+@app.post("/dist/{slug}/toggle-public")
+async def dist_toggle_public(slug: str, user: dict = Depends(_current_user)):
+    with _db() as c:
+        row = c.execute("SELECT user_id, is_public FROM app_releases WHERE slug=? AND is_active=1", (slug,)).fetchone()
+        if not row:
+            raise HTTPException(404, "不存在")
+        if dict(row)["user_id"] != user["id"]:
+            raise HTTPException(403, "无权限")
+        new_val = 0 if dict(row)["is_public"] else 1
+        c.execute("UPDATE app_releases SET is_public=? WHERE slug=?", (new_val, slug))
+    return {"ok": True, "is_public": bool(new_val)}
+
+
+@app.get("/market/list")
+async def market_list(
+    platform: str = "",
+    offset: int = 0,
+    limit: int = 24,
+):
+    where = "is_active=1 AND is_public=1"
+    params: list = []
+    if platform:
+        where += " AND platform=?"
+        params.append(platform)
+    with _db() as c:
+        rows = c.execute(
+            f"""SELECT slug, app_name, version, file_type, file_size,
+                        display_name, icon_b64, platform, download_count, created_at
+                FROM app_releases WHERE {where}
+                ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            (*params, limit, offset),
+        ).fetchall()
+    return {"apps": [dict(r) for r in rows]}
+
+
+def _market_html() -> str:
+    site = os.getenv("SITE_URL", "https://maclechen.top")
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>应用市场 — AppSec AI</title>
+  <link rel="icon" href="{site}/favicon.svg" type="image/svg+xml">
+  <style>
+    *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
+    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          background:#050b18;color:#f1f5f9;min-height:100vh;padding:0}}
+    header{{background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);
+            padding:16px 24px;display:flex;align-items:center;gap:12px}}
+    header a{{color:#60a5fa;text-decoration:none;font-weight:700;font-size:1.1em;
+               display:flex;align-items:center;gap:8px}}
+    header img{{width:28px;height:28px}}
+    h1{{font-size:1.05em;color:#94a3b8;font-weight:400}}
+    .filters{{display:flex;gap:8px;padding:20px 24px 8px;flex-wrap:wrap}}
+    .filter-btn{{padding:6px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.12);
+                 background:rgba(255,255,255,.05);color:#94a3b8;cursor:pointer;font-size:.82em;
+                 transition:all .15s}}
+    .filter-btn.active,.filter-btn:hover{{background:rgba(99,102,241,.25);
+      border-color:rgba(99,102,241,.5);color:#a5b4fc}}
+    .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+           gap:16px;padding:16px 24px 40px;max-width:1200px;margin:0 auto}}
+    .card{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+           border-radius:16px;padding:20px 16px;text-align:center;transition:transform .15s,border-color .15s;
+           cursor:pointer;text-decoration:none;color:inherit;display:block}}
+    .card:hover{{transform:translateY(-3px);border-color:rgba(99,102,241,.4)}}
+    .icon{{width:72px;height:72px;border-radius:18px;margin:0 auto 12px;
+           object-fit:cover;display:block;background:rgba(99,102,241,.15)}}
+    .icon-ph{{width:72px;height:72px;border-radius:18px;margin:0 auto 12px;
+              background:linear-gradient(135deg,rgba(59,130,246,.3),rgba(139,92,246,.3));
+              display:flex;align-items:center;justify-content:center;font-size:1.8em}}
+    .name{{font-weight:700;font-size:.95em;margin-bottom:4px;
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+    .ver{{font-size:.72em;color:#64748b;margin-bottom:8px}}
+    .badge{{display:inline-block;padding:2px 10px;border-radius:12px;
+            font-size:.68em;font-weight:700;letter-spacing:.04em}}
+    .badge-android{{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.35)}}
+    .badge-ios{{background:rgba(139,92,246,.2);color:#a78bfa;border:1px solid rgba(139,92,246,.35)}}
+    .badge-windows{{background:rgba(56,189,248,.2);color:#38bdf8;border:1px solid rgba(56,189,248,.35)}}
+    .badge-macos{{background:rgba(52,211,153,.2);color:#34d399;border:1px solid rgba(52,211,153,.35)}}
+    .badge-linux{{background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.35)}}
+    .badge-other{{background:rgba(148,163,184,.2);color:#94a3b8;border:1px solid rgba(148,163,184,.35)}}
+    .dl-cnt{{font-size:.7em;color:#475569;margin-top:6px}}
+    #loading{{text-align:center;padding:60px;color:#475569}}
+    footer{{text-align:center;padding:24px;font-size:.75em;color:#334155;
+            border-top:1px solid rgba(255,255,255,.05);margin-top:24px}}
+    footer a{{color:#3b82f6;text-decoration:none}}
+  </style>
+</head>
+<body>
+<header>
+  <a href="{site}">
+    <img src="{site}/favicon.svg" alt="logo">
+    AppSec AI
+  </a>
+  <h1>应用市场</h1>
+</header>
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('')">全部</button>
+  <button class="filter-btn" onclick="setFilter('android')">🤖 Android</button>
+  <button class="filter-btn" onclick="setFilter('ios')">🍎 iOS</button>
+  <button class="filter-btn" onclick="setFilter('windows')">🪟 Windows</button>
+  <button class="filter-btn" onclick="setFilter('macos')">🍏 macOS</button>
+  <button class="filter-btn" onclick="setFilter('linux')">🐧 Linux</button>
+</div>
+<div id="grid" class="grid"></div>
+<div id="loading">加载中…</div>
+<footer>Powered by <a href="{site}">AppSec AI</a></footer>
+<script>
+const SITE='{site}';
+let currentPlatform='',offset=0,loading=false,done=false;
+const BADGE_LABELS={{android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'}};
+function esc(s){{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}}
+function setFilter(p){{
+  currentPlatform=p;offset=0;done=false;
+  document.getElementById('grid').innerHTML='';
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(p)||(p===''&&b.textContent==='全部')));
+  loadMore();
+}}
+async function loadMore(){{
+  if(loading||done)return;
+  loading=true;
+  const el=document.getElementById('loading');
+  el.style.display='block';
+  const qs=currentPlatform?`?platform=${{currentPlatform}}&offset=${{offset}}`:`?offset=${{offset}}`;
+  const r=await fetch(SITE+'/market/list'+qs);
+  const d=await r.json();
+  const apps=d.apps||[];
+  if(apps.length<24)done=true;
+  const grid=document.getElementById('grid');
+  apps.forEach(app=>{{
+    const name=esc(app.display_name||app.app_name||'未命名');
+    const ver=app.version?`<div class="ver">v${{esc(app.version)}}</div>`:'';
+    const plat=app.platform||'other';
+    const label=BADGE_LABELS[plat]||plat;
+    const icon=app.icon_b64?`<img class="icon" src="data:image/png;base64,${{app.icon_b64}}" alt="icon">`:`<div class="icon-ph">📦</div>`;
+    const card=document.createElement('a');
+    card.className='card';
+    card.href=`${{SITE}}/dist/${{app.slug}}`;
+    card.target='_blank';
+    card.innerHTML=`${{icon}}<div class="name">${{name}}</div>${{ver}}<span class="badge badge-${{plat}}">${{label}}</span><div class="dl-cnt">⬇️ ${{app.download_count||0}} 次下载</div>`;
+    grid.appendChild(card);
+  }});
+  offset+=apps.length;
+  el.style.display=done?'none':'block';
+  if(done)el.textContent='已加载全部';
+  loading=false;
+}}
+window.addEventListener('scroll',()=>{{
+  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200)loadMore();
+}});
+loadMore();
+</script>
+</body>
+</html>"""
+
+
+@app.get("/market", response_class=HTMLResponse)
+async def market_page():
+    return HTMLResponse(_market_html())
 
 
 @app.get("/robots.txt")
