@@ -1351,6 +1351,7 @@ def _dist_preview_html(r: dict) -> str:
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>{app_name}{' v'+html_lib.escape(version) if version else ''} — 应用下载</title>
   <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="{site}/favicon.svg" type="image/svg+xml">
   <style>
     *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
     body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
@@ -1406,8 +1407,10 @@ def _dist_preview_html(r: dict) -> str:
     .meta-row{{display:flex;justify-content:space-between;padding:9px 0;
                border-bottom:1px solid rgba(255,255,255,.04);font-size:.8em}}
     .meta-key{{color:#475569}}
-    .footer{{margin-top:28px;font-size:.72em;color:#1e293b}}
-    .footer a{{color:#3b82f6;text-decoration:none}}
+    .footer{{margin-top:28px;font-size:.72em;color:#334155;
+             display:flex;align-items:center;gap:6px;justify-content:center}}
+    .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
+    .footer-logo{{width:18px;height:18px;opacity:.7}}
   </style>
 </head>
 <body>
@@ -1433,7 +1436,13 @@ def _dist_preview_html(r: dict) -> str:
       <div class="meta-row"><span class="meta-key">有效期</span><span>{exp_html}</span></div>
     </div>
   </div>
-  <div class="footer">Powered by <a href="https://maclechen.top">AppSec AI</a></div>
+  <div class="footer">
+    Powered by
+    <a href="{site}" target="_blank" rel="noopener">
+      <img class="footer-logo" src="{site}/favicon.svg" alt="logo">
+      AppSec AI
+    </a>
+  </div>
   <script>
   function copyLink(){{
     navigator.clipboard.writeText('{page_url}').then(()=>{{
