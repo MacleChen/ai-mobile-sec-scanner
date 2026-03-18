@@ -1105,19 +1105,50 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                         info["pkg_name"]    = pl.get("CFBundleIdentifier", "")
                         info["display_name"] = (pl.get("CFBundleDisplayName")
                                                 or pl.get("CFBundleName", ""))
-                    # ── Icon: prefer 60x60@2x (120px) → largest match ──────
+                    # ── Icon ────────────────────────────────────────────────
                     app_dir = plists[0].rsplit("/", 1)[0] + "/" if plists else "Payload/"
-                    icons = sorted(
-                        [n for n in names
-                         if n.startswith(app_dir) and re.search(r'AppIcon.*\.png$', n, re.I)
-                         and "@3x" not in n],   # skip 3x, 2x is plenty
-                        key=lambda x: -len(x)
-                    )
-                    if not icons:
-                        icons = [n for n in names
-                                 if n.startswith(app_dir) and re.search(r'AppIcon.*\.png$', n, re.I)]
-                    if icons:
-                        raw = z.read(icons[0])
+                    names_set = set(names)
+
+                    def _ipa_res_rank(name):
+                        if "@3x" in name: return 0
+                        if "@2x" in name: return 1
+                        return 2
+
+                    # Step 1: resolve from CFBundleIconFiles (direct or nested)
+                    icon_file_names = []
+                    if plists:
+                        for key in ("CFBundleIcons", "CFBundleIcons~ipad"):
+                            bi = pl.get(key, {})
+                            if isinstance(bi, dict):
+                                pi = bi.get("CFBundlePrimaryIcon", {})
+                                if isinstance(pi, dict):
+                                    icon_file_names.extend(pi.get("CFBundleIconFiles", []))
+                        icon_file_names.extend(pl.get("CFBundleIconFiles", []))
+
+                    chosen = None
+                    # Sort candidates: prefer @3x > @2x > plain
+                    for icon_name in sorted(set(icon_file_names), key=_ipa_res_rank):
+                        for candidate in (icon_name, icon_name + ".png"):
+                            full = app_dir + candidate
+                            if full in names_set:
+                                chosen = full
+                                break
+                        if chosen:
+                            break
+
+                    # Step 2: fallback — scan for AppIcon*.png directly in app_dir
+                    if not chosen:
+                        app_icons = [
+                            n for n in names_set
+                            if n.startswith(app_dir)
+                            and re.search(r'AppIcon.*\.png$', n, re.I)
+                            and "/PlugIns/" not in n
+                        ]
+                        if app_icons:
+                            chosen = sorted(app_icons, key=_ipa_res_rank)[0]
+
+                    if chosen:
+                        raw = z.read(chosen)
                         info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
             except Exception:
                 pass
