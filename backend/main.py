@@ -1125,16 +1125,17 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                                     icon_file_names.extend(pi.get("CFBundleIconFiles", []))
                         icon_file_names.extend(pl.get("CFBundleIconFiles", []))
 
-                    chosen = None
-                    # Sort candidates: prefer @3x > @2x > plain
-                    for icon_name in sorted(set(icon_file_names), key=_ipa_res_rank):
-                        for candidate in (icon_name, icon_name + ".png"):
-                            full = app_dir + candidate
+                    # Step 1: enumerate base names × resolution suffixes, pick best
+                    # iOS stores base name in CFBundleIconFiles (e.g. "AppIcon60x60")
+                    # and appends @2x/@3x + .png at runtime — we must try all combos.
+                    suffix_ranks = [("@3x.png", 0), ("@2x.png", 1), (".png", 2), ("", 3)]
+                    candidates = []
+                    for base_name in set(icon_file_names):
+                        for suffix, rank in suffix_ranks:
+                            full = app_dir + base_name + suffix
                             if full in names_set:
-                                chosen = full
-                                break
-                        if chosen:
-                            break
+                                candidates.append((rank, full))
+                    chosen = sorted(candidates)[0][1] if candidates else None
 
                     # Step 2: fallback — scan for AppIcon*.png directly in app_dir
                     if not chosen:
@@ -1341,6 +1342,12 @@ async def dist_upload(
     if ext not in ("apk", "ipa"):
         raise HTTPException(400, "只支持 APK 或 IPA 文件")
 
+    # ── Credits check ────────────────────────────────────────────
+    with _db() as c:
+        _u = c.execute("SELECT credits FROM users_v2 WHERE id=?", (user["id"],)).fetchone()
+    if not _u or _u["credits"] <= 0:
+        raise HTTPException(402, "Credits 不足，请先购买")
+
     resolved_name = app_name.strip() or (file.filename or "未命名").rsplit(".", 1)[0]
 
     # ── Deduplication: same user + app_name + file_type → update existing ──
@@ -1411,8 +1418,19 @@ async def dist_upload(
                  meta["pkg_name"], meta["display_name"], meta["icon_b64"]),
             )
 
+    # ── Deduct 1 credit ─────────────────────────────────────────
+    with _db() as c:
+        c.execute(
+            "UPDATE users_v2 SET credits=credits-1, updated_at=datetime('now')"
+            " WHERE id=? AND credits>0",
+            (user["id"],),
+        )
+        _row = c.execute("SELECT credits FROM users_v2 WHERE id=?", (user["id"],)).fetchone()
+        credits_left = _row["credits"] if _row else 0
+
     site = os.getenv("SITE_URL", "https://maclechen.top")
-    return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}", "updated": is_update}
+    return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}",
+            "updated": is_update, "credits_left": credits_left}
 
 
 @app.get("/dist/list")

@@ -2516,10 +2516,20 @@ function distUpload() {
     try { d = JSON.parse(xhr.responseText); } catch(_) {}
     if (xhr.status === 200) {
       const isUpdate = d.updated;
+      // Update local credits display
+      if (userInfo && typeof d.credits_left === 'number') {
+        userInfo.credits = d.credits_left;
+        setText('credits-num', d.credits_left);
+        const badge = document.getElementById('credits-badge');
+        if (badge) badge.classList.toggle('low', d.credits_left === 0);
+      }
+      const creditsHint = typeof d.credits_left === 'number'
+        ? (lang === 'en' ? ` (${d.credits_left} credits left)` : `（剩余 ${d.credits_left} 次）`)
+        : '';
       msg.className = 'form-msg ok';
       msg.textContent = isUpdate
-        ? (lang === 'en' ? '✅ App updated — link unchanged' : '✅ 已更新，分发链接不变')
-        : (lang === 'en' ? '✅ Upload successful, link generated' : '✅ 上传成功，分发链接已生成');
+        ? (lang === 'en' ? `✅ App updated — link unchanged${creditsHint}` : `✅ 已更新，分发链接不变${creditsHint}`)
+        : (lang === 'en' ? `✅ Upload successful, link generated${creditsHint}` : `✅ 上传成功，分发链接已生成${creditsHint}`);
       // Reset form
       distFileInput.value = '';
       document.getElementById('dist-file-name').style.display = 'none';
@@ -2530,6 +2540,9 @@ function distUpload() {
       document.getElementById('dist-expiry').value = '';
       document.getElementById('dist-maxdl').value = '0';
       setTimeout(() => { msg.textContent = ''; loadDistList(); }, 1800);
+    } else if (xhr.status === 402) {
+      msg.className = 'form-msg err';
+      msg.textContent = lang === 'en' ? '❌ Insufficient credits — please purchase more' : '❌ Credits 不足，请先购买次数';
     } else {
       msg.className = 'form-msg err';
       msg.textContent = (lang === 'en' ? 'Upload failed: ' : '上传失败：') + (d.detail || xhr.status);
