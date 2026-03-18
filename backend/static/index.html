@@ -2583,6 +2583,7 @@ async function loadDistList() {
         const dlTxt      = r.max_downloads > 0
           ? `${r.download_count} / ${r.max_downloads}`
           : `${r.download_count}`;
+        const uploadTxt  = r.created_at ? r.created_at.slice(0,16).replace('T',' ') : '';
         const apkBadge   = r.file_type === 'apk'
           ? '<span class="upload-badge apk-badge" style="font-size:.7em;padding:1px 7px;margin-left:4px">APK</span>'
           : '<span class="upload-badge ipa-badge" style="font-size:.7em;padding:1px 7px;margin-left:4px">IPA</span>';
@@ -2593,20 +2594,21 @@ async function loadDistList() {
         const pkgLine    = r.pkg_name
           ? `<div class="dist-pkg-name">${esc(r.pkg_name)}</div>` : '';
         const verBadge   = r.version
-          ? `<span style="color:var(--muted);font-size:.78em">v${esc(r.version)}</span>` : '';
+          ? `<span class="dist-stat-pill" style="font-size:.72em">v${esc(r.version)}</span>` : '';
         return `<div class="dist-release-row">
           <div class="dist-release-info">
             ${iconHtml}
             <div class="dist-release-meta">
               <div class="dist-release-name">${esc(displayName)}${apkBadge}</div>
-              ${verBadge}
               ${pkgLine}
             </div>
           </div>
           <div class="dist-release-stats">
             <span class="${statusCls}">${statusTxt}</span>
+            ${verBadge}
             <span class="dist-stat-pill">⬇ ${dlTxt}</span>
             <span class="dist-stat-pill">📅 ${expiryTxt}</span>
+            ${uploadTxt ? `<span class="dist-stat-pill" style="color:var(--muted)">🕐 ${uploadTxt}</span>` : ''}
           </div>
           <div class="dist-release-actions">
             <button class="dist-link" onclick="showDistQR('${previewUrl}','${esc(displayName)}','${r.slug}')">

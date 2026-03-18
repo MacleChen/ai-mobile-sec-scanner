@@ -1335,7 +1335,9 @@ def _dist_preview_html(r: dict) -> str:
             exp_html = html_lib.escape(expires_at[:10])
     else:
         exp_html = '<span style="color:#34d399">永不过期</span>'
-    dl_html = f'{dl_count} / {max_dl} 次' if max_dl > 0 else f'{dl_count} 次'
+    dl_html      = f'{dl_count} / {max_dl} 次' if max_dl > 0 else f'{dl_count} 次'
+    created_at   = r.get('created_at') or ''
+    upload_html  = html_lib.escape(created_at[:16].replace('T', ' ')) if created_at else '—'
     expired    = _dist_expired(r)
     exhausted  = _dist_exhausted(r)
     unavail    = expired or exhausted or not r.get('is_active', 1)
@@ -1431,6 +1433,8 @@ def _dist_preview_html(r: dict) -> str:
     {btn_html}
     <button class="copy-btn" onclick="copyLink()" id="lnk">{page_url}</button>
     <div class="meta">
+      {f'<div class="meta-row"><span class="meta-key">版本号</span><span>v{html_lib.escape(version)}</span></div>' if version else ''}
+      <div class="meta-row"><span class="meta-key">上传时间</span><span>{upload_html}</span></div>
       <div class="meta-row"><span class="meta-key">文件大小</span><span>{size_str}</span></div>
       <div class="meta-row"><span class="meta-key">下载次数</span><span>{dl_html}</span></div>
       <div class="meta-row"><span class="meta-key">有效期</span><span>{exp_html}</span></div>
