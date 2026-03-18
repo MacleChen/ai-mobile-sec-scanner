@@ -1007,35 +1007,87 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                 info["display_name"] = apk.get_app_name() or ""
             except Exception:
                 pass
-            # ── Icon: scan zip for highest-res mipmap/drawable launcher icon ──
-            # Modern APKs (Android 8+) use WebP; older ones use PNG
-            _DPI_RANK = {"xxxhdpi": 0, "xxhdpi": 1, "xhdpi": 2,
-                         "hdpi": 3, "mdpi": 4, "ldpi": 5}
-            def _dpi_key(name):
+            # ── Icon extraction ──────────────────────────────────────────
+            # DPI rank: lower = better quality
+            _DPI_RANK = {"xxxhdpi": 0, "xxhdpi": 1, "xhdpi": 2, "hdpi": 3, "mdpi": 4, "ldpi": 5}
+            def _dpi_cfg_rank(cfg_str):
+                s = str(cfg_str)
+                for dpi, rank in _DPI_RANK.items():
+                    if dpi in s:
+                        return rank
+                return 9
+            def _dpi_name_rank(name):
                 for dpi, rank in _DPI_RANK.items():
                     if dpi in name:
                         return rank
                 return 9
 
             try:
+                import struct as _struct
                 with _zipfile.ZipFile(str(path)) as z:
-                    names = z.namelist()
-                    # Primary: ic_launcher or ic_launcher_round (png or webp)
-                    candidates = [
-                        n for n in names
-                        if re.search(r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.(png|webp)$', n, re.I)
-                    ]
-                    # Prefer non-round over round, then sort by DPI descending
-                    candidates.sort(key=lambda n: (1 if "_round" in n else 0, _dpi_key(n)))
-                    # Fallback: any image in mipmap folder
-                    if not candidates:
-                        candidates = sorted(
-                            [n for n in names
-                             if re.search(r'mipmap[^/]+/\w+\.(png|webp)$', n, re.I)],
-                            key=_dpi_key,
-                        )
-                    if candidates:
-                        raw = z.read(candidates[0])
+                    names_set = set(z.namelist())
+                    chosen = None
+
+                    # ── Step 1: use pyaxmlparser icon path ──────────────────
+                    icon_path = None
+                    try:
+                        icon_path = apk.get_app_icon()
+                    except Exception:
+                        pass
+
+                    if icon_path and icon_path.lower().endswith(('.png', '.webp')) \
+                            and icon_path in names_set:
+                        # Direct bitmap icon — use it
+                        chosen = icon_path
+
+                    elif icon_path and icon_path.lower().endswith('.xml') \
+                            and icon_path in names_set:
+                        # Adaptive icon XML — resolve via resources.arsc
+                        try:
+                            xml_data = z.read(icon_path)
+                            # Extract all 0x7Fxxxxxx resource ID references from binary XML
+                            res_ids = set()
+                            for i in range(0, len(xml_data) - 3, 4):
+                                val = _struct.unpack_from("<I", xml_data, i)[0]
+                                if 0x7F000000 <= val <= 0x7FFFFFFF:
+                                    res_ids.add(val)
+                            arsc = apk.get_android_resources()
+                            best_rank = 99
+                            for rid in res_ids:
+                                try:
+                                    for cfg, fname in arsc.get_resolved_res_configs(rid):
+                                        if fname.lower().endswith(('.png', '.webp')) \
+                                                and fname in names_set:
+                                            rank = _dpi_cfg_rank(cfg)
+                                            if rank < best_rank:
+                                                best_rank = rank
+                                                chosen = fname
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+
+                    # ── Step 2: fallback — standard mipmap/drawable folder scan ──
+                    if not chosen:
+                        candidates = [
+                            n for n in names_set
+                            if re.search(
+                                r'(mipmap|drawable)[^/]*/ic_launcher(_round)?\.(png|webp)$',
+                                n, re.I)
+                        ]
+                        candidates.sort(
+                            key=lambda n: (1 if "_round" in n else 0, _dpi_name_rank(n)))
+                        if not candidates:
+                            candidates = sorted(
+                                [n for n in names_set
+                                 if re.search(r'mipmap[^/]+/\w+\.(png|webp)$', n, re.I)],
+                                key=_dpi_name_rank,
+                            )
+                        if candidates:
+                            chosen = candidates[0]
+
+                    if chosen:
+                        raw = z.read(chosen)
                         info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
             except Exception:
                 pass
@@ -1107,7 +1159,6 @@ def _dist_preview_html(r: dict) -> str:
     icon_b64     = r.get('icon_b64') or ''
     page_url     = f"{site}/dist/{slug}"
     dl_url       = f"{site}/dist/{slug}/download"
-    logo_url     = f"{site}/favicon.svg"
     qr_url       = f"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={urllib.parse.quote(page_url, safe='')}&ecc=H&margin=8"
     apk          = file_type == 'APK'
     badge_bg     = 'rgba(59,130,246,.2)'  if apk else 'rgba(139,92,246,.2)'
@@ -1219,7 +1270,7 @@ def _dist_preview_html(r: dict) -> str:
     <div class="qr-wrap">
       <div class="qr-container">
         <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
-        <div class="qr-logo"><img src="{logo_url}" alt="logo"></div>
+        <div class="qr-logo">{f'<img src="data:image/png;base64,{icon_b64}" alt="logo" style="border-radius:18%">' if icon_b64 else f'<img src="{site}/favicon.svg" alt="logo">'}</div>
       </div>
       <div class="qr-hint">📱 手机扫码访问</div>
     </div>

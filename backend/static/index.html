@@ -1257,7 +1257,7 @@
     <div class="dist-qr-container">
       <img class="dist-qr-img" id="dist-qr-img" src="" alt="QR">
       <div class="dist-qr-logo">
-        <img src="/favicon.svg" alt="logo">
+        <img id="dist-qr-logo-img" src="/favicon.svg" alt="logo">
       </div>
     </div>
     <div class="dist-qr-url" id="dist-qr-url"></div>
@@ -2543,6 +2543,8 @@ function distUpload() {
 }
 
 // ── Distribution: list ──────────────────────────────────────
+let _distReleases = [];  // cache for QR icon lookup
+
 async function loadDistList() {
   if (!userInfo) return;
   const l = L();
@@ -2552,6 +2554,7 @@ async function loadDistList() {
     const resp = await fetch('/dist/list', { headers: { Authorization: `Bearer ${jwt}` } });
     const d = await resp.json();
     const list = d.releases || [];
+    _distReleases = list;
     if (!list.length) {
       wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:30px">${l.distNoReleases}</div>`;
       return;
@@ -2593,7 +2596,7 @@ async function loadDistList() {
             <span class="dist-stat-pill">📅 ${expiryTxt}</span>
           </div>
           <div class="dist-release-actions">
-            <button class="dist-link" onclick="showDistQR('${previewUrl}','${esc(displayName)}')">
+            <button class="dist-link" onclick="showDistQR('${previewUrl}','${esc(displayName)}','${r.slug}')">
               <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M3 4a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Zm8-5a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2h-3a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2h-3a1 1 0 0 1-1-1Zm-8 5a1 1 0 0 1 1-1h12a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/></svg>
               QR
             </button>
@@ -2627,11 +2630,20 @@ async function deleteRelease(slug, btn) {
 }
 
 // ── Distribution: QR popup ──────────────────────────────────
-function showDistQR(url, name) {
+function showDistQR(url, name, slug) {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}&ecc=H&margin=8`;
   document.getElementById('dist-qr-img').src = qrUrl;
   document.getElementById('dist-qr-name').textContent = name;
   document.getElementById('dist-qr-url').textContent = url;
+  // Use app icon as QR logo; fall back to site favicon
+  const rel = _distReleases.find(r => r.slug === slug);
+  const logoImg = document.getElementById('dist-qr-logo-img');
+  if (logoImg) {
+    logoImg.src = rel?.icon_b64
+      ? `data:image/png;base64,${rel.icon_b64}`
+      : '/favicon.svg';
+    logoImg.style.borderRadius = rel?.icon_b64 ? '20%' : '0';
+  }
   document.getElementById('dist-qr-pop').classList.remove('hidden');
 }
 
