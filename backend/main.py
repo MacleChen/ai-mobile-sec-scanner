@@ -980,13 +980,132 @@ DIST_DIR.mkdir(parents=True, exist_ok=True)
 _SLUG_ABC = _str_mod.ascii_lowercase + _str_mod.digits
 
 
+def _decode_cgbi_png(data: bytes) -> bytes:
+    """Convert Apple CgBI (Xcode-crushed) PNG to standard PNG.
+
+    Xcode's pngcrush produces PNGs with:
+      - A CgBI chunk inserted before IHDR
+      - IDAT compressed with raw DEFLATE (no zlib header)
+      - Pixels stored as BGRA with pre-multiplied alpha
+    This function reverses those transforms and returns a standard RGBA PNG.
+    Returns the original bytes unchanged on any error.
+    """
+    import zlib as _zlib, struct as _struct
+    try:
+        if b'CgBI' not in data[8:20]:
+            return data  # not CgBI
+
+        # ── Parse chunks ────────────────────────────────────────
+        ihdr_body = None
+        idat_parts: list[bytes] = []
+        off = 8
+        while off + 12 <= len(data):
+            length = _struct.unpack_from('>I', data, off)[0]
+            tag    = data[off + 4: off + 8]
+            body   = data[off + 8: off + 8 + length]
+            off   += 12 + length
+            if tag == b'IHDR':
+                ihdr_body = body
+            elif tag == b'IDAT':
+                idat_parts.append(body)
+            elif tag == b'IEND':
+                break
+
+        if not ihdr_body or not idat_parts:
+            return data
+
+        w, h = _struct.unpack_from('>II', ihdr_body)
+
+        # ── Decompress — CgBI uses raw DEFLATE (wbits = -15) ────
+        compressed = b''.join(idat_parts)
+        try:
+            raw = _zlib.decompress(compressed, -15)
+        except Exception:
+            raw = _zlib.decompress(compressed)   # fallback: standard zlib
+
+        # ── Reconstruct RGBA pixels ──────────────────────────────
+        row_len = w * 4          # bytes per row (no filter byte in output)
+        stride  = 1 + row_len    # input row: 1 filter byte + BGRA pixels
+        img_out = bytearray(h * row_len)
+
+        for y in range(h):
+            in_off      = y * stride
+            filter_byte = raw[in_off]
+            src         = bytearray(raw[in_off + 1: in_off + 1 + row_len])
+            out_off     = y * row_len
+
+            # Apply PNG reconstruction filter
+            if filter_byte == 1:       # Sub
+                for i in range(4, row_len):
+                    src[i] = (src[i] + src[i - 4]) & 0xFF
+            elif filter_byte == 2:     # Up
+                if y > 0:
+                    for i in range(row_len):
+                        src[i] = (src[i] + img_out[out_off - row_len + i]) & 0xFF
+            elif filter_byte == 3:     # Average
+                for i in range(row_len):
+                    a = src[i - 4] if i >= 4 else 0
+                    b = img_out[out_off - row_len + i] if y > 0 else 0
+                    src[i] = (src[i] + (a + b) // 2) & 0xFF
+            elif filter_byte == 4:     # Paeth
+                for i in range(row_len):
+                    a = src[i - 4]                          if i >= 4 else 0
+                    b = img_out[out_off - row_len + i]      if y > 0 else 0
+                    c = img_out[out_off - row_len + i - 4]  if (y > 0 and i >= 4) else 0
+                    p  = a + b - c
+                    pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                    pr = a if pa <= pb and pa <= pc else (b if pb <= pc else c)
+                    src[i] = (src[i] + pr) & 0xFF
+
+            # Convert BGRA (pre-multiplied) → RGBA (straight alpha)
+            for i in range(0, row_len, 4):
+                bv, gv, rv, av = src[i], src[i+1], src[i+2], src[i+3]
+                if av > 0:
+                    src[i]   = min(255, rv * 255 // av)   # R
+                    src[i+1] = min(255, gv * 255 // av)   # G
+                    src[i+2] = min(255, bv * 255 // av)   # B
+                else:
+                    src[i], src[i+1], src[i+2] = rv, gv, bv
+                src[i+3] = av
+
+            img_out[out_off: out_off + row_len] = src
+
+        # ── Re-encode as standard PNG ────────────────────────────
+        def _chunk(tag: bytes, body: bytes) -> bytes:
+            crc = _zlib.crc32(tag + body) & 0xFFFFFFFF
+            return _struct.pack('>I', len(body)) + tag + body + _struct.pack('>I', crc)
+
+        ihdr_new  = _struct.pack('>II', w, h) + bytes([8, 6, 0, 0, 0])  # RGBA
+        # PNG IDAT requires a filter-type byte (0 = None) before every scanline
+        png_rows = bytearray()
+        for y in range(h):
+            png_rows.append(0)   # filter type 0 (no filter)
+            png_rows.extend(img_out[y * row_len: (y + 1) * row_len])
+        idat_new  = _zlib.compress(bytes(png_rows), 6)
+
+        return (b'\x89PNG\r\n\x1a\n'
+                + _chunk(b'IHDR', ihdr_new)
+                + _chunk(b'IDAT', idat_new)
+                + _chunk(b'IEND', b''))
+    except Exception:
+        return data
+
+
 def _resize_icon(data: bytes, size: int = 128) -> bytes:
-    """Resize icon PNG to `size x size` using Pillow; return original on failure."""
+    """Resize icon to `size x size` PNG; auto-decodes Apple CgBI format."""
     try:
         from PIL import Image
         import io
-        img = Image.open(io.BytesIO(data)).convert("RGBA")
-        img = img.resize((size, size), Image.LANCZOS)
+        # CgBI detection: try direct open; on failure attempt CgBI decode first
+        try:
+            img = Image.open(io.BytesIO(data))
+            img.load()   # force decode to catch CgBI errors early
+        except Exception:
+            decoded = _decode_cgbi_png(data)
+            if decoded is data:
+                return data
+            img = Image.open(io.BytesIO(decoded))
+        img = img.convert("RGBA").resize((size, size), Image.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="PNG", optimize=True)
         return buf.getvalue()
