@@ -202,6 +202,7 @@ def _migrate_db():
         "ALTER TABLE app_releases ADD COLUMN icon_b64     TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN platform     TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN is_public    INTEGER DEFAULT 0",
+        "ALTER TABLE app_releases ADD COLUMN category     TEXT DEFAULT ''",
     ]
     with _db() as c:
         for sql in migrations:
@@ -1460,6 +1461,20 @@ def _dist_preview_html(r: dict) -> str:
              display:flex;align-items:center;gap:6px;justify-content:center}}
     .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
     .footer-logo{{width:18px;height:18px;opacity:.7}}
+    .ai-promo{{background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.08));
+               border:1px solid rgba(99,102,241,.22);border-radius:12px;
+               padding:16px;margin-top:16px;text-align:left}}
+    .ai-promo-hd{{font-size:.85em;font-weight:800;margin-bottom:4px;
+                  background:linear-gradient(135deg,#60a5fa,#a78bfa);
+                  -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+    .ai-promo-copy{{font-size:.76em;color:#64748b;margin-bottom:9px}}
+    .ai-feats{{list-style:none;display:flex;flex-direction:column;gap:3px;margin-bottom:11px}}
+    .ai-feats li{{font-size:.76em;color:#94a3b8}}
+    .ai-cta{{display:block;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+             color:white!important;padding:9px 16px;border-radius:8px;
+             font-size:.8em;font-weight:800;text-align:center;text-decoration:none!important;
+             transition:opacity .2s}}
+    .ai-cta:hover{{opacity:.85}}
   </style>
 </head>
 <body>
@@ -1485,6 +1500,16 @@ def _dist_preview_html(r: dict) -> str:
       <div class="meta-row"><span class="meta-key">文件大小</span><span>{size_str}</span></div>
       <div class="meta-row"><span class="meta-key">下载次数</span><span>{dl_html}</span></div>
       <div class="meta-row"><span class="meta-key">有效期</span><span>{exp_html}</span></div>
+    </div>
+    <div class="ai-promo">
+      <div class="ai-promo-hd">🔍 AppSec AI 安全扫描</div>
+      <div class="ai-promo-copy">使用 AI 深度检测此应用的安全风险，保护你的用户</div>
+      <ul class="ai-feats">
+        <li>✓ 深度漏洞扫描 &amp; CVE 检测</li>
+        <li>✓ 隐私数据追踪 &amp; 合规分析</li>
+        <li>✓ 恶意行为 &amp; 后门识别</li>
+      </ul>
+      <a class="ai-cta" href="{site}" target="_blank" rel="noopener">立即免费扫描 →</a>
     </div>
   </div>
   <div class="footer">
@@ -1516,6 +1541,7 @@ async def dist_upload(
     expires_days:  int = Form(0),
     max_downloads: int = Form(0),
     is_public:     int = Form(0),
+    category:      str = Form(""),
     user: dict = Depends(_current_user),
 ):
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
@@ -1583,21 +1609,21 @@ async def dist_upload(
                    version=?, file_size=?, description=?, expires_at=?,
                    max_downloads=?, download_count=0, is_active=1,
                    created_at=datetime('now'),
-                   pkg_name=?, display_name=?, icon_b64=?, platform=?, is_public=?
+                   pkg_name=?, display_name=?, icon_b64=?, platform=?, is_public=?, category=?
                    WHERE slug=?""",
                 (resolved_version, size, description.strip(), expires_at,
                  max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, slug),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip(), slug),
             )
         else:
             c.execute(
                 """INSERT INTO app_releases
                    (slug, user_id, app_name, version, file_type, file_size,
-                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform, is_public)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform, is_public, category)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (slug, user["id"], resolved_name, resolved_version, ext, size,
                  description.strip(), expires_at, max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip()),
             )
 
     # ── Deduct 1 credit ─────────────────────────────────────────
@@ -1701,6 +1727,9 @@ async def dist_toggle_public(slug: str, user: dict = Depends(_current_user)):
 @app.get("/market/list")
 async def market_list(
     platform: str = "",
+    category: str = "",
+    q: str = "",
+    sort: str = "newest",
     offset: int = 0,
     limit: int = 24,
 ):
@@ -1709,165 +1738,273 @@ async def market_list(
     if platform:
         where += " AND platform=?"
         params.append(platform)
+    if category:
+        where += " AND category=?"
+        params.append(category)
+    if q:
+        like = f"%{q}%"
+        where += " AND (app_name LIKE ? OR display_name LIKE ? OR pkg_name LIKE ?)"
+        params.extend([like, like, like])
+    order = "download_count DESC, created_at DESC" if sort == "popular" else "created_at DESC"
     with _db() as c:
+        total = c.execute(
+            f"SELECT COUNT(*) FROM app_releases WHERE {where}", params
+        ).fetchone()[0]
         rows = c.execute(
             f"""SELECT slug, app_name, version, file_type, file_size,
-                        display_name, icon_b64, platform, download_count, created_at
+                        display_name, icon_b64, platform, category, description,
+                        download_count, created_at
                 FROM app_releases WHERE {where}
-                ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+                ORDER BY {order} LIMIT ? OFFSET ?""",
             (*params, limit, offset),
         ).fetchall()
-    return {"apps": [dict(r) for r in rows]}
+    return {"apps": [dict(r) for r in rows], "total": total}
 
 
-def _market_html() -> str:
+def _market_html() -> str:  # noqa: PLR0915
     site = os.getenv("SITE_URL", "https://maclechen.top")
+    css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060d1c;--border:rgba(255,255,255,.07);--text:#f1f5f9;--muted:#64748b;--muted2:#475569;--pr:#6366f1;--pr2:#8b5cf6;--card:rgba(13,20,38,.85)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+#prog{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--pr),var(--pr2),#06b6d4);transform:scaleX(0);transform-origin:left;transition:transform .35s;z-index:9999}
+#prog.show{transform:scaleX(.88)}
+header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1em;white-space:nowrap;flex-shrink:0}
+.logo img{width:24px;height:24px}
+.logo-sep{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0}
+.logo-sub{font-weight:400;font-size:.88em;color:var(--muted)}
+.h-search{flex:1;max-width:420px;position:relative}
+.h-search input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:22px;padding:7px 40px 7px 16px;color:var(--text);font-size:.85em;outline:none;transition:border-color .2s,background .2s}
+.h-search input:focus{border-color:rgba(99,102,241,.5);background:rgba(255,255,255,.09)}
+.h-search input::placeholder{color:var(--muted)}
+.h-sbtn{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:rgba(99,102,241,.2);border:none;color:#a5b4fc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9em;transition:background .15s}
+.h-sbtn:hover{background:rgba(99,102,241,.38)}
+.h-cta{flex-shrink:0;background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff;padding:6px 14px;border-radius:20px;font-size:.8em;font-weight:700;white-space:nowrap;transition:opacity .2s}
+.h-cta:hover{opacity:.83}
+.hero{text-align:center;padding:44px 20px 28px;background:radial-gradient(ellipse 90% 60% at 50% -10%,rgba(99,102,241,.1) 0%,transparent 65%)}
+.hero-title{font-size:1.9em;font-weight:900;letter-spacing:-.025em;background:linear-gradient(135deg,#93c5fd 20%,#c4b5fd 60%,#6ee7b7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero-sub{color:var(--muted);font-size:.9em;margin-bottom:20px}
+.hero-tags{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.hero-tag{padding:5px 12px;border-radius:20px;font-size:.75em;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted)}
+.hero-tag b{color:var(--text)}
+.filters{border-bottom:1px solid var(--border);padding:2px 20px 0;max-width:1440px;margin:0 auto}
+.frow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.04)}
+.frow:first-child{border-top:none}
+.flbl{font-size:.7em;color:var(--muted);width:30px;flex-shrink:0}
+.chips{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.78em;transition:all .15s;white-space:nowrap}
+.chip.on{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.45);color:#a5b4fc;font-weight:600}
+.chip:hover:not(.on){background:rgba(255,255,255,.06);color:var(--text);border-color:rgba(255,255,255,.15)}
+.toolbar{max-width:1440px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px}
+#stats{font-size:.8em;color:var(--muted)}
+.sort-sel{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:7px;font-size:.78em;cursor:pointer;outline:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px;padding:0 20px 24px;max-width:1440px;margin:0 auto}
+@media(min-width:1440px){.grid{grid-template-columns:repeat(7,1fr)}}
+@media(max-width:480px){.grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:0 12px 20px}}
+.acard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 11px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.acard::before{content:'';position:absolute;top:0;left:0;right:0;height:38px;background:linear-gradient(180deg,rgba(99,102,241,.08),transparent);opacity:0;transition:opacity .2s}
+.acard:hover{transform:translateY(-3px);border-color:rgba(99,102,241,.32);box-shadow:0 10px 36px rgba(0,0,0,.55)}
+.acard:hover::before{opacity:1}
+.ac-icon{width:64px;height:64px;border-radius:14px;margin-bottom:10px;object-fit:cover;display:block;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.ac-icon-ph{width:64px;height:64px;border-radius:14px;margin-bottom:10px;background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(139,92,246,.22));border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:1.6em}
+.ac-name{font-weight:700;font-size:.85em;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;width:100%}
+.ac-ver{font-size:.64em;color:var(--muted);margin-bottom:6px}
+.ac-badges{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
+.badge{padding:2px 7px;border-radius:8px;font-size:.6em;font-weight:700;letter-spacing:.02em}
+.b-android{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.25)}
+.b-ios{background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.25)}
+.b-windows{background:rgba(56,189,248,.15);color:#38bdf8;border:1px solid rgba(56,189,248,.25)}
+.b-macos{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.25)}
+.b-linux{background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.25)}
+.b-other{background:rgba(148,163,184,.15);color:#94a3b8;border:1px solid rgba(148,163,184,.25)}
+.b-cat{background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.2)}
+.ac-desc{font-size:.68em;color:var(--muted2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;width:100%;text-align:left}
+.ac-dl{font-size:.64em;color:#334155;margin-top:auto;padding-top:5px}
+.ac-btn{display:block;width:100%;margin-top:7px;padding:6px 0;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.24);border-radius:7px;color:#818cf8;font-size:.72em;font-weight:700;transition:all .15s}
+.ac-btn:hover{background:rgba(99,102,241,.28);color:#a5b4fc;border-color:rgba(99,102,241,.44)}
+.pages{display:flex;gap:5px;justify-content:center;padding:8px 20px 40px;flex-wrap:wrap}
+.pg{min-width:34px;height:34px;padding:0 8px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;font-size:.82em;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.pg:hover:not(.off){background:rgba(255,255,255,.08);color:var(--text)}
+.pg.on{background:rgba(99,102,241,.22);border-color:rgba(99,102,241,.45);color:#a5b4fc;font-weight:700}
+.pg.off{opacity:.25;cursor:default}
+.pg-dot{color:var(--muted);font-size:.85em;padding:0 4px;line-height:34px}
+.skc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 11px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.sk{background:rgba(255,255,255,.06);border-radius:6px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+.empty{text-align:center;padding:80px 20px;max-width:360px;margin:0 auto}
+.empty-em{font-size:3.2em;margin-bottom:14px}
+.empty-t{font-size:1em;font-weight:700;color:var(--muted2);margin-bottom:8px}
+.empty-s{font-size:.83em;color:var(--muted);line-height:1.7}
+footer{text-align:center;padding:24px;font-size:.73em;color:#1e293b;border-top:1px solid var(--border)}
+footer a{color:#3b82f6}"""
+    js = """const PS=24;
+let q='',plat='',cat='',srt='newest',pg=1,total=0;
+const PL={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
+const CL={tools:'工具',social:'社交',games:'游戏',finance:'金融',entertainment:'娱乐',education:'教育',productivity:'效率',health:'健康',other:'其他'};
+const CI={tools:'🔧',social:'💬',games:'🎮',finance:'💰',entertainment:'🎬',education:'📚',productivity:'⚡',health:'💪',other:'📦'};
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function showProg(on){document.getElementById('prog').classList.toggle('show',on)}
+function doSearch(){q=document.getElementById('si').value.trim();pg=1;load()}
+function setCat(c,el){cat=c;pg=1;document.querySelectorAll('#cc .chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');load()}
+function setPlat(p,el){plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');load()}
+function setSort(s){srt=s;pg=1;load()}
+function goPage(p){pg=p;load();window.scrollTo({top:300,behavior:'smooth'})}
+function renderSkeleton(){
+  const g=document.getElementById('grid');g.innerHTML='';
+  for(let i=0;i<12;i++){
+    const d=document.createElement('div');d.className='skc';
+    d.innerHTML='<div class="sk" style="width:64px;height:64px;border-radius:14px"></div><div class="sk" style="width:72%;height:10px"></div><div class="sk" style="width:52%;height:8px"></div><div class="sk" style="width:60%;height:8px"></div>';
+    g.appendChild(d);
+  }
+}
+function renderCards(apps){
+  const g=document.getElementById('grid');g.innerHTML='';
+  apps.forEach(app=>{
+    const name=esc(app.display_name||app.app_name||'未命名');
+    const ver=app.version?`<div class="ac-ver">v${esc(app.version)}</div>`:'';
+    const p=app.platform||'other';
+    const c=app.category||'';
+    const icon=app.icon_b64?`<img class="ac-icon" src="data:image/png;base64,${app.icon_b64}" alt="${name}" loading="lazy">`:`<div class="ac-icon-ph">📦</div>`;
+    const catBadge=c&&CL[c]?`<span class="badge b-cat">${CI[c]||''} ${CL[c]}</span>`:'';
+    const platBadge=`<span class="badge b-${p}">${PL[p]||p}</span>`;
+    const desc=app.description?`<div class="ac-desc">${esc(app.description)}</div>`:'';
+    const a=document.createElement('a');
+    a.className='acard';a.href='/dist/'+app.slug;a.target='_blank';a.rel='noopener';
+    a.innerHTML=`${icon}<div class="ac-name">${name}</div>${ver}<div class="ac-badges">${catBadge}${platBadge}</div>${desc}<div class="ac-dl">⬇️ ${app.download_count||0} 次下载</div><div class="ac-btn">查看详情</div>`;
+    g.appendChild(a);
+  });
+}
+function renderPages(){
+  const el=document.getElementById('pages');
+  const tp=Math.ceil(total/PS);
+  if(tp<=1){el.innerHTML='';return;}
+  let h=`<button class="pg${pg<=1?' off':''}" onclick="if(${pg>1})goPage(${pg-1})">‹ 上一页</button>`;
+  const arr=[];
+  for(let i=1;i<=tp;i++){
+    if(i===1||i===tp||Math.abs(i-pg)<=2) arr.push(i);
+    else if(arr[arr.length-1]!=='…') arr.push('…');
+  }
+  arr.forEach(p=>{
+    if(p==='…') h+=`<span class="pg-dot">…</span>`;
+    else h+=`<button class="pg${p===pg?' on':''}" onclick="goPage(${p})">${p}</button>`;
+  });
+  h+=`<button class="pg${pg>=tp?' off':''}" onclick="if(${pg<tp})goPage(${pg+1})">下一页 ›</button>`;
+  el.innerHTML=h;
+}
+async function load(){
+  showProg(true);renderSkeleton();
+  document.getElementById('empty').hidden=true;
+  document.getElementById('pages').innerHTML='';
+  document.getElementById('stats').textContent='';
+  try{
+    const p=new URLSearchParams({q,platform:plat,category:cat,sort:srt,offset:String((pg-1)*PS),limit:String(PS)});
+    const r=await fetch('/market/list?'+p,{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    total=d.total||0;
+    const apps=d.apps||[];
+    if(!apps.length){
+      document.getElementById('grid').innerHTML='';
+      document.getElementById('empty').hidden=false;
+      document.getElementById('stats').textContent='共 0 个应用';
+    }else{
+      renderCards(apps);
+      renderPages();
+      const s=(pg-1)*PS+1,e=Math.min(pg*PS,total);
+      document.getElementById('stats').textContent=`共 ${total} 个应用  第 ${s}–${e} 个`;
+    }
+  }catch(e){
+    document.getElementById('grid').innerHTML=`<div style="padding:40px;color:#ef4444;grid-column:1/-1;text-align:center">⚠️ 加载失败，<u style="cursor:pointer" onclick="load()">点击重试</u></div>`;
+    console.error('[market]',e);
+  }
+  showProg(false);
+}
+load();"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>应用市场 — AppSec AI</title>
-  <link rel="icon" href="{site}/favicon.svg" type="image/svg+xml">
-  <style>
-    *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
-    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-          background:#050b18;color:#f1f5f9;min-height:100vh;padding:0}}
-    header{{background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);
-            padding:16px 24px;display:flex;align-items:center;gap:12px}}
-    header a{{color:#60a5fa;text-decoration:none;font-weight:700;font-size:1.1em;
-               display:flex;align-items:center;gap:8px}}
-    header img{{width:28px;height:28px}}
-    h1{{font-size:1.05em;color:#94a3b8;font-weight:400}}
-    .filters{{display:flex;gap:8px;padding:20px 24px 8px;flex-wrap:wrap}}
-    .filter-btn{{padding:6px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.12);
-                 background:rgba(255,255,255,.05);color:#94a3b8;cursor:pointer;font-size:.82em;
-                 transition:all .15s}}
-    .filter-btn.active,.filter-btn:hover{{background:rgba(99,102,241,.25);
-      border-color:rgba(99,102,241,.5);color:#a5b4fc}}
-    .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-           gap:16px;padding:16px 24px 40px;max-width:1200px;margin:0 auto}}
-    .card{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-           border-radius:16px;padding:20px 16px;text-align:center;transition:transform .15s,border-color .15s;
-           cursor:pointer;text-decoration:none;color:inherit;display:block}}
-    .card:hover{{transform:translateY(-3px);border-color:rgba(99,102,241,.4)}}
-    .icon{{width:72px;height:72px;border-radius:18px;margin:0 auto 12px;
-           object-fit:cover;display:block;background:rgba(99,102,241,.15)}}
-    .icon-ph{{width:72px;height:72px;border-radius:18px;margin:0 auto 12px;
-              background:linear-gradient(135deg,rgba(59,130,246,.3),rgba(139,92,246,.3));
-              display:flex;align-items:center;justify-content:center;font-size:1.8em}}
-    .name{{font-weight:700;font-size:.95em;margin-bottom:4px;
-           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-    .ver{{font-size:.72em;color:#64748b;margin-bottom:8px}}
-    .badge{{display:inline-block;padding:2px 10px;border-radius:12px;
-            font-size:.68em;font-weight:700;letter-spacing:.04em}}
-    .badge-android{{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.35)}}
-    .badge-ios{{background:rgba(139,92,246,.2);color:#a78bfa;border:1px solid rgba(139,92,246,.35)}}
-    .badge-windows{{background:rgba(56,189,248,.2);color:#38bdf8;border:1px solid rgba(56,189,248,.35)}}
-    .badge-macos{{background:rgba(52,211,153,.2);color:#34d399;border:1px solid rgba(52,211,153,.35)}}
-    .badge-linux{{background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.35)}}
-    .badge-other{{background:rgba(148,163,184,.2);color:#94a3b8;border:1px solid rgba(148,163,184,.35)}}
-    .dl-cnt{{font-size:.7em;color:#475569;margin-top:6px}}
-    #loading{{text-align:center;padding:40px;color:#475569;font-size:.9em}}
-    #empty{{display:none;text-align:center;padding:80px 24px;color:#475569}}
-    #empty .empty-icon{{font-size:3em;margin-bottom:12px}}
-    #empty p{{font-size:.9em}}
-    footer{{text-align:center;padding:24px;font-size:.75em;color:#334155;
-            border-top:1px solid rgba(255,255,255,.05);margin-top:24px}}
-    footer a{{color:#3b82f6;text-decoration:none}}
-  </style>
+  <meta name="description" content="浏览下载多平台应用，所有应用均可通过 AI 安全扫描认证">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>{css}</style>
 </head>
 <body>
+<div id="prog"></div>
 <header>
-  <a href="{site}">
-    <img src="{site}/favicon.svg" alt="logo">
-    AppSec AI
+  <a class="logo" href="{site}">
+    <img src="/favicon.svg" alt="logo">
+    <div class="logo-sep"></div>
+    <span class="logo-sub">应用市场</span>
   </a>
-  <h1>应用市场</h1>
+  <div class="h-search">
+    <input id="si" type="search" placeholder="搜索应用名称、包名…" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="h-sbtn" onclick="doSearch()">↵</button>
+  </div>
+  <a class="h-cta" href="{site}/app">⬆️ 上传应用</a>
 </header>
+<section class="hero">
+  <h1 class="hero-title">发现 · 下载 · 安全</h1>
+  <p class="hero-sub">所有应用均可通过 AppSec AI 进行专业安全扫描，放心下载</p>
+  <div class="hero-tags">
+    <div class="hero-tag">🤖 <b>AI 安全检测</b></div>
+    <div class="hero-tag">🌐 <b>多平台支持</b></div>
+    <div class="hero-tag">⚡ <b>极速分发</b></div>
+    <div class="hero-tag">🔒 <b>隐私安全</b></div>
+    <div class="hero-tag">📦 <b>10+ 应用分类</b></div>
+  </div>
+</section>
 <div class="filters">
-  <button class="filter-btn active" onclick="setFilter('')">全部</button>
-  <button class="filter-btn" data-plat="android" onclick="setFilter('android')">🤖 Android</button>
-  <button class="filter-btn" data-plat="ios" onclick="setFilter('ios')">🍎 iOS</button>
-  <button class="filter-btn" data-plat="windows" onclick="setFilter('windows')">🪟 Windows</button>
-  <button class="filter-btn" data-plat="macos" onclick="setFilter('macos')">🍏 macOS</button>
-  <button class="filter-btn" data-plat="linux" onclick="setFilter('linux')">🐧 Linux</button>
+  <div class="frow">
+    <span class="flbl">分类</span>
+    <div class="chips" id="cc">
+      <button class="chip on" onclick="setCat('',this)">全部</button>
+      <button class="chip" onclick="setCat('tools',this)">🔧 工具</button>
+      <button class="chip" onclick="setCat('social',this)">💬 社交</button>
+      <button class="chip" onclick="setCat('games',this)">🎮 游戏</button>
+      <button class="chip" onclick="setCat('finance',this)">💰 金融</button>
+      <button class="chip" onclick="setCat('entertainment',this)">🎬 娱乐</button>
+      <button class="chip" onclick="setCat('education',this)">📚 教育</button>
+      <button class="chip" onclick="setCat('productivity',this)">⚡ 效率</button>
+      <button class="chip" onclick="setCat('health',this)">💪 健康</button>
+      <button class="chip" onclick="setCat('other',this)">📦 其他</button>
+    </div>
+  </div>
+  <div class="frow">
+    <span class="flbl">平台</span>
+    <div class="chips" id="pc">
+      <button class="chip on" onclick="setPlat('',this)">全部</button>
+      <button class="chip" onclick="setPlat('android',this)">🤖 Android</button>
+      <button class="chip" onclick="setPlat('ios',this)">🍎 iOS</button>
+      <button class="chip" onclick="setPlat('windows',this)">🪟 Windows</button>
+      <button class="chip" onclick="setPlat('macos',this)">🍏 macOS</button>
+      <button class="chip" onclick="setPlat('linux',this)">🐧 Linux</button>
+    </div>
+  </div>
+</div>
+<div class="toolbar">
+  <span id="stats"></span>
+  <select class="sort-sel" onchange="setSort(this.value)">
+    <option value="newest">最新上传</option>
+    <option value="popular">下载最多</option>
+  </select>
 </div>
 <div id="grid" class="grid"></div>
-<div id="empty"><div class="empty-icon">📭</div><p>暂无应用，快来上传第一个吧！</p></div>
-<div id="loading">加载中…</div>
-<footer>Powered by <a href="{site}">AppSec AI</a></footer>
-<script>
-const SITE='{site}';
-let currentPlatform='',offset=0,loading=false,done=false;
-const BADGE_LABELS={{android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'}};
-function esc(s){{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}}
-function setFilter(p){{
-  currentPlatform=p;offset=0;done=false;
-  document.getElementById('grid').innerHTML='';
-  document.getElementById('empty').style.display='none';
-  document.getElementById('loading').textContent='加载中…';
-  document.querySelectorAll('.filter-btn').forEach(b=>{{
-    const isAll=b.textContent.trim()==='全部';
-    b.classList.toggle('active',(p===''&&isAll)||(p!==''&&b.getAttribute('data-plat')===p));
-  }});
-  loadMore();
-}}
-async function loadMore(){{
-  if(loading||done)return;
-  loading=true;
-  const el=document.getElementById('loading');
-  el.style.display='block';
-  el.textContent='加载中…';
-  el.onclick=null;
-  try{{
-    const qs='/market/list?platform='+encodeURIComponent(currentPlatform)+'&offset='+offset+'&limit=24';
-    const r=await fetch(qs,{{cache:'no-store'}});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    const apps=d.apps||[];
-    if(apps.length<24)done=true;
-    const grid=document.getElementById('grid');
-    apps.forEach(app=>{{
-      const name=esc(app.display_name||app.app_name||'未命名');
-      const ver=app.version?`<div class="ver">v${{esc(app.version)}}</div>`:'';
-      const plat=app.platform||'other';
-      const label=BADGE_LABELS[plat]||plat;
-      const icon=app.icon_b64?`<img class="icon" src="data:image/png;base64,${{app.icon_b64}}" alt="icon">`:`<div class="icon-ph">📦</div>`;
-      const card=document.createElement('a');
-      card.className='card';
-      card.href='/dist/'+app.slug;
-      card.target='_blank';
-      card.innerHTML=`${{icon}}<div class="name">${{name}}</div>${{ver}}<span class="badge badge-${{plat}}">${{label}}</span><div class="dl-cnt">⬇️ ${{app.download_count||0}} 次下载</div>`;
-      grid.appendChild(card);
-    }});
-    offset+=apps.length;
-    if(done){{
-      if(offset===0){{
-        el.style.display='none';
-        document.getElementById('empty').style.display='block';
-      }}else{{
-        el.textContent='✅ 已加载全部';
-        el.style.display='block';
-      }}
-    }}else{{
-      el.style.display='none';
-    }}
-  }}catch(e){{
-    el.innerHTML='加载失败 <u style="cursor:pointer">点击重试</u>';
-    el.onclick=()=>{{loading=false;loadMore();}};
-    el.style.display='block';
-    console.error('[market]',e);
-  }}
-  loading=false;
-}}
-window.addEventListener('scroll',()=>{{
-  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200)loadMore();
-}});
-loadMore();
-</script>
+<div id="empty" class="empty" hidden>
+  <div class="empty-em">📭</div>
+  <div class="empty-t">暂无应用</div>
+  <div class="empty-s">当前筛选条件下没有找到应用<br>换个分类或平台试试？</div>
+</div>
+<div id="pages" class="pages"></div>
+<footer>Powered by <a href="{site}" target="_blank">AppSec AI</a> — 安全扫描 · 应用分发 · 应用市场</footer>
+<script>{js}</script>
 </body>
 </html>"""
+
+
 
 
 @app.get("/market", response_class=HTMLResponse)

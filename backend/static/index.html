@@ -1214,6 +1214,21 @@
             <option value="100">100 次</option>
           </select>
         </div>
+        <div class="form-field">
+          <label class="form-label" id="dist-label-category">应用分类</label>
+          <select class="dist-select" id="dist-category">
+            <option value="">请选择分类</option>
+            <option value="tools">🔧 工具</option>
+            <option value="social">💬 社交</option>
+            <option value="games">🎮 游戏</option>
+            <option value="finance">💰 金融</option>
+            <option value="entertainment">🎬 娱乐</option>
+            <option value="education">📚 教育</option>
+            <option value="productivity">⚡ 效率</option>
+            <option value="health">💪 健康</option>
+            <option value="other">📦 其他</option>
+          </select>
+        </div>
         <div class="form-field full">
           <label class="form-label" id="dist-label-desc">备注说明</label>
           <input class="form-input" id="dist-desc" type="text" placeholder="版本更新说明...">
@@ -1430,6 +1445,7 @@ const LANG = {
     distLabelVersion:'版本号',
     distLabelExpiry: '有效天数',
     distLabelMaxdl:  '最大下载次数',
+    distLabelCategory:'应用分类',
     distLabelDesc:   '备注说明',
     distLabelPublic: '上架到应用市场（公开展示，用户可浏览下载）',
     distSubmitText:  '上传并生成分发链接',
@@ -1589,6 +1605,7 @@ const LANG = {
     distLabelVersion:'Version',
     distLabelExpiry: 'Expiry (days)',
     distLabelMaxdl:  'Max Downloads',
+    distLabelCategory:'Category',
     distLabelDesc:   'Description',
     distLabelPublic: 'List on App Marketplace (publicly visible)',
     distSubmitText:  'Upload & Generate Link',
@@ -2093,8 +2110,9 @@ function applyI18n() {
   setText('dist-label-appname', l.distLabelAppname);
   setText('dist-label-version', l.distLabelVersion);
   setText('dist-label-expiry',  l.distLabelExpiry);
-  setText('dist-label-maxdl',   l.distLabelMaxdl);
-  setText('dist-label-desc',    l.distLabelDesc);
+  setText('dist-label-maxdl',    l.distLabelMaxdl);
+  setText('dist-label-category', l.distLabelCategory);
+  setText('dist-label-desc',     l.distLabelDesc);
   setText('dist-label-public',  l.distLabelPublic);
   setText('dist-submit-text',   l.distSubmitText);
   setText('dist-releases-title',l.distReleasesTitle);
@@ -2505,6 +2523,7 @@ function distUpload() {
   fd.append('expires_days',  document.getElementById('dist-expiry').value || '0');
   fd.append('max_downloads', document.getElementById('dist-maxdl').value || '0');
   fd.append('is_public',     document.getElementById('dist-is-public').checked ? '1' : '0');
+  fd.append('category',      document.getElementById('dist-category').value || '');
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/dist/upload');
