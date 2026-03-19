@@ -210,6 +210,21 @@ def _init_db():
                 is_public      INTEGER DEFAULT 0,
                 FOREIGN KEY(user_id) REFERENCES users_v2(id)
             );
+            CREATE TABLE IF NOT EXISTS app_reviews (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug        TEXT NOT NULL,
+                user_id     INTEGER NOT NULL,
+                rating      INTEGER NOT NULL DEFAULT 5,
+                comment     TEXT DEFAULT '',
+                created_at  TEXT DEFAULT (datetime('now')),
+                UNIQUE(slug, user_id)
+            );
+            CREATE TABLE IF NOT EXISTS app_likes (
+                slug        TEXT NOT NULL,
+                user_id     INTEGER NOT NULL,
+                created_at  TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY(slug, user_id)
+            );
         """)
 
 def _migrate_db():
@@ -225,6 +240,9 @@ def _migrate_db():
         "ALTER TABLE app_releases ADD COLUMN platform     TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN is_public    INTEGER DEFAULT 0",
         "ALTER TABLE app_releases ADD COLUMN category     TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN nickname   TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN bio        TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN avatar_b64 TEXT DEFAULT ''",
     ]
     with _db() as c:
         for sql in migrations:
@@ -414,6 +432,14 @@ class LoginBody(BaseModel):
 class OrderCreateBody(BaseModel):
     package_id: str
     pay_type: str = "alipay"   # "alipay" or "wechat"
+
+class ReviewBody(BaseModel):
+    rating: int = 5
+    comment: str = ""
+
+class ProfileUpdate(BaseModel):
+    nickname: str = ""
+    bio: str = ""
 
 
 # ── Report HTML labels (zh / en) ──────────────────────────────
@@ -828,7 +854,12 @@ async def auth_login(body: LoginBody):
 @app.get("/auth/me")
 async def auth_me(user: dict = Depends(_current_user)):
     """Return current user info from JWT."""
-    return {"id": user["id"], "email": user["email"], "credits": user["credits"], "total_scans": user["total_scans"]}
+    return {
+        "id": user["id"], "email": user["email"],
+        "credits": user["credits"], "total_scans": user["total_scans"],
+        "nickname": user.get("nickname") or "",
+        "avatar_b64": user.get("avatar_b64") or "",
+    }
 
 
 # ── Payment Endpoints ───────────────────────────────────────
@@ -1714,6 +1745,65 @@ def _dist_preview_html(r: dict) -> str:
              display:flex;align-items:center;gap:6px;justify-content:center}}
     .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
     .footer img{{width:16px;height:16px;opacity:.6}}
+    /* ── Social stats bar ── */
+    .social-stats{{display:flex;align-items:center;gap:18px;margin-top:14px;flex-wrap:wrap}}
+    .sstat{{display:flex;align-items:center;gap:5px;font-size:.82em;
+             color:rgba(255,255,255,.7);font-weight:600}}
+    .sstat-val{{font-weight:800;color:white}}
+    .sstat-sep{{width:1px;height:14px;background:rgba(255,255,255,.25)}}
+    /* ── Like button ── */
+    .like-btn{{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+               background:rgba(255,255,255,.05);color:#94a3b8;font-size:.9em;font-weight:700;
+               cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+               transition:all .2s}}
+    .like-btn:hover{{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:#f87171}}
+    .like-btn.liked{{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.45);color:#f87171}}
+    .like-btn .heart{{font-size:1.1em;transition:transform .15s}}
+    .like-btn.liked .heart{{transform:scale(1.2)}}
+    /* ── Reviews ── */
+    .reviews-section{{margin-top:28px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06)}}
+    .reviews-hd{{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}}
+    .reviews-title{{font-size:.82em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569}}
+    .avg-stars{{display:flex;align-items:center;gap:6px;font-size:.85em;color:#fbbf24;font-weight:700}}
+    /* Star rating input */
+    .star-row{{display:flex;gap:4px;margin-bottom:10px}}
+    .star-pick{{font-size:1.6em;cursor:pointer;color:#334155;transition:color .1s;user-select:none}}
+    .star-pick.on{{color:#fbbf24}}
+    .review-textarea{{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+                      border-radius:10px;padding:12px;color:#e2e8f0;font-size:.88em;
+                      resize:vertical;min-height:80px;font-family:inherit;line-height:1.6}}
+    .review-textarea:focus{{outline:none;border-color:rgba(99,102,241,.5)}}
+    .review-submit{{margin-top:10px;width:100%;padding:11px;border-radius:10px;border:none;
+                    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;
+                    font-size:.88em;font-weight:800;cursor:pointer;transition:opacity .2s}}
+    .review-submit:hover{{opacity:.85}}
+    .review-login-prompt{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+                           border-radius:12px;padding:16px;text-align:center;margin-bottom:16px}}
+    .review-login-prompt a{{color:#60a5fa;text-decoration:none;font-weight:700}}
+    /* Review cards */
+    .review-card{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+                  border-radius:14px;padding:16px;margin-bottom:12px}}
+    .review-card.mine{{border-color:rgba(99,102,241,.35);background:rgba(99,102,241,.05)}}
+    .review-top{{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}}
+    .av-circle{{width:40px;height:40px;border-radius:50%;flex-shrink:0;overflow:hidden;
+                display:flex;align-items:center;justify-content:center;
+                font-size:.9em;font-weight:800;color:white}}
+    .av-circle img{{width:100%;height:100%;object-fit:cover}}
+    .review-meta{{flex:1;min-width:0}}
+    .review-nick{{font-size:.88em;font-weight:700;color:#cbd5e1}}
+    .review-date{{font-size:.72em;color:#475569;margin-top:1px}}
+    .review-stars{{display:flex;gap:2px;margin-top:4px}}
+    .rstar{{font-size:.85em;color:#fbbf24}}
+    .rstar.empty{{color:#334155}}
+    .review-comment{{font-size:.85em;color:#94a3b8;line-height:1.65;white-space:pre-wrap;word-break:break-word}}
+    .review-actions{{display:flex;gap:8px;margin-top:10px}}
+    .review-act-btn{{font-size:.75em;color:#475569;background:none;border:none;cursor:pointer;padding:0}}
+    .review-act-btn:hover{{color:#94a3b8}}
+    .empty-reviews{{text-align:center;padding:32px;color:#334155;font-size:.88em}}
+    .review-form-wrap{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+                        border-radius:14px;padding:18px;margin-bottom:20px}}
+    .review-form-title{{font-size:.78em;font-weight:700;color:#64748b;margin-bottom:12px;
+                        text-transform:uppercase;letter-spacing:.08em}}
   </style>
 </head>
 <body>
@@ -1762,6 +1852,13 @@ def _dist_preview_html(r: dict) -> str:
           <div class="hero-name">{app_name}</div>
           {f'<div class="hero-version">版本 {html_lib.escape(version)}</div>' if version else ''}
           {f'<div class="hero-pkg">{pkg_name}</div>' if pkg_name else ''}
+          <div class="social-stats">
+            <div class="sstat">❤ <span class="sstat-val" id="ss-likes">…</span> 喜欢</div>
+            <div class="sstat-sep"></div>
+            <div class="sstat" id="ss-avg-wrap">★ <span class="sstat-val" id="ss-avg">…</span></div>
+            <div class="sstat-sep"></div>
+            <div class="sstat"><span class="sstat-val" id="ss-cnt">…</span> 条评价</div>
+          </div>
         </div>
       </div>
 
@@ -1790,11 +1887,31 @@ def _dist_preview_html(r: dict) -> str:
             </ul>
             <a class="ai-cta" href="{site}" target="_blank" rel="noopener">免费扫描此应用 →</a>
           </div>
+
+          <!-- Reviews section -->
+          <div class="reviews-section">
+            <div class="reviews-hd">
+              <div class="reviews-title">用户评价</div>
+              <div class="avg-stars" id="avg-stars-display" style="display:none">
+                <span id="avg-stars-text"></span>
+              </div>
+            </div>
+            <!-- Review form (filled by JS) -->
+            <div id="review-form-area"></div>
+            <!-- Reviews list -->
+            <div id="reviews-list"></div>
+          </div>
         </div>
 
         <!-- Right: sidebar -->
         <div class="sidebar">
           {btn_html}
+          <!-- Like button -->
+          <button class="like-btn" id="like-btn" onclick="toggleLike()">
+            <span class="heart">♥</span>
+            <span id="like-btn-text">喜欢</span>
+            <span id="like-btn-count"></span>
+          </button>
           <div class="copy-wrap" onclick="copyLink()" title="复制链接">
             <span class="copy-url" id="lnk">{page_url}</span>
             <span class="copy-icon">📋</span>
@@ -1820,6 +1937,10 @@ def _dist_preview_html(r: dict) -> str:
   </div>
 
   <script>
+  // ── Utilities ───────────────────────────────────────────────
+  const _jwt = () => localStorage.getItem('jwt') || '';
+  const _authHdr = () => _jwt() ? {{'Authorization':'Bearer '+_jwt()}} : {{}};
+
   function copyLink(){{
     navigator.clipboard.writeText('{page_url}').then(()=>{{
       const el=document.getElementById('lnk');
@@ -1827,44 +1948,343 @@ def _dist_preview_html(r: dict) -> str:
       setTimeout(()=>el.textContent='{page_url}',2000);
     }});
   }}
+
+  // ── Download ─────────────────────────────────────────────────
   async function handleDownload(){{
-    const jwt = localStorage.getItem('jwt');
     const btn = document.getElementById('dl-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ 准备中…';
+    btn.disabled = true; btn.textContent = '⏳ 准备中…';
     try {{
       const resp = await fetch('/dist/{slug}/request-download', {{
-        method: 'POST',
-        headers: jwt ? {{'Authorization': 'Bearer '+jwt}} : {{}}
+        method: 'POST', headers: _authHdr()
       }});
       if (resp.status === 401) {{
         document.getElementById('ov-login').classList.add('show');
-        btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}'; return;
+        btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; return;
       }}
       if (resp.status === 402) {{
         document.getElementById('ov-credits').classList.add('show');
-        btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}'; return;
+        btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; return;
       }}
       if (!resp.ok) {{
         const err = await resp.json().catch(()=>({{detail:'下载失败，请稍后重试'}}));
-        alert(err.detail || '下载失败，请稍后重试');
-        btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}'; return;
+        alert(err.detail||'下载失败，请稍后重试');
+        btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; return;
       }}
       const data = await resp.json();
-      btn.textContent = '✅ 开始下载…';
-      window.location.href = '/dist/{slug}/download?token=' + data.token;
-      setTimeout(()=>{{ btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; }}, 3000);
-    }} catch(e) {{
+      btn.textContent='✅ 开始下载…';
+      window.location.href='/dist/{slug}/download?token='+data.token;
+      setTimeout(()=>{{btn.disabled=false;btn.textContent='⬇️ 点击下载 {file_type}';}},3000);
+    }} catch(e){{
       alert('网络错误，请稍后重试');
-      btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}';
+      btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}';
     }}
   }}
+
+  // ── Avatar helper ────────────────────────────────────────────
+  const _AV_COLORS=['#6366f1','#8b5cf6','#0ea5e9','#10b981','#f59e0b','#ef4444'];
+  function avatarHtml(nick, av64){{
+    if(av64) return `<img src="data:image/png;base64,${{av64}}" alt="${{nick}}">`;
+    const ch=(nick||'U')[0].toUpperCase();
+    const col=_AV_COLORS[(nick||'U').charCodeAt(0)%_AV_COLORS.length];
+    return `<span style="background:${{col}};width:100%;height:100%;display:flex;align-items:center;justify-content:center">${{ch}}</span>`;
+  }}
+
+  // ── Stars render ─────────────────────────────────────────────
+  function starsHtml(n, cls='rstar'){{
+    return [1,2,3,4,5].map(i=>`<span class="${{cls}}${{i<=n?'':' empty'}}">★</span>`).join('');
+  }}
+
+  // ── Social data ──────────────────────────────────────────────
+  let _myRating = 5;
+  let _liked = false;
+
+  async function loadSocial(){{
+    try{{
+      const resp = await fetch('/dist/{slug}/reviews', {{headers: _authHdr()}});
+      if(!resp.ok) return;
+      const d = await resp.json();
+      renderSocial(d);
+    }}catch(e){{}}
+  }}
+
+  function renderSocial(d){{
+    // Stats bar
+    document.getElementById('ss-likes').textContent = d.likes;
+    document.getElementById('ss-cnt').textContent = d.count;
+    const avgWrap = document.getElementById('ss-avg-wrap');
+    if(d.avg){{
+      document.getElementById('ss-avg').textContent = d.avg+'★';
+    }}else{{
+      avgWrap.style.display='none';
+      document.querySelector('.sstat-sep')&&(()=>{{
+        const seps=document.querySelectorAll('.sstat-sep');
+        if(seps.length>0) seps[0].style.display='none';
+      }})();
+    }}
+    // Like button
+    _liked = d.liked;
+    updateLikeBtn(d.likes, d.liked);
+    // Avg display in reviews header
+    if(d.avg){{
+      const ad=document.getElementById('avg-stars-display');
+      ad.style.display='flex';
+      document.getElementById('avg-stars-text').innerHTML=starsHtml(Math.round(d.avg))+` ${{d.avg}}`;
+    }}
+    // Review form area
+    const fa=document.getElementById('review-form-area');
+    if(_jwt()){{
+      const mr=d.my_review;
+      if(mr) _myRating=mr.rating;
+      fa.innerHTML=`
+        <div class="review-form-wrap">
+          <div class="review-form-title">${{mr?'修改你的评价':'写评价'}}</div>
+          <div class="star-row" id="star-row">
+            ${{[1,2,3,4,5].map(i=>`<span class="star-pick${{i<=_myRating?' on':''}}" onclick="setRating(${{i}})" onmouseover="hoverRating(${{i}})" onmouseout="resetRating()">★</span>`).join('')}}
+          </div>
+          <textarea class="review-textarea" id="review-text" placeholder="分享你对这个应用的看法（选填）..." maxlength="500">${{mr?mr.comment:''}}</textarea>
+          <button class="review-submit" onclick="submitReview()">${{mr?'更新评价':'发布评价'}}</button>
+          ${{mr?`<button class="review-act-btn" onclick="deleteReview()" style="margin-top:8px;display:block;font-size:.78em;color:#475569">删除我的评价</button>`:''}}
+        </div>`;
+    }}else{{
+      fa.innerHTML=`<div class="review-login-prompt">
+        <a href="{site}/app?action=login&return={page_url_enc}">登录</a> 后发表评价
+      </div>`;
+    }}
+    // Reviews list
+    const rl=document.getElementById('reviews-list');
+    if(!d.reviews.length){{
+      rl.innerHTML='<div class="empty-reviews">暂无评价，成为第一个评价者 ✨</div>';
+      return;
+    }}
+    rl.innerHTML=d.reviews.map(r=>`
+      <div class="review-card${{r.is_mine?' mine':''}}">
+        <div class="review-top">
+          <div class="av-circle">${{avatarHtml(r.nickname,r.avatar_b64)}}</div>
+          <div class="review-meta">
+            <div class="review-nick">${{r.nickname}}${{r.is_mine?' <span style="font-size:.7em;color:#6366f1;font-weight:700">（我）</span>':''}}</div>
+            <div class="review-stars">${{starsHtml(r.rating)}}</div>
+            <div class="review-date">${{r.created_at}}</div>
+          </div>
+        </div>
+        ${{r.comment?`<div class="review-comment">${{r.comment}}</div>`:''}}
+      </div>`).join('');
+  }}
+
+  // ── Like toggle ───────────────────────────────────────────────
+  function updateLikeBtn(count, liked){{
+    const btn=document.getElementById('like-btn');
+    const txt=document.getElementById('like-btn-text');
+    const cnt=document.getElementById('like-btn-count');
+    btn.classList.toggle('liked', liked);
+    txt.textContent=liked?'已喜欢':'喜欢';
+    cnt.textContent=count>0?`(${{count}})`:''
+  }}
+
+  async function toggleLike(){{
+    if(!_jwt()){{
+      document.getElementById('ov-login').classList.add('show'); return;
+    }}
+    try{{
+      const r=await fetch('/dist/{slug}/like',{{method:'POST',headers:_authHdr()}});
+      if(r.ok){{
+        const d=await r.json();
+        _liked=d.liked;
+        updateLikeBtn(d.count,d.liked);
+        document.getElementById('ss-likes').textContent=d.count;
+      }}
+    }}catch(e){{}}
+  }}
+
+  // ── Review form ───────────────────────────────────────────────
+  function setRating(n){{
+    _myRating=n;
+    document.querySelectorAll('.star-pick').forEach((s,i)=>
+      s.classList.toggle('on',i<n));
+  }}
+  function hoverRating(n){{
+    document.querySelectorAll('.star-pick').forEach((s,i)=>
+      s.classList.toggle('on',i<n));
+  }}
+  function resetRating(){{
+    document.querySelectorAll('.star-pick').forEach((s,i)=>
+      s.classList.toggle('on',i<_myRating));
+  }}
+
+  async function submitReview(){{
+    const comment=document.getElementById('review-text')?.value||'';
+    try{{
+      const r=await fetch('/dist/{slug}/review',{{
+        method:'POST',
+        headers:{{..._authHdr(),'Content-Type':'application/json'}},
+        body:JSON.stringify({{rating:_myRating,comment}})
+      }});
+      if(r.ok) loadSocial();
+    }}catch(e){{alert('提交失败，请重试');}}
+  }}
+
+  async function deleteReview(){{
+    if(!confirm('确定删除你的评价？')) return;
+    try{{
+      const r=await fetch('/dist/{slug}/review',{{method:'DELETE',headers:_authHdr()}});
+      if(r.ok) loadSocial();
+    }}catch(e){{}}
+  }}
+
+  // ── Overlays & init ───────────────────────────────────────────
   document.querySelectorAll('.overlay').forEach(el=>{{
-    el.addEventListener('click', e=>{{ if(e.target===el) el.classList.remove('show'); }});
+    el.addEventListener('click',e=>{{if(e.target===el)el.classList.remove('show');}});
   }});
+  loadSocial();
   </script>
 </body>
 </html>"""
+
+
+# ── User Profile ────────────────────────────────────────────
+
+@app.get("/auth/profile")
+async def get_profile(user: dict = Depends(_current_user)):
+    return {
+        "id": user["id"], "email": user["email"],
+        "nickname": user.get("nickname") or "",
+        "bio": user.get("bio") or "",
+        "avatar_b64": user.get("avatar_b64") or "",
+        "credits": user.get("credits", 0),
+    }
+
+@app.put("/auth/profile")
+async def update_profile(body: ProfileUpdate, user: dict = Depends(_current_user)):
+    nickname = body.nickname.strip()[:32]
+    bio = body.bio.strip()[:200]
+    with _db() as c:
+        c.execute("UPDATE users_v2 SET nickname=?, bio=? WHERE id=?",
+                  (nickname, bio, user["id"]))
+    return {"ok": True, "nickname": nickname, "bio": bio}
+
+@app.post("/auth/avatar")
+async def update_avatar(file: UploadFile, user: dict = Depends(_current_user)):
+    data = await file.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(400, "图片太大（最大 5MB）")
+    try:
+        from PIL import Image as _PILImg
+        import io as _io
+        img = _PILImg.open(_io.BytesIO(data)).convert("RGBA")
+        img = img.resize((80, 80), _PILImg.LANCZOS)
+        buf = _io.BytesIO()
+        img.save(buf, "PNG", optimize=True)
+        avatar_b64 = base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        raise HTTPException(400, "无效的图片文件")
+    with _db() as c:
+        c.execute("UPDATE users_v2 SET avatar_b64=? WHERE id=?", (avatar_b64, user["id"]))
+    return {"ok": True, "avatar_b64": avatar_b64}
+
+# ── App Likes ────────────────────────────────────────────────
+
+@app.post("/dist/{slug}/like")
+async def dist_toggle_like(slug: str, user: dict = Depends(_current_user)):
+    with _db() as c:
+        if not c.execute("SELECT 1 FROM app_releases WHERE slug=? AND is_active=1", (slug,)).fetchone():
+            raise HTTPException(404, "Not found")
+        existing = c.execute("SELECT 1 FROM app_likes WHERE slug=? AND user_id=?",
+                              (slug, user["id"])).fetchone()
+        if existing:
+            c.execute("DELETE FROM app_likes WHERE slug=? AND user_id=?", (slug, user["id"]))
+            liked = False
+        else:
+            c.execute("INSERT INTO app_likes(slug, user_id) VALUES(?,?)", (slug, user["id"]))
+            liked = True
+        count = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
+    return {"liked": liked, "count": count}
+
+# ── App Reviews ──────────────────────────────────────────────
+
+def _review_display_name(nickname: str, email: str) -> str:
+    if nickname:
+        return nickname
+    local = (email or "").split("@")[0]
+    return local[:2] + "***" if len(local) > 2 else local or "用户"
+
+@app.get("/dist/{slug}/reviews")
+async def dist_get_reviews(slug: str, request: Request):
+    # Optional auth
+    user = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        try:
+            payload = jwt.decode(auth[7:], JWT_SECRET, algorithms=[JWT_ALG])
+            uid = payload.get("sub")
+            with _db() as c:
+                u = c.execute("SELECT * FROM users_v2 WHERE id=?", (uid,)).fetchone()
+                if u:
+                    user = dict(u)
+        except Exception:
+            pass
+    with _db() as c:
+        rows = c.execute("""
+            SELECT r.id, r.rating, r.comment, r.created_at,
+                   u.nickname, u.avatar_b64, u.email
+            FROM app_reviews r
+            JOIN users_v2 u ON u.id = r.user_id
+            WHERE r.slug=?
+            ORDER BY r.created_at DESC
+        """, (slug,)).fetchall()
+        likes = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
+        my_review = None
+        liked = False
+        if user:
+            mr = c.execute("SELECT * FROM app_reviews WHERE slug=? AND user_id=?",
+                           (slug, user["id"])).fetchone()
+            if mr:
+                my_review = dict(mr)
+            liked = bool(c.execute("SELECT 1 FROM app_likes WHERE slug=? AND user_id=?",
+                                   (slug, user["id"])).fetchone())
+    reviews = [
+        {
+            "id": r["id"],
+            "rating": r["rating"],
+            "comment": r["comment"] or "",
+            "created_at": (r["created_at"] or "")[:10],
+            "nickname": _review_display_name(r["nickname"], r["email"]),
+            "avatar_b64": r["avatar_b64"] or "",
+            "is_mine": bool(user and my_review and r["id"] == my_review["id"]),
+        }
+        for r in rows
+    ]
+    ratings = [r["rating"] for r in reviews] if reviews else []
+    avg = round(sum(ratings) / len(ratings), 1) if ratings else None
+    return {
+        "reviews": reviews,
+        "likes": likes,
+        "liked": liked,
+        "my_review": my_review,
+        "avg": avg,
+        "count": len(reviews),
+    }
+
+@app.post("/dist/{slug}/review")
+async def dist_post_review(slug: str, body: ReviewBody, user: dict = Depends(_current_user)):
+    if not 1 <= body.rating <= 5:
+        raise HTTPException(400, "评分需在 1-5 之间")
+    with _db() as c:
+        if not c.execute("SELECT 1 FROM app_releases WHERE slug=? AND is_active=1", (slug,)).fetchone():
+            raise HTTPException(404, "Not found")
+        c.execute("""
+            INSERT INTO app_reviews(slug, user_id, rating, comment)
+            VALUES(?,?,?,?)
+            ON CONFLICT(slug, user_id) DO UPDATE SET
+                rating=excluded.rating,
+                comment=excluded.comment,
+                created_at=datetime('now')
+        """, (slug, user["id"], body.rating, body.comment.strip()[:500]))
+    return {"ok": True}
+
+@app.delete("/dist/{slug}/review")
+async def dist_delete_review(slug: str, user: dict = Depends(_current_user)):
+    with _db() as c:
+        c.execute("DELETE FROM app_reviews WHERE slug=? AND user_id=?", (slug, user["id"]))
+    return {"ok": True}
 
 
 @app.post("/dist/upload")
