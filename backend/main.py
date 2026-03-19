@@ -58,6 +58,8 @@ async def _baidu_push():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(_baidu_push())
+    # Run metadata backfill in background so startup isn't blocked
+    asyncio.get_event_loop().run_in_executor(None, _backfill_metadata)
 
 _tasks: dict = {}
 
@@ -235,29 +237,7 @@ def _migrate_db():
         c.execute("UPDATE app_releases SET platform='windows' WHERE file_type IN ('exe','msi') AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='macos'   WHERE file_type IN ('dmg','pkg') AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='linux'   WHERE file_type IN ('deb','rpm','appimage') AND (platform IS NULL OR platform='')")
-        # Backfill version + icon for existing records that are missing them
-        stale = c.execute(
-            "SELECT slug, file_type FROM app_releases WHERE is_active=1 AND (version='' OR version IS NULL OR icon_b64='' OR icon_b64 IS NULL)"
-        ).fetchall()
-    for row in stale:
-        slug, ext = row["slug"], row["file_type"]
-        fpath = DIST_DIR / f"{slug}.{ext}"
-        if not fpath.exists():
-            continue
-        try:
-            meta = _extract_app_info(fpath, ext)
-            with _db() as c2:
-                c2.execute(
-                    "UPDATE app_releases SET version=COALESCE(NULLIF(?,''),(SELECT version FROM app_releases WHERE slug=?)),"
-                    " icon_b64=COALESCE(NULLIF(?,''),(SELECT icon_b64 FROM app_releases WHERE slug=?)),"
-                    " display_name=COALESCE(NULLIF(?,''),(SELECT display_name FROM app_releases WHERE slug=?)),"
-                    " pkg_name=COALESCE(NULLIF(?,''),(SELECT pkg_name FROM app_releases WHERE slug=?))"
-                    " WHERE slug=?",
-                    (meta["version"], slug, meta["icon_b64"], slug,
-                     meta["display_name"], slug, meta["pkg_name"], slug, slug),
-                )
-        except Exception:
-            pass
+        pass  # backfill runs in startup_event after all functions are defined
 
 _init_db()
 _migrate_db()
@@ -1359,10 +1339,60 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                     info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
         except Exception:
             pass
+
     return info
 
 def _gen_slug(n: int = 8) -> str:
     return ''.join(random.choices(_SLUG_ABC, k=n))
+
+def _backfill_metadata():
+    """Re-extract version/icon/name for existing records that are missing them.
+    Called from startup_event so _extract_app_info is guaranteed to be defined."""
+    try:
+        with _db() as c:
+            stale = c.execute(
+                "SELECT slug, file_type, app_name, display_name, version FROM app_releases"
+                " WHERE is_active=1"
+                " AND (version='' OR version IS NULL OR icon_b64='' OR icon_b64 IS NULL"
+                " OR display_name='' OR display_name IS NULL)"
+            ).fetchall()
+        _dist_dir = Path("/app/data/releases")
+        for row in stale:
+            slug, ext = row["slug"], row["file_type"]
+            app_name = row["app_name"] or ""
+            fpath = _dist_dir / f"{slug}.{ext}"
+            if not fpath.exists():
+                continue
+            try:
+                meta = _extract_app_info(fpath, ext)
+                # Fallback: extract version from app_name (original filename) for EXE/DMG
+                if not meta["version"] and app_name:
+                    m = re.search(r'[._\-](\d+(?:[._\-]\d+){1,3})', app_name)
+                    if m:
+                        meta["version"] = m.group(1).replace('_', '.').replace('-', '.')
+                # Fallback: format display_name from app_name if extraction gave nothing
+                if not meta["display_name"] and app_name:
+                    meta["display_name"] = _fmt_name(app_name)
+                with _db() as c2:
+                    c2.execute(
+                        "UPDATE app_releases SET"
+                        " version=CASE WHEN ?!='' THEN ? ELSE version END,"
+                        " icon_b64=CASE WHEN ?!='' THEN ? ELSE icon_b64 END,"
+                        " display_name=CASE WHEN ?!='' THEN ? ELSE display_name END,"
+                        " pkg_name=CASE WHEN ?!='' THEN ? ELSE pkg_name END"
+                        " WHERE slug=?",
+                        (meta["version"], meta["version"],
+                         meta["icon_b64"], meta["icon_b64"],
+                         meta["display_name"], meta["display_name"],
+                         meta["pkg_name"], meta["pkg_name"],
+                         slug),
+                    )
+                print("[backfill] %s.%s: ver=%r display=%r icon=%s" % (
+                    slug, ext, meta["version"], meta["display_name"], bool(meta["icon_b64"])))
+            except Exception as e:
+                print("[backfill] %s.%s error: %s" % (slug, ext, e))
+    except Exception as e:
+        print("[backfill] failed: %s" % e)
 
 def _fmt_size(n: int) -> str:
     if n >= 1024**2: return f"{n/1024**2:.1f} MB"
