@@ -1218,6 +1218,12 @@
           <label class="form-label" id="dist-label-desc">备注说明</label>
           <input class="form-input" id="dist-desc" type="text" placeholder="版本更新说明...">
         </div>
+        <div class="form-field full" style="margin-top:4px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85em;color:#94a3b8">
+            <input type="checkbox" id="dist-is-public" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer">
+            <span id="dist-label-public">上架到应用市场（公开展示，用户可浏览下载）</span>
+          </label>
+        </div>
       </div>
       <div id="dist-upload-msg" class="form-msg" style="margin-top:10px"></div>
       <button class="upload-btn" id="dist-submit-btn" onclick="distUpload()" style="margin-top:16px;width:100%;justify-content:center">
@@ -1425,6 +1431,7 @@ const LANG = {
     distLabelExpiry: '有效天数',
     distLabelMaxdl:  '最大下载次数',
     distLabelDesc:   '备注说明',
+    distLabelPublic: '上架到应用市场（公开展示，用户可浏览下载）',
     distSubmitText:  '上传并生成分发链接',
     distReleasesTitle:'📋 我的分发',
     distRefreshBtn:  '↻ 刷新',
@@ -1583,6 +1590,7 @@ const LANG = {
     distLabelExpiry: 'Expiry (days)',
     distLabelMaxdl:  'Max Downloads',
     distLabelDesc:   'Description',
+    distLabelPublic: 'List on App Marketplace (publicly visible)',
     distSubmitText:  'Upload & Generate Link',
     distReleasesTitle:'📋 My Releases',
     distRefreshBtn:  '↻ Refresh',
@@ -2087,6 +2095,7 @@ function applyI18n() {
   setText('dist-label-expiry',  l.distLabelExpiry);
   setText('dist-label-maxdl',   l.distLabelMaxdl);
   setText('dist-label-desc',    l.distLabelDesc);
+  setText('dist-label-public',  l.distLabelPublic);
   setText('dist-submit-text',   l.distSubmitText);
   setText('dist-releases-title',l.distReleasesTitle);
   setText('dist-refresh-btn',   l.distRefreshBtn);
@@ -2495,6 +2504,7 @@ function distUpload() {
   fd.append('description',   document.getElementById('dist-desc').value.trim());
   fd.append('expires_days',  document.getElementById('dist-expiry').value || '0');
   fd.append('max_downloads', document.getElementById('dist-maxdl').value || '0');
+  fd.append('is_public',     document.getElementById('dist-is-public').checked ? '1' : '0');
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/dist/upload');

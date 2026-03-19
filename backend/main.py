@@ -209,6 +209,12 @@ def _migrate_db():
                 c.execute(sql)
             except Exception:
                 pass  # Column already exists
+        # Backfill platform for existing records that have empty platform
+        c.execute("UPDATE app_releases SET platform='android' WHERE file_type='apk'  AND (platform IS NULL OR platform='')")
+        c.execute("UPDATE app_releases SET platform='ios'     WHERE file_type='ipa'  AND (platform IS NULL OR platform='')")
+        c.execute("UPDATE app_releases SET platform='windows' WHERE file_type IN ('exe','msi') AND (platform IS NULL OR platform='')")
+        c.execute("UPDATE app_releases SET platform='macos'   WHERE file_type IN ('dmg','pkg') AND (platform IS NULL OR platform='')")
+        c.execute("UPDATE app_releases SET platform='linux'   WHERE file_type IN ('deb','rpm','appimage') AND (platform IS NULL OR platform='')")
 
 _init_db()
 _migrate_db()
@@ -1509,6 +1515,7 @@ async def dist_upload(
     description:   str = Form(""),
     expires_days:  int = Form(0),
     max_downloads: int = Form(0),
+    is_public:     int = Form(0),
     user: dict = Depends(_current_user),
 ):
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
@@ -1569,27 +1576,28 @@ async def dist_upload(
 
     platform = _PLATFORM_MAP.get(ext, "other")
     with _db() as c:
+        pub = 1 if is_public else 0
         if is_update:
             c.execute(
                 """UPDATE app_releases SET
                    version=?, file_size=?, description=?, expires_at=?,
                    max_downloads=?, download_count=0, is_active=1,
                    created_at=datetime('now'),
-                   pkg_name=?, display_name=?, icon_b64=?, platform=?
+                   pkg_name=?, display_name=?, icon_b64=?, platform=?, is_public=?
                    WHERE slug=?""",
                 (resolved_version, size, description.strip(), expires_at,
                  max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, slug),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, slug),
             )
         else:
             c.execute(
                 """INSERT INTO app_releases
                    (slug, user_id, app_name, version, file_type, file_size,
-                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform, is_public)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (slug, user["id"], resolved_name, resolved_version, ext, size,
                  description.strip(), expires_at, max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub),
             )
 
     # ── Deduct 1 credit ─────────────────────────────────────────
@@ -1760,7 +1768,10 @@ def _market_html() -> str:
     .badge-linux{{background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.35)}}
     .badge-other{{background:rgba(148,163,184,.2);color:#94a3b8;border:1px solid rgba(148,163,184,.35)}}
     .dl-cnt{{font-size:.7em;color:#475569;margin-top:6px}}
-    #loading{{text-align:center;padding:60px;color:#475569}}
+    #loading{{text-align:center;padding:40px;color:#475569;font-size:.9em}}
+    #empty{{display:none;text-align:center;padding:80px 24px;color:#475569}}
+    #empty .empty-icon{{font-size:3em;margin-bottom:12px}}
+    #empty p{{font-size:.9em}}
     footer{{text-align:center;padding:24px;font-size:.75em;color:#334155;
             border-top:1px solid rgba(255,255,255,.05);margin-top:24px}}
     footer a{{color:#3b82f6;text-decoration:none}}
@@ -1776,13 +1787,14 @@ def _market_html() -> str:
 </header>
 <div class="filters">
   <button class="filter-btn active" onclick="setFilter('')">全部</button>
-  <button class="filter-btn" onclick="setFilter('android')">🤖 Android</button>
-  <button class="filter-btn" onclick="setFilter('ios')">🍎 iOS</button>
-  <button class="filter-btn" onclick="setFilter('windows')">🪟 Windows</button>
-  <button class="filter-btn" onclick="setFilter('macos')">🍏 macOS</button>
-  <button class="filter-btn" onclick="setFilter('linux')">🐧 Linux</button>
+  <button class="filter-btn" data-plat="android" onclick="setFilter('android')">🤖 Android</button>
+  <button class="filter-btn" data-plat="ios" onclick="setFilter('ios')">🍎 iOS</button>
+  <button class="filter-btn" data-plat="windows" onclick="setFilter('windows')">🪟 Windows</button>
+  <button class="filter-btn" data-plat="macos" onclick="setFilter('macos')">🍏 macOS</button>
+  <button class="filter-btn" data-plat="linux" onclick="setFilter('linux')">🐧 Linux</button>
 </div>
 <div id="grid" class="grid"></div>
+<div id="empty"><div class="empty-icon">📭</div><p>暂无应用，快来上传第一个吧！</p></div>
 <div id="loading">加载中…</div>
 <footer>Powered by <a href="{site}">AppSec AI</a></footer>
 <script>
@@ -1793,7 +1805,12 @@ function esc(s){{const d=document.createElement('div');d.textContent=s||'';retur
 function setFilter(p){{
   currentPlatform=p;offset=0;done=false;
   document.getElementById('grid').innerHTML='';
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(p)||(p===''&&b.textContent==='全部')));
+  document.getElementById('empty').style.display='none';
+  document.getElementById('loading').textContent='加载中…';
+  document.querySelectorAll('.filter-btn').forEach(b=>{{
+    const isAll=b.textContent.trim()==='全部';
+    b.classList.toggle('active',(p===''&&isAll)||(p!==''&&b.getAttribute('data-plat')===p));
+  }});
   loadMore();
 }}
 async function loadMore(){{
@@ -1801,28 +1818,45 @@ async function loadMore(){{
   loading=true;
   const el=document.getElementById('loading');
   el.style.display='block';
-  const qs=currentPlatform?`?platform=${{currentPlatform}}&offset=${{offset}}`:`?offset=${{offset}}`;
-  const r=await fetch(SITE+'/market/list'+qs);
-  const d=await r.json();
-  const apps=d.apps||[];
-  if(apps.length<24)done=true;
-  const grid=document.getElementById('grid');
-  apps.forEach(app=>{{
-    const name=esc(app.display_name||app.app_name||'未命名');
-    const ver=app.version?`<div class="ver">v${{esc(app.version)}}</div>`:'';
-    const plat=app.platform||'other';
-    const label=BADGE_LABELS[plat]||plat;
-    const icon=app.icon_b64?`<img class="icon" src="data:image/png;base64,${{app.icon_b64}}" alt="icon">`:`<div class="icon-ph">📦</div>`;
-    const card=document.createElement('a');
-    card.className='card';
-    card.href=`${{SITE}}/dist/${{app.slug}}`;
-    card.target='_blank';
-    card.innerHTML=`${{icon}}<div class="name">${{name}}</div>${{ver}}<span class="badge badge-${{plat}}">${{label}}</span><div class="dl-cnt">⬇️ ${{app.download_count||0}} 次下载</div>`;
-    grid.appendChild(card);
-  }});
-  offset+=apps.length;
-  el.style.display=done?'none':'block';
-  if(done)el.textContent='已加载全部';
+  el.textContent='加载中…';
+  try{{
+    const qs=currentPlatform?`?platform=${{currentPlatform}}&offset=${{offset}}`:`?offset=${{offset}}`;
+    const r=await fetch(SITE+'/market/list'+qs);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const apps=d.apps||[];
+    if(apps.length<24)done=true;
+    const grid=document.getElementById('grid');
+    apps.forEach(app=>{{
+      const name=esc(app.display_name||app.app_name||'未命名');
+      const ver=app.version?`<div class="ver">v${{esc(app.version)}}</div>`:'';
+      const plat=app.platform||'other';
+      const label=BADGE_LABELS[plat]||plat;
+      const icon=app.icon_b64?`<img class="icon" src="data:image/png;base64,${{app.icon_b64}}" alt="icon">`:`<div class="icon-ph">📦</div>`;
+      const card=document.createElement('a');
+      card.className='card';
+      card.href=`${{SITE}}/dist/${{app.slug}}`;
+      card.target='_blank';
+      card.innerHTML=`${{icon}}<div class="name">${{name}}</div>${{ver}}<span class="badge badge-${{plat}}">${{label}}</span><div class="dl-cnt">⬇️ ${{app.download_count||0}} 次下载</div>`;
+      grid.appendChild(card);
+    }});
+    offset+=apps.length;
+    if(done){{
+      if(offset===0){{
+        el.style.display='none';
+        document.getElementById('empty').style.display='block';
+      }}else{{
+        el.textContent='已加载全部';
+        el.style.display='block';
+      }}
+    }}else{{
+      el.style.display='none';
+    }}
+  }}catch(e){{
+    el.textContent='加载失败，请刷新重试';
+    el.style.display='block';
+    console.error(e);
+  }}
   loading=false;
 }}
 window.addEventListener('scroll',()=>{{
