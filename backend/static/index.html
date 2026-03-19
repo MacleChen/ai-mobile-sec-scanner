@@ -136,18 +136,20 @@
     }
     .modal {
       background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
-      width: 100%; max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,.65); overflow: hidden;
+      width: 100%; max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,.65);
+      overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;
     }
+    .modal-body { overflow-y: auto; }
     .modal-head {
       background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(139,92,246,.18));
-      border-bottom: 1px solid var(--border); padding: 24px 28px;
+      border-bottom: 1px solid var(--border); padding: 18px 24px; flex-shrink: 0;
     }
     .modal-head h2 { font-size: 1.3em; font-weight: 800; margin-bottom: 4px; color: var(--text); }
     .modal-head p  { font-size: .88em; color: var(--muted); }
     .modal-body { padding: 24px 28px; }
     .modal-footer {
-      padding: 16px 28px; background: rgba(255,255,255,.02); border-top: 1px solid var(--border);
-      text-align: center; font-size: .78em; color: var(--muted);
+      padding: 12px 28px; background: rgba(255,255,255,.02); border-top: 1px solid var(--border);
+      text-align: center; font-size: .78em; color: var(--muted); flex-shrink: 0;
     }
     .modal-close {
       float: right; background: none; border: none;
@@ -187,41 +189,45 @@
     .code-input:focus { border-color: var(--blue); }
 
     /* ── Purchase modal ─────────────── */
-    .buy-modal-wide { max-width: 660px !important; }
-    .pkg-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 20px; }
-    @media(max-width:480px){ .pkg-grid { grid-template-columns: 1fr 1fr; gap: 8px; } }
+    .buy-modal-wide { max-width: 820px !important; }
+    .buy-modal-wide .modal-head { padding: 16px 28px; }
+    .buy-modal-wide .modal-head h2 { font-size: 1.15em; }
+    .buy-modal-wide .modal-body { padding: 20px 24px; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+    @media(max-width:600px){ .pkg-grid { grid-template-columns: repeat(2,1fr); } }
     .pkg {
-      background: rgba(255,255,255,.04); border: 1.5px solid var(--border); border-radius: 16px;
-      padding: 18px 14px 16px; text-align: center; cursor: pointer; transition: all .2s;
-      position: relative; overflow: hidden;
+      background: rgba(255,255,255,.04); border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 16px 10px 14px; text-align: center; cursor: pointer; transition: all .2s;
+      position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;
     }
     .pkg:hover { border-color: rgba(99,102,241,.5); background: rgba(99,102,241,.07); transform: translateY(-2px); }
     .pkg.selected { border-color: var(--blue); background: rgba(59,130,246,.1); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-    .pkg.featured { border-color: rgba(139,92,246,.5); background: rgba(139,92,246,.06); }
+    .pkg.featured { border-color: rgba(139,92,246,.45); background: rgba(139,92,246,.06); }
     .pkg.featured.selected { border-color: var(--purple); background: rgba(139,92,246,.13); box-shadow: 0 0 0 3px rgba(139,92,246,.18); }
     .pkg-badge {
       position: absolute; top: 0; right: 0;
       background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
-      font-size: .62em; font-weight: 800; padding: 3px 10px;
-      border-radius: 0 14px 0 10px; letter-spacing: .04em;
+      font-size: .58em; font-weight: 800; padding: 3px 8px;
+      border-radius: 0 12px 0 8px; letter-spacing: .04em; white-space: nowrap;
     }
-    .pkg-name { font-size: .72em; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-    .pkg .scans { font-size: 2.2em; font-weight: 900; color: var(--text); line-height: 1; }
-    .pkg-credits-label { font-size: .72em; color: var(--muted); margin-bottom: 10px; }
-    .pkg .price { font-size: 1.1em; font-weight: 800; color: var(--blue-l); }
-    .pkg .unit  { font-size: .72em; color: var(--muted); margin-top: 3px; }
-    .pkg-feats { list-style: none; text-align: left; margin: 10px 0 0; padding: 0; border-top: 1px solid rgba(255,255,255,.07); padding-top: 10px; }
-    .pkg-feats li { font-size: .72em; color: #94a3b8; padding: 2px 0; display: flex; gap: 5px; }
-    .pkg-feats li::before { content: '✓'; color: var(--green); font-weight: 800; flex-shrink: 0; }
+    .pkg-name { font-size: .68em; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .pkg .scans { font-size: 2.6em; font-weight: 900; color: var(--text); line-height: 1; }
+    .pkg-credits-label { font-size: .68em; color: var(--muted); margin: 2px 0 10px; }
+    .pkg .price { font-size: 1.05em; font-weight: 800; color: var(--blue-l); }
+    .pkg .unit  { font-size: .68em; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+    .pkg-tag {
+      margin-top: 10px; padding: 3px 8px; border-radius: 6px; font-size: .65em; font-weight: 700;
+      background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.25);
+    }
     .pay-btn-row { display: flex; gap: 10px; }
     .pay-btn {
       flex: 1; background: linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.15));
       border: 1.5px solid rgba(99,102,241,.35); border-radius: 12px;
-      padding: 14px 8px; text-align: center; cursor: pointer;
+      padding: 13px 8px; text-align: center; cursor: pointer;
       font-size: .88em; font-weight: 700; color: var(--text); transition: all .2s;
     }
     .pay-btn:hover { border-color: var(--blue); background: linear-gradient(135deg,rgba(59,130,246,.25),rgba(139,92,246,.25)); transform: translateY(-1px); }
-    .pay-btn .icon { font-size: 1.6em; display: block; margin-bottom: 6px; }
+    .pay-btn .icon { font-size: 1.5em; display: block; margin-bottom: 5px; }
     .redeem-row { display: flex; gap: 8px; margin-top: 16px; }
     .redeem-input {
       flex: 1; background: rgba(255,255,255,.06); border: 1.5px solid var(--border); border-radius: 8px;
@@ -891,64 +897,38 @@
     </div>
     <div class="modal-body">
       <div class="pkg-grid">
-        <!-- p10 入门包 -->
         <div class="pkg selected" data-pkg="p10" onclick="selectPkg(this)">
           <div class="pkg-name">入门包</div>
           <div class="scans">10</div>
           <div class="pkg-credits-label">Credits</div>
           <div class="price">$1.5 USDT</div>
           <div class="unit">$0.15 / 次</div>
-          <ul class="pkg-feats">
-            <li>APK / IPA 安全检测</li>
-            <li>AI 安全摘要报告</li>
-            <li>应用分发上传</li>
-          </ul>
+          <div class="pkg-tag">基础功能</div>
         </div>
-        <!-- p50 专业包（推荐） -->
         <div class="pkg featured" data-pkg="p50" onclick="selectPkg(this)">
           <div class="pkg-badge">最受欢迎</div>
           <div class="pkg-name">专业包</div>
           <div class="scans">50</div>
           <div class="pkg-credits-label">Credits</div>
           <div class="price">$5.5 USDT</div>
-          <div class="unit">$0.11 / 次 · 节省 27%</div>
-          <ul class="pkg-feats">
-            <li>APK / IPA 安全检测</li>
-            <li>AI 安全摘要报告</li>
-            <li>应用分发上传</li>
-            <li>完整权限分析报告</li>
-          </ul>
+          <div class="unit">$0.11 / 次<br>节省 27%</div>
+          <div class="pkg-tag">权限分析报告</div>
         </div>
-        <!-- p100 团队包 -->
         <div class="pkg" data-pkg="p100" onclick="selectPkg(this)">
           <div class="pkg-name">团队包</div>
           <div class="scans">100</div>
           <div class="pkg-credits-label">Credits</div>
           <div class="price">$10 USDT</div>
-          <div class="unit">$0.10 / 次 · 节省 33%</div>
-          <ul class="pkg-feats">
-            <li>APK / IPA 安全检测</li>
-            <li>AI 安全摘要报告</li>
-            <li>应用分发上传</li>
-            <li>完整权限分析报告</li>
-            <li>追踪器 SDK 深度报告</li>
-          </ul>
+          <div class="unit">$0.10 / 次<br>节省 33%</div>
+          <div class="pkg-tag">SDK 深度报告</div>
         </div>
-        <!-- p200 企业包 -->
         <div class="pkg" data-pkg="p200" onclick="selectPkg(this)">
           <div class="pkg-name">企业包</div>
           <div class="scans">200</div>
           <div class="pkg-credits-label">Credits</div>
           <div class="price">$18 USDT</div>
-          <div class="unit">$0.09 / 次 · 节省 40%</div>
-          <ul class="pkg-feats">
-            <li>APK / IPA 安全检测</li>
-            <li>AI 安全摘要报告</li>
-            <li>应用分发上传</li>
-            <li>完整权限分析报告</li>
-            <li>追踪器 SDK 深度报告</li>
-            <li>专属 Telegram 客服</li>
-          </ul>
+          <div class="unit">$0.09 / 次<br>节省 40%</div>
+          <div class="pkg-tag">专属客服支持</div>
         </div>
       </div>
       <div class="pay-btn-row">
