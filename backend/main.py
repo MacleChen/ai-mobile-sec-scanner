@@ -62,6 +62,7 @@ async def startup_event():
     asyncio.get_event_loop().run_in_executor(None, _backfill_metadata)
 
 _tasks: dict = {}
+_dl_tokens: dict = {}   # one-time download tokens: hex -> {slug, expires_at}
 
 # ── Auth helpers ────────────────────────────────────────────
 def _hash_pw(password: str) -> str:
@@ -1464,8 +1465,11 @@ def _dist_preview_html(r: dict) -> str:
     btn_html   = (
         '<div class="dl-btn disabled">⚠️ 链接已失效</div>'
         if unavail else
-        f'<a class="dl-btn" href="{dl_url}" download>⬇️ 点击下载 {file_type}</a>'
+        f'<button class="dl-btn" id="dl-btn" onclick="handleDownload()">⬇️ 点击下载 {file_type}</button>'
     )
+    # page_url_enc for use inside JS (no f-string conflict)
+    page_url_enc = urllib.parse.quote(page_url, safe='')
+    return_url_enc = urllib.parse.quote(page_url, safe='')
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1547,9 +1551,50 @@ def _dist_preview_html(r: dict) -> str:
              font-size:.8em;font-weight:800;text-align:center;text-decoration:none!important;
              transition:opacity .2s}}
     .ai-cta:hover{{opacity:.85}}
+    /* ── Overlay modals ── */
+    .overlay{{display:none;position:fixed;inset:0;z-index:200;
+              background:rgba(5,11,24,.82);backdrop-filter:blur(8px);
+              align-items:center;justify-content:center;padding:20px}}
+    .overlay.show{{display:flex}}
+    .ov-card{{background:#0f172a;border:1px solid rgba(255,255,255,.12);
+              border-radius:20px;padding:36px 32px;max-width:360px;width:100%;
+              text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.6)}}
+    .ov-icon{{font-size:2.6em;margin-bottom:14px}}
+    .ov-title{{font-size:1.15em;font-weight:800;margin-bottom:8px;
+               background:linear-gradient(135deg,#60a5fa,#a78bfa);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+    .ov-body{{font-size:.88em;color:#94a3b8;margin-bottom:24px;line-height:1.6}}
+    .ov-btn{{display:block;width:100%;padding:13px;border-radius:10px;
+             font-size:.95em;font-weight:800;text-decoration:none;
+             cursor:pointer;border:none;margin-bottom:10px}}
+    .ov-btn-primary{{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;
+                     box-shadow:0 6px 20px rgba(59,130,246,.3)}}
+    .ov-btn-secondary{{background:rgba(255,255,255,.06);color:#94a3b8;
+                       border:1px solid rgba(255,255,255,.1)}}
+    .ov-btn:hover{{opacity:.85}}
   </style>
 </head>
 <body>
+  <!-- Login overlay -->
+  <div class="overlay" id="ov-login">
+    <div class="ov-card">
+      <div class="ov-icon">🔐</div>
+      <div class="ov-title">登录后即可下载</div>
+      <div class="ov-body">请先登录或注册账号，下载无需消耗次数（仅非上传者需要）</div>
+      <a class="ov-btn ov-btn-primary" href="{site}/app?action=login&return={page_url_enc}">登录账号</a>
+      <a class="ov-btn ov-btn-secondary" href="{site}/app?action=register&return={page_url_enc}">注册账号</a>
+    </div>
+  </div>
+  <!-- Credits overlay -->
+  <div class="overlay" id="ov-credits">
+    <div class="ov-card">
+      <div class="ov-icon">💳</div>
+      <div class="ov-title">Credits 不足</div>
+      <div class="ov-body">每次下载消耗 1 Credit，购买套餐即可获得 Credits</div>
+      <a class="ov-btn ov-btn-primary" href="{site}/app?action=buy&return={page_url_enc}">立即购买 Credits</a>
+      <button class="ov-btn ov-btn-secondary" onclick="document.getElementById('ov-credits').classList.remove('show')">取消</button>
+    </div>
+  </div>
   <div class="card">
     <div class="app-icon-wrap">{icon_html}</div>
     <div class="app-name">{app_name}</div>
@@ -1599,6 +1644,49 @@ def _dist_preview_html(r: dict) -> str:
       setTimeout(()=>b.textContent='{page_url}',2000);
     }});
   }}
+  async function handleDownload(){{
+    const jwt = localStorage.getItem('jwt');
+    const btn = document.getElementById('dl-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 准备中…';
+    try {{
+      const resp = await fetch('/dist/{slug}/request-download', {{
+        method: 'POST',
+        headers: jwt ? {{'Authorization': 'Bearer '+jwt}} : {{}}
+      }});
+      if (resp.status === 401) {{
+        document.getElementById('ov-login').classList.add('show');
+        btn.disabled = false;
+        btn.textContent = '⬇️ 点击下载 {file_type}';
+        return;
+      }}
+      if (resp.status === 402) {{
+        document.getElementById('ov-credits').classList.add('show');
+        btn.disabled = false;
+        btn.textContent = '⬇️ 点击下载 {file_type}';
+        return;
+      }}
+      if (!resp.ok) {{
+        const err = await resp.json().catch(()=>({{detail:'下载失败，请稍后重试'}}));
+        alert(err.detail || '下载失败，请稍后重试');
+        btn.disabled = false;
+        btn.textContent = '⬇️ 点击下载 {file_type}';
+        return;
+      }}
+      const data = await resp.json();
+      btn.textContent = '✅ 开始下载…';
+      window.location.href = '/dist/{slug}/download?token=' + data.token;
+      setTimeout(()=>{{ btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; }}, 3000);
+    }} catch(e) {{
+      alert('网络错误，请稍后重试');
+      btn.disabled = false;
+      btn.textContent = '⬇️ 点击下载 {file_type}';
+    }}
+  }}
+  // Close overlays on backdrop click
+  document.querySelectorAll('.overlay').forEach(el=>{{
+    el.addEventListener('click', e=>{{ if(e.target===el) el.classList.remove('show'); }});
+  }});
   </script>
 </body>
 </html>"""
@@ -1764,8 +1852,15 @@ async def dist_delete(slug: str, user: dict = Depends(_current_user)):
     return {"ok": True}
 
 
-@app.get("/dist/{slug}/download")
-async def dist_download(slug: str):
+@app.post("/dist/{slug}/request-download")
+async def dist_request_download(slug: str, request: Request):
+    """Authenticate user, check/deduct credits, return one-time download token."""
+    # Clean up expired tokens
+    now = time.time()
+    expired_keys = [k for k, v in list(_dl_tokens.items()) if v["expires_at"] < now]
+    for k in expired_keys:
+        _dl_tokens.pop(k, None)
+
     with _db() as c:
         row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
     if not row:
@@ -1777,6 +1872,68 @@ async def dist_download(slug: str):
         raise HTTPException(410, "链接已过期")
     if _dist_exhausted(r):
         raise HTTPException(410, "下载次数已达上限")
+
+    # Try to extract user from Authorization header (optional)
+    user = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            payload = jwt.decode(auth_header[7:], JWT_SECRET, algorithms=[JWT_ALG])
+            uid = payload.get("sub")
+            with _db() as c:
+                u = c.execute("SELECT * FROM users_v2 WHERE id=?", (uid,)).fetchone()
+                if u:
+                    user = dict(u)
+        except Exception:
+            pass
+
+    if not user:
+        raise HTTPException(401, detail={"need": "login", "msg": "请登录后下载"})
+
+    is_owner = user["id"] == r["user_id"]
+    credits_left = user.get("credits", 0)
+
+    if not is_owner:
+        if credits_left <= 0:
+            raise HTTPException(402, detail={"need": "credits", "msg": "Credits 不足，请先购买", "credits": 0})
+        with _db() as c:
+            updated = c.execute(
+                "UPDATE users_v2 SET credits=credits-1 WHERE id=? AND credits>0",
+                (user["id"],)
+            ).rowcount
+        if updated == 0:
+            raise HTTPException(402, detail={"need": "credits", "msg": "Credits 不足，请先购买", "credits": 0})
+        credits_left -= 1
+
+    dl_token = uuid.uuid4().hex
+    _dl_tokens[dl_token] = {"slug": slug, "expires_at": now + 300}
+    return {"token": dl_token, "is_owner": is_owner, "credits_left": credits_left if not is_owner else None}
+
+
+@app.get("/dist/{slug}/download")
+async def dist_download(slug: str, token: str = ""):
+    # Validate one-time token
+    if not token:
+        raise HTTPException(403, "请通过详情页下载")
+    entry = _dl_tokens.get(token)
+    if not entry:
+        raise HTTPException(403, "下载链接已失效，请重新获取")
+    if entry["slug"] != slug:
+        raise HTTPException(403, "下载链接无效")
+    if time.time() > entry["expires_at"]:
+        _dl_tokens.pop(token, None)
+        raise HTTPException(403, "下载链接已过期，请重新获取")
+    del _dl_tokens[token]   # one-time use
+
+    with _db() as c:
+        row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
+    if not row:
+        raise HTTPException(404, "链接不存在")
+    r = dict(row)
+    if not r.get("is_active", 1):
+        raise HTTPException(410, "链接已停用")
+    if _dist_expired(r):
+        raise HTTPException(410, "链接已过期")
     # Find file
     file_path = DIST_DIR / f"{slug}.{r['file_type']}"
     if not file_path.exists():
@@ -1784,9 +1941,8 @@ async def dist_download(slug: str):
     # Increment counter
     with _db() as c:
         c.execute("UPDATE app_releases SET download_count=download_count+1 WHERE slug=?", (slug,))
-    ext      = r['file_type']   # 'apk' or 'ipa'
+    ext      = r['file_type']
     app_name = (r.get("app_name") or slug).strip()
-    # ASCII fallback + UTF-8 encoded filename (RFC 5987)
     ascii_name  = f"{slug}.{ext}"
     utf8_name   = urllib.parse.quote(f"{app_name}.{ext}", safe="")
     disp        = f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{utf8_name}'

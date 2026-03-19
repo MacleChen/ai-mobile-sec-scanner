@@ -1893,6 +1893,7 @@ async function doLogin() {
       closeLoginModal();
       renderAuthState();
       showToast(`欢迎回来，${userInfo.email}`);
+      _maybeRedirectAfterAuth();
     } else if (d.need_verify) {
       pendingVerifyEmail = d.email;
       closeLoginModal();
@@ -1972,6 +1973,7 @@ async function doVerify() {
       hide('verify-modal');
       renderAuthState();
       showToast('注册成功！欢迎使用');
+      _maybeRedirectAfterAuth();
     } else {
       msg.className='form-msg err'; msg.textContent = d.error || '验证失败';
     }
@@ -2909,10 +2911,47 @@ function copyDistLink(url, btn) {
   });
 }
 
+// ── Handle ?action=login/register/buy&return=URL ────────────
+async function handleUrlAction() {
+  const params = new URLSearchParams(location.search);
+  const action = params.get('action');
+  const returnUrl = params.get('return');
+  if (!action) return;
+  // Store return URL so we can redirect after success
+  if (returnUrl) sessionStorage.setItem('returnAfterAuth', returnUrl);
+  // Wait for auth state to be resolved first
+  await fetchMe();
+  if (action === 'login') {
+    if (!userInfo) openLoginModal();
+    else if (returnUrl) location.href = returnUrl;
+  } else if (action === 'register') {
+    if (!userInfo) openRegisterModal();
+    else if (returnUrl) location.href = returnUrl;
+  } else if (action === 'buy') {
+    if (!userInfo) openLoginModal();
+    else openBuyModal();
+  }
+  // Clean up URL without reload
+  const clean = location.pathname + (location.hash || '');
+  history.replaceState(null, '', clean);
+}
+
+// Hook post-login redirect into auth success handlers
+const _origOpenBuyModal = openBuyModal;
+// After successful login/register: check if there's a pending returnUrl
+function _maybeRedirectAfterAuth() {
+  const url = sessionStorage.getItem('returnAfterAuth');
+  if (url) { sessionStorage.removeItem('returnAfterAuth'); location.href = url; }
+}
+
 // ── Init ───────────────────────────────────────────────────
 applyI18n();
 checkMobSF();
-fetchMe();
+if (new URLSearchParams(location.search).get('action')) {
+  handleUrlAction();
+} else {
+  fetchMe();
+}
 </script>
 </body>
 </html>
