@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>AppSec AI · 移动应用安全检测平台 — AI 深度扫描 APK/IPA</title>
   <meta name="description" content="AI 驱动的移动应用安全检测平台，深度扫描 Android/iOS 应用，自动识别漏洞、追踪器与高危权限，秒级生成专业安全报告。注册即赠 1 次免费扫描。">
-  <meta name="keywords" content="APK安全检测,IPA安全检测,移动应用安全,Android安全扫描,iOS安全扫描,APP漏洞检测,移动安全测试,apk漏洞分析,移动应用渗透测试,AI安全报告,MobSF,权限分析,追踪器检测,代码安全审计,移动安全工具">
+  <meta name="keywords" content="APK安全检测,IPA安全检测,移动应用安全,Android安全扫描,iOS安全扫描,APP漏洞检测,移动安全测试,apk漏洞分析,移动应用渗透测试,AI安全报告,MobSF,权限分析,追踪器检测,代码安全审计,移动安全工具,应用分发,APK分发,IPA分发,应用市场,独立开发者,内测分发">
   <meta name="author" content="AppSec AI">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <meta name="format-detection" content="telephone=no">
@@ -722,6 +722,88 @@
     .dist-mkt-badge.blue   { background: rgba(59,130,246,.15);  border: 1px solid rgba(59,130,246,.3);  color: var(--blue-l); }
     .dist-mkt-badge.green  { background: rgba(16,185,129,.15);  border: 1px solid rgba(16,185,129,.3);  color: #34d399; }
 
+    /* ── Marketplace section ────────────────── */
+    .mkt-flow-strip {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin: 0 auto 64px; max-width: 860px; flex-wrap: wrap;
+    }
+    .mkt-flow-item {
+      text-align: center; padding: 28px 24px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; flex: 1; min-width: 180px;
+      transition: all .25s;
+    }
+    .mkt-flow-item:hover { border-color: rgba(59,130,246,.35); transform: translateY(-3px); }
+    .mkt-flow-icon {
+      width: 60px; height: 60px; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px; font-size: 1.5em;
+    }
+    .mkt-flow-label { font-size: .88em; font-weight: 800; margin-bottom: 6px; }
+    .mkt-flow-desc { font-size: .76em; color: var(--muted); line-height: 1.55; }
+    .mkt-flow-arrow {
+      font-size: 1.5em; color: var(--muted); padding: 0 12px;
+      opacity: .5; flex-shrink: 0;
+    }
+    @media (max-width: 680px) { .mkt-flow-arrow { display: none; } .mkt-flow-item { min-width: 140px; padding: 20px 14px; } }
+
+    .mkt-feat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 56px;
+    }
+    @media (max-width: 900px) { .mkt-feat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 540px) { .mkt-feat-grid { grid-template-columns: 1fr; } }
+    .mkt-feat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px 22px;
+      transition: all .25s;
+    }
+    .mkt-feat-card:hover { border-color: rgba(59,130,246,.35); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+    .mkt-feat-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px; font-size: 1.4em;
+    }
+    .mkt-feat-card h4 { font-size: .92em; font-weight: 800; margin-bottom: 8px; }
+    .mkt-feat-card p  { font-size: .82em; color: var(--muted); line-height: 1.65; }
+
+    .mkt-preview-wrap {
+      background: rgba(10,22,40,.9); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04);
+      max-width: 780px; margin: 0 auto;
+    }
+    .mkt-preview-header {
+      background: rgba(255,255,255,.04); padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .mkt-preview-url {
+      flex: 1; text-align: center; font-size: .74em; color: var(--muted);
+      background: rgba(255,255,255,.05); border-radius: 6px;
+      padding: 4px 14px; margin: 0 16px;
+    }
+    .mkt-filter-btn {
+      padding: 5px 14px; border-radius: 20px; font-size: .78em; font-weight: 600;
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      color: var(--muted); cursor: default;
+    }
+    .mkt-filter-btn.active { background: rgba(99,102,241,.2); border-color: rgba(99,102,241,.4); color: #a5b4fc; }
+    .mkt-app-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px;
+    }
+    @media (max-width: 640px) { .mkt-app-grid { grid-template-columns: repeat(2, 1fr); } }
+    .mkt-app-card {
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 12px; text-align: center;
+    }
+    .mkt-app-name { font-size: .86em; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mkt-app-ver  { font-size: .68em; color: #64748b; margin-bottom: 8px; }
+    .mkt-app-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 12px;
+      font-size: .66em; font-weight: 700; border: 1px solid; margin-bottom: 8px;
+    }
+    .mkt-app-dl { font-size: .7em; color: #475569; }
+
     #faq { padding: 72px 5%; }
     .faq-list { max-width: 680px; margin: 0 auto; }
     .faq-item {
@@ -896,6 +978,7 @@
     <a href="#how">使用流程</a>
     <a href="#detection">检测项目</a>
     <a href="#dist-marketing">应用分发</a>
+    <a href="#market-section">应用市场</a>
     <a href="#pricing">定价</a>
     <a href="#faq">FAQ</a>
   </div>
@@ -916,6 +999,7 @@
   <a href="#how" onclick="closeMobileMenu()">使用流程</a>
   <a href="#detection" onclick="closeMobileMenu()">检测项目</a>
   <a href="#dist-marketing" onclick="closeMobileMenu()">应用分发</a>
+  <a href="#market-section" onclick="closeMobileMenu()">应用市场</a>
   <a href="#pricing" onclick="closeMobileMenu()">定价</a>
   <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
   <div class="mobile-menu-divider"></div>
@@ -944,7 +1028,7 @@
 
         <p class="hero-sub">
           上传 APK / IPA，MobSF 引擎秒级深度扫描，AI 自动生成专业安全报告。
-          识别权限滥用、代码漏洞、追踪器与证书配置问题，守护每一位用户的隐私与数据安全。
+          支持全平台应用分发、专属下载页生成与公开应用市场，一个 Credit 用到底。
         </p>
 
         <div class="hero-actions">
@@ -1444,72 +1528,232 @@
 <section id="dist-marketing">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">NEW · 应用分发平台</div>
-      <h2>一键生成<span class="gradient-text">应用下载页</span></h2>
-      <p>上传 APK / IPA，自动生成含二维码的专属下载页面，轻松分享给测试人员或内测用户</p>
-      <p style="margin-top:10px;font-size:.85em;color:var(--accent);background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:8px 16px;display:inline-block">
-        💡 每次上传消耗 1 Credit，与安全扫描共用余额，多合一使用更划算
+      <div class="section-eyebrow">应用分发平台</div>
+      <h2>全平台分发，<span class="gradient-text">一键生成下载页</span></h2>
+      <p>无需上架应用商店，上传即获得专属下载链接与二维码，支持 Android / iOS / Windows / macOS / Linux 全平台</p>
+      <p style="margin-top:12px;font-size:.85em;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:8px 18px;display:inline-block;color:#c4b5fd">
+        💡 每次上传消耗 1 Credit，与安全扫描共用余额，一个账号搞定全流程
       </p>
     </div>
+
+    <!-- Platform pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:48px" class="fade-in">
+      <span style="padding:6px 16px;border-radius:99px;font-size:.8em;font-weight:700;background:rgba(59,130,246,.14);color:#60a5fa;border:1px solid rgba(59,130,246,.28)">🤖 Android APK</span>
+      <span style="padding:6px 16px;border-radius:99px;font-size:.8em;font-weight:700;background:rgba(139,92,246,.14);color:#a78bfa;border:1px solid rgba(139,92,246,.28)">🍎 iOS IPA</span>
+      <span style="padding:6px 16px;border-radius:99px;font-size:.8em;font-weight:700;background:rgba(56,189,248,.14);color:#38bdf8;border:1px solid rgba(56,189,248,.28)">🪟 Windows EXE / MSI</span>
+      <span style="padding:6px 16px;border-radius:99px;font-size:.8em;font-weight:700;background:rgba(52,211,153,.14);color:#34d399;border:1px solid rgba(52,211,153,.28)">🍏 macOS DMG / PKG</span>
+      <span style="padding:6px 16px;border-radius:99px;font-size:.8em;font-weight:700;background:rgba(251,146,60,.14);color:#fb923c;border:1px solid rgba(251,146,60,.28)">🐧 Linux DEB / RPM / AppImage</span>
+    </div>
+
     <div class="dist-mkt-grid">
       <div class="dist-mkt-steps">
-        <div class="dist-mkt-step">
+        <div class="dist-mkt-step fade-in">
           <div class="dist-mkt-num">1</div>
           <div>
-            <h4>上传应用文件</h4>
-            <p>支持 Android APK 和 iOS IPA，最大 500 MB，填写版本号与说明后一键上传。</p>
+            <h4>上传任意平台的应用文件</h4>
+            <p>支持 APK、IPA、EXE、MSI、DMG、PKG、DEB、RPM、AppImage 等格式，最大 500 MB。平台自动识别平台类型，提取应用图标与版本号。</p>
           </div>
         </div>
-        <div class="dist-mkt-step">
+        <div class="dist-mkt-step fade-in fade-in-d1">
           <div class="dist-mkt-num">2</div>
           <div>
-            <h4>获得专属下载页</h4>
-            <p>平台自动生成包含二维码的下载页面，扫一扫或点链接即可下载，无需上架应用市场。</p>
+            <h4>获得专属下载页 + 二维码</h4>
+            <p>自动生成精美下载页，包含应用图标、版本信息、二维码与直接下载按钮。手机扫码或分享链接，用户一键下载，无需注册。</p>
           </div>
         </div>
-        <div class="dist-mkt-step">
+        <div class="dist-mkt-step fade-in fade-in-d2">
           <div class="dist-mkt-num">3</div>
           <div>
-            <h4>管控分发权限</h4>
-            <p>可设置有效天数（1/3/7/30/90 天或永久）和最大下载次数，到期自动失效，精准控制分发范围。</p>
+            <h4>精细管控分发权限</h4>
+            <p>可设置有效天数（1/3/7/30/90 天或永久）和最大下载次数，到期自动失效，防止链接扩散失控，精准把握内测范围。</p>
           </div>
         </div>
-        <div style="margin-top:8px">
+        <div class="dist-mkt-step fade-in fade-in-d3">
+          <div class="dist-mkt-num">4</div>
+          <div>
+            <h4>一键上架应用市场（可选）</h4>
+            <p>点击"上架"将应用公开到平台应用市场，让更多用户发现你的作品。随时可下架，完全掌控发布节奏。</p>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap" class="fade-in fade-in-d4">
           <a href="/app" class="btn-hero-primary" style="display:inline-flex">
             📦 立即使用应用分发 →
           </a>
+          <a href="/market" target="_blank" class="btn-hero-ghost" style="display:inline-flex">
+            🌐 浏览应用市场
+          </a>
         </div>
       </div>
-      <div class="dist-mkt-card">
-        <div class="dist-mkt-mock">
-          <div class="dist-mkt-qr-placeholder"></div>
-          <div style="font-size:.82em;color:var(--muted);font-weight:600">扫码下载 / 点击访问</div>
-          <div style="font-size:.78em;color:#a78bfa;background:rgba(139,92,246,.1);border-radius:8px;padding:4px 12px;font-family:monospace">
-            https://maclechen.top/dist/xxxx
+      <div class="dist-mkt-card fade-in fade-in-d1">
+        <!-- Preview card mockup -->
+        <div style="background:rgba(5,11,24,.8);border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;margin-bottom:16px">
+          <div style="background:rgba(255,255,255,.04);padding:10px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(255,255,255,.06)">
+            <div style="width:8px;height:8px;border-radius:50%;background:#ff5f57"></div>
+            <div style="width:8px;height:8px;border-radius:50%;background:#febc2e"></div>
+            <div style="width:8px;height:8px;border-radius:50%;background:#28c840"></div>
+            <div style="flex:1;text-align:center;font-size:.7em;color:#475569">🔒 maclechen.top/dist/ab3x7k</div>
+          </div>
+          <div style="padding:22px;text-align:center">
+            <div style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(139,92,246,.35));margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:2em">📱</div>
+            <div style="font-size:1em;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px">我的应用 v2.1.0</div>
+            <div style="font-size:.72em;color:#64748b;margin-bottom:10px">com.example.myapp</div>
+            <span style="display:inline-block;padding:3px 14px;border-radius:20px;font-size:.7em;font-weight:800;background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.35);margin-bottom:14px">Android</span>
+            <div style="background:repeating-conic-gradient(rgba(139,92,246,.3) 0% 25%,transparent 0% 50%) 0 0/8px 8px;width:80px;height:80px;border-radius:10px;margin:0 auto 10px;border:2px solid rgba(139,92,246,.3)"></div>
+            <div style="font-size:.7em;color:#475569;margin-bottom:12px">📱 手机扫码访问</div>
+            <div style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border-radius:10px;padding:10px;font-size:.82em;font-weight:700">⬇️ 点击下载 APK</div>
           </div>
         </div>
         <div class="dist-mkt-badges">
           <span class="dist-mkt-badge purple">
             <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd"/></svg>
-            设置下载次数
+            限制下载次数
           </span>
           <span class="dist-mkt-badge blue">
             <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd"/></svg>
             设置有效期
           </span>
           <span class="dist-mkt-badge green">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/></svg>
-            APK & IPA 双支持
+            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41Z" clip-rule="evenodd"/></svg>
+            自动提取图标版本
           </span>
-          <span class="dist-mkt-badge purple">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M3.505 2.365A41.369 41.369 0 0 1 9 2c1.863 0 3.697.124 5.495.365 1.247.167 2.18 1.108 2.435 2.268a4.45 4.45 0 0 0-.577-.069 43.141 43.141 0 0 0-4.706 0C9.229 4.696 7.5 6.727 7.5 8.998v2.24c0 1.413.67 2.735 1.76 3.562l-2.98 2.98A.75.75 0 0 1 5 17.25v-3.443c-.501-.048-1-.106-1.495-.172C2.033 13.438 1 12.162 1 10.72V5.28c0-1.441 1.033-2.717 2.505-2.914Z"/><path d="M14 6c-.762 0-1.52.02-2.271.062C10.157 6.148 9 7.472 9 8.998v2.24c0 1.519 1.141 2.841 2.693 2.952a43.18 43.18 0 0 0 4.614 0C17.855 14.08 19 12.758 19 11.238V8.998c0-1.526-1.157-2.85-2.729-2.936A41.645 41.645 0 0 0 14 6Z"/></svg>
-            二维码即时生成
-          </span>
+          <span class="dist-mkt-badge purple">🌐 上架市场</span>
         </div>
-        <p style="text-align:center;font-size:.8em;color:var(--muted);margin-top:16px">
-          适用于：内测分发 · 灰度发布 · 企业内网 · 演示包分享
+        <p style="text-align:center;font-size:.78em;color:var(--muted);margin-top:14px;line-height:1.6">
+          适用于：内测分发 · 灰度发布 · 企业内网 · 演示包 · 跨平台应用推广
         </p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ APP MARKETPLACE ══════════════════════════════════════ -->
+<section id="market-section" style="padding:88px 5%;background:linear-gradient(180deg,transparent,rgba(16,185,129,.03),transparent)">
+  <div class="container">
+    <div class="section-title fade-in">
+      <div class="section-eyebrow">应用市场</div>
+      <h2>公开发布，<span class="gradient-text">触达更多用户</span></h2>
+      <p>上架到 AppSec AI 应用市场，让全球用户发现并下载你的作品——免费、无限制</p>
+    </div>
+
+    <!-- 三大模块连接流程 -->
+    <div class="mkt-flow-strip fade-in">
+      <div class="mkt-flow-item">
+        <div class="mkt-flow-icon" style="background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(59,130,246,.1));border:1px solid rgba(59,130,246,.3);color:#60a5fa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+        </div>
+        <div class="mkt-flow-label">① 安全扫描</div>
+        <div class="mkt-flow-desc">MobSF + Gemini AI<br>生成专业安全报告</div>
+      </div>
+      <div class="mkt-flow-arrow">→</div>
+      <div class="mkt-flow-item">
+        <div class="mkt-flow-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(139,92,246,.1));border:1px solid rgba(139,92,246,.3);color:#a78bfa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        </div>
+        <div class="mkt-flow-label">② 应用分发</div>
+        <div class="mkt-flow-desc">生成专属链接 + 二维码<br>精准管控下载权限</div>
+      </div>
+      <div class="mkt-flow-arrow">→</div>
+      <div class="mkt-flow-item">
+        <div class="mkt-flow-icon" style="background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(16,185,129,.1));border:1px solid rgba(16,185,129,.3);color:#34d399">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"/></svg>
+        </div>
+        <div class="mkt-flow-label">③ 应用市场</div>
+        <div class="mkt-flow-desc">公开上架，全球可见<br>1 Credit 即可发现更多</div>
+      </div>
+    </div>
+
+    <!-- 特性网格 -->
+    <div class="mkt-feat-grid fade-in">
+      <div class="mkt-feat-card">
+        <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.08));border:1px solid rgba(59,130,246,.28);color:#60a5fa">🌐</div>
+        <h4>全平台统一展示</h4>
+        <p>Android、iOS、Windows、macOS、Linux 应用统一收录，按平台筛选，一站发现各类工具与独立应用。</p>
+      </div>
+      <div class="mkt-feat-card">
+        <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(16,185,129,.08));border:1px solid rgba(16,185,129,.28);color:#34d399">🔒</div>
+        <h4>开发者完全掌控</h4>
+        <p>随时上架/下架，更新版本后重新上传自动覆盖，分发链接不变。可设置有效期与下载次数限制，精准管理每一次分发。</p>
+      </div>
+      <div class="mkt-feat-card">
+        <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(139,92,246,.08));border:1px solid rgba(139,92,246,.28);color:#a78bfa">⬇️</div>
+        <h4>用户免费下载</h4>
+        <p>访客无需注册即可浏览市场和下载应用，开发者上传消耗 1 Credit，下载端完全免费，降低用户获取门槛。</p>
+      </div>
+      <div class="mkt-feat-card">
+        <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(251,146,60,.2),rgba(251,146,60,.08));border:1px solid rgba(251,146,60,.28);color:#fb923c">📊</div>
+        <h4>下载数据统计</h4>
+        <p>实时查看每个发布版本的下载次数，直观了解应用受欢迎程度，帮助开发者做出更好的发布决策。</p>
+      </div>
+      <div class="mkt-feat-card">
+        <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(234,179,8,.2),rgba(234,179,8,.08));border:1px solid rgba(234,179,8,.28);color:#fbbf24">📱</div>
+        <h4>自动提取应用信息</h4>
+        <p>上传 APK/IPA 后自动解析应用图标、包名、版本号，无需手动填写，市场卡片展示效果专业美观。</p>
+      </div>
+      <div class="mkt-feat-card">
+        <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(236,72,153,.2),rgba(236,72,153,.08));border:1px solid rgba(236,72,153,.28);color:#f472b6">🚀</div>
+        <h4>快速建立品牌形象</h4>
+        <p>在市场中展示你的应用作品集，与全球独立开发者社区互动，无需独立官网也能建立专业的应用发布渠道。</p>
+      </div>
+    </div>
+
+    <!-- Marketplace preview mockup -->
+    <div class="mkt-preview-wrap fade-in">
+      <div class="mkt-preview-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff5f57"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#febc2e"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#28c840"></div>
+        </div>
+        <div class="mkt-preview-url">🌐 maclechen.top/market</div>
+        <div></div>
+      </div>
+      <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:8px;flex-wrap:wrap">
+        <span class="mkt-filter-btn active">全部</span>
+        <span class="mkt-filter-btn">🤖 Android</span>
+        <span class="mkt-filter-btn">🍎 iOS</span>
+        <span class="mkt-filter-btn">🪟 Windows</span>
+        <span class="mkt-filter-btn">🍏 macOS</span>
+        <span class="mkt-filter-btn">🐧 Linux</span>
+      </div>
+      <div class="mkt-app-grid">
+        <div class="mkt-app-card">
+          <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,rgba(59,130,246,.4),rgba(139,92,246,.4));display:flex;align-items:center;justify-content:center;font-size:1.6em;margin:0 auto 10px">📷</div>
+          <div class="mkt-app-name">拍照识字</div>
+          <div class="mkt-app-ver">v3.2.1</div>
+          <span class="mkt-app-badge" style="background:rgba(59,130,246,.2);color:#60a5fa;border-color:rgba(59,130,246,.35)">Android</span>
+          <div class="mkt-app-dl">⬇️ 1,204 次</div>
+        </div>
+        <div class="mkt-app-card">
+          <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,rgba(16,185,129,.4),rgba(59,130,246,.4));display:flex;align-items:center;justify-content:center;font-size:1.6em;margin:0 auto 10px">📝</div>
+          <div class="mkt-app-name">Notes Pro</div>
+          <div class="mkt-app-ver">v1.8.0</div>
+          <span class="mkt-app-badge" style="background:rgba(139,92,246,.2);color:#a78bfa;border-color:rgba(139,92,246,.35)">iOS</span>
+          <div class="mkt-app-dl">⬇️ 892 次</div>
+        </div>
+        <div class="mkt-app-card">
+          <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,rgba(56,189,248,.4),rgba(99,102,241,.4));display:flex;align-items:center;justify-content:center;font-size:1.6em;margin:0 auto 10px">🛠️</div>
+          <div class="mkt-app-name">DevTools</div>
+          <div class="mkt-app-ver">v2.0.3</div>
+          <span class="mkt-app-badge" style="background:rgba(56,189,248,.2);color:#38bdf8;border-color:rgba(56,189,248,.35)">Windows</span>
+          <div class="mkt-app-dl">⬇️ 548 次</div>
+        </div>
+        <div class="mkt-app-card">
+          <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,rgba(52,211,153,.4),rgba(16,185,129,.4));display:flex;align-items:center;justify-content:center;font-size:1.6em;margin:0 auto 10px">🎵</div>
+          <div class="mkt-app-name">Music Lab</div>
+          <div class="mkt-app-ver">v0.9.5</div>
+          <span class="mkt-app-badge" style="background:rgba(52,211,153,.2);color:#34d399;border-color:rgba(52,211,153,.35)">macOS</span>
+          <div class="mkt-app-dl">⬇️ 317 次</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:36px" class="fade-in">
+      <a href="/market" target="_blank" class="btn-hero-primary" style="display:inline-flex;margin-right:12px">
+        🌐 立即浏览应用市场 →
+      </a>
+      <a href="/app" class="btn-hero-ghost" style="display:inline-flex">
+        📦 上传我的应用
+      </a>
     </div>
   </div>
 </section>
@@ -1537,7 +1781,7 @@
           <span class="faq-arrow">▾</span>
         </div>
         <div class="faq-a">
-          支持 Android APK 和 iOS IPA 格式，最大支持 500 MB 的文件上传。分析时间根据文件大小和复杂度在 2–20 分钟不等。
+          安全扫描支持 Android APK 和 iOS IPA；应用分发额外支持 EXE、MSI（Windows）、DMG、PKG（macOS）、DEB、RPM、AppImage（Linux）。所有格式最大 500 MB。扫描时间 2–20 分钟不等。
         </div>
       </div>
       <div class="faq-item">
@@ -1596,6 +1840,24 @@
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
+          应用市场是什么？上架需要付费吗？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          应用市场是平台提供的公开应用展示页（/market），开发者可将自己上传的应用公开上架，让全球用户发现和下载。上架只需在分发管理列表点击"上架"按钮（消耗应用分发时的 1 Credit，无需额外付费）。用户浏览和下载市场应用完全免费，无需注册。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          应用分发和直接发邮件/网盘分享有什么区别？
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          主要差异在于：① 专业展示 — 自动生成含图标、版本、QR 码的专属下载页；② 权限管控 — 可设下载次数上限和有效期，防止链接外泄扩散；③ 数据统计 — 实时查看下载次数；④ 可上架市场 — 一键公开到平台市场触达更多用户；⑤ 分发链接永久不变 — 更新版本后链接保持不变，用户无需更新书签。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
           和市面上其他安全检测平台相比有什么优势？
           <span class="faq-arrow">▾</span>
         </div>
@@ -1611,11 +1873,11 @@
 <section id="cta">
   <div class="container">
     <div class="cta-inner">
-      <h2>立即开始保护<br><span class="gradient-text">您的移动应用</span></h2>
-      <p>注册即赠 1 次免费扫描，专业安全报告触手可及</p>
+      <h2>安全扫描 · 应用分发 · 应用市场<br><span class="gradient-text">一个平台，全搞定</span></h2>
+      <p>注册即赠 1 次免费体验，从上传到分发到上架，全流程一个账号掌控</p>
       <div class="cta-actions">
-        <a href="/app" class="btn-hero-primary">🚀 免费注册，立即扫描</a>
-        <a href="/app" class="btn-hero-ghost">已有账号？直接登录</a>
+        <a href="/app" class="btn-hero-primary">🚀 免费注册，立即体验</a>
+        <a href="/market" target="_blank" class="btn-hero-ghost">🌐 浏览应用市场</a>
       </div>
       <p style="margin-top:28px;font-size:.82em;color:var(--muted);position:relative;">
         需要批量检测或 CI/CD 集成？
@@ -1644,6 +1906,7 @@
       <a href="#detection">检测项目</a>
       <a href="#how">使用流程</a>
       <a href="#dist-marketing">应用分发</a>
+      <a href="/market" target="_blank">应用市场</a>
       <a href="#pricing">定价方案</a>
     </div>
     <div class="footer-col">
@@ -1661,7 +1924,7 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <div class="footer-copy">© 2026 AppSec AI · APK安全检测 · IPA安全检测 · 移动应用安全检测平台</div>
+    <div class="footer-copy">© 2026 AppSec AI · APK安全检测 · IPA安全检测 · 移动应用安全检测平台 · 应用分发 · 应用市场</div>
     <div class="footer-legal">
       <a href="#">隐私政策</a>
       <a href="#">服务条款</a>
