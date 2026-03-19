@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 
+RUN apt-get update -qq && apt-get install -y -qq p7zip-full && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY requirements.txt .

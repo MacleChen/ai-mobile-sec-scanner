@@ -1341,6 +1341,29 @@ def _extract_app_info(path: Path, ext: str) -> dict:
         except Exception:
             pass
 
+    elif ext in ("dmg", "pkg"):
+        # Extract .icns from DMG/PKG via 7z (best-effort; requires p7zip installed)
+        try:
+            import subprocess, tempfile, io as _io
+            with tempfile.TemporaryDirectory() as tmp:
+                subprocess.run(
+                    ["7z", "e", str(path), f"-o{tmp}", "*.icns", "-r", "-y"],
+                    capture_output=True, timeout=30,
+                )
+                icns_files = sorted(
+                    Path(tmp).glob("*.icns"),
+                    key=lambda f: f.stat().st_size, reverse=True,
+                )
+                if icns_files:
+                    from PIL import Image as _PILImage
+                    with _PILImage.open(str(icns_files[0])) as img:
+                        img = img.convert("RGBA").resize((128, 128), _PILImage.LANCZOS)
+                        buf = _io.BytesIO()
+                        img.save(buf, format="PNG", optimize=True)
+                        info["icon_b64"] = base64.b64encode(buf.getvalue()).decode()
+        except Exception:
+            pass
+
     return info
 
 def _gen_slug(n: int = 8) -> str:
@@ -1469,102 +1492,149 @@ def _dist_preview_html(r: dict) -> str:
     )
     # page_url_enc for use inside JS (no f-string conflict)
     page_url_enc = urllib.parse.quote(page_url, safe='')
-    return_url_enc = urllib.parse.quote(page_url, safe='')
+    # Platform display name
+    plat_name = {"android":"Android","ios":"iOS","windows":"Windows","macos":"macOS","linux":"Linux"}.get(platform, file_type)
+    # Platform gradient colors
+    plat_grad = {"android":"135deg,#22c55e,#16a34a","ios":"135deg,#a78bfa,#7c3aed",
+                 "windows":"135deg,#38bdf8,#0284c7","macos":"135deg,#34d399,#059669",
+                 "linux":"135deg,#fb923c,#ea580c"}.get(platform,"135deg,#60a5fa,#3b82f6")
+    # Platform placeholder emoji (pre-computed to avoid nested dict in f-string)
+    plat_emoji = {"android":"🤖","ios":"🍏","windows":"🪟","macos":"🍎","linux":"🐧"}.get(platform,"📦")
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <title>{app_name}{' v'+html_lib.escape(version) if version else ''} — 应用下载</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{app_name}{' v'+html_lib.escape(version) if version else ''} — 下载</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="{site}/favicon.svg" type="image/svg+xml">
   <style>
     *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
-    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-          background:#050b18;color:#f1f5f9;min-height:100vh;
-          display:flex;flex-direction:column;align-items:center;
-          justify-content:center;padding:24px}}
-    .card{{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);
-           border-radius:24px;padding:40px 32px;max-width:420px;width:100%;
-           box-shadow:0 24px 64px rgba(0,0,0,.5);backdrop-filter:blur(20px);text-align:center}}
-    .app-icon-wrap{{margin:0 auto 18px;width:96px;height:96px}}
-    .app-icon-img{{width:96px;height:96px;border-radius:22px;
-                   box-shadow:0 8px 28px rgba(0,0,0,.5);display:block}}
-    .app-icon-placeholder{{width:96px;height:96px;border-radius:22px;
-               background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(139,92,246,.35));
-               border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;
-               justify-content:center;font-size:2.8em}}
-    .app-name{{font-size:1.35em;font-weight:800;
-               background:linear-gradient(135deg,#60a5fa,#a78bfa);
-               -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
-    .app-version{{font-size:.85em;color:#64748b;margin-top:4px}}
-    .app-pkg{{font-size:.75em;color:#475569;margin-top:5px;
-              font-family:monospace;word-break:break-all;
-              background:rgba(255,255,255,.04);border-radius:6px;
-              padding:3px 10px;display:inline-block;max-width:100%}}
-    .badge{{display:inline-block;padding:3px 14px;border-radius:20px;font-size:.72em;
-            font-weight:800;letter-spacing:.06em;margin:14px 0;
-            background:{badge_bg};color:{badge_col};border:1px solid {badge_brd}}}
-    .app-desc{{font-size:.85em;color:#94a3b8;line-height:1.6;margin-bottom:18px;
-               white-space:pre-wrap;text-align:left}}
-    .qr-wrap{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-              border-radius:14px;padding:18px;display:inline-block;margin-bottom:20px}}
-    .qr-container{{position:relative;display:inline-block}}
-    .qr-container img.qr-img{{width:200px;height:200px;border-radius:10px;display:block}}
-    .qr-logo{{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-              width:46px;height:46px;background:white;border-radius:10px;padding:4px;
-              display:flex;align-items:center;justify-content:center;
-              box-shadow:0 2px 8px rgba(0,0,0,.3)}}
-    .qr-logo img{{width:38px;height:38px}}
-    .qr-hint{{font-size:.72em;color:#475569;margin-top:8px}}
-    .dl-btn{{display:block;width:100%;
-             background:linear-gradient(135deg,#3b82f6,#8b5cf6);
-             color:white;border:none;padding:15px;border-radius:12px;
-             font-size:1em;font-weight:800;cursor:pointer;text-decoration:none;
-             margin-bottom:12px;box-shadow:0 6px 24px rgba(59,130,246,.35)}}
-    .dl-btn.disabled{{background:rgba(255,255,255,.08);color:#64748b;
-                      box-shadow:none;cursor:default}}
-    .copy-btn{{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-               color:#94a3b8;border-radius:8px;padding:9px 14px;font-size:.78em;cursor:pointer;
-               overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:18px;
-               text-align:left}}
-    .copy-btn:hover{{background:rgba(255,255,255,.1)}}
-    .meta{{border-top:1px solid rgba(255,255,255,.07);margin-top:4px}}
-    .meta-row{{display:flex;justify-content:space-between;padding:9px 0;
-               border-bottom:1px solid rgba(255,255,255,.04);font-size:.8em}}
-    .meta-key{{color:#475569}}
-    .footer{{margin-top:28px;font-size:.72em;color:#334155;
-             display:flex;align-items:center;gap:6px;justify-content:center}}
-    .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
-    .footer-logo{{width:18px;height:18px;opacity:.7}}
-    .ai-promo{{background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.08));
-               border:1px solid rgba(99,102,241,.22);border-radius:12px;
-               padding:16px;margin-top:16px;text-align:left}}
-    .ai-promo-hd{{font-size:.85em;font-weight:800;margin-bottom:4px;
+    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+          background:#060c1a;color:#e2e8f0;min-height:100vh;
+          display:flex;flex-direction:column;align-items:center;padding:32px 16px 48px}}
+    /* ── Page wrapper ── */
+    .page{{width:100%;max-width:860px}}
+    /* ── Header bar ── */
+    .topbar{{display:flex;align-items:center;justify-content:space-between;
+             margin-bottom:28px}}
+    .brand{{display:flex;align-items:center;gap:8px;text-decoration:none;color:#94a3b8;
+            font-size:.82em}}
+    .brand img{{width:22px;height:22px;opacity:.8}}
+    /* ── Main card ── */
+    .main-card{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+                border-radius:24px;overflow:hidden;
+                box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04)}}
+    /* ── Hero banner ── */
+    .hero{{background:linear-gradient({plat_grad});
+           padding:36px 40px 32px;display:flex;align-items:flex-start;gap:28px;
+           position:relative;overflow:hidden}}
+    .hero::after{{content:'';position:absolute;inset:0;
+                  background:radial-gradient(ellipse at top left,rgba(255,255,255,.12) 0%,transparent 60%);
+                  pointer-events:none}}
+    .hero-icon{{flex-shrink:0;width:100px;height:100px;border-radius:24px;
+                box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 3px rgba(255,255,255,.2);
+                overflow:hidden;background:rgba(255,255,255,.12)}}
+    .hero-icon img{{width:100%;height:100%;object-fit:cover;display:block}}
+    .hero-icon-ph{{width:100%;height:100%;display:flex;align-items:center;
+                   justify-content:center;font-size:3em}}
+    .hero-info{{flex:1;min-width:0}}
+    .hero-badges{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}}
+    .badge{{display:inline-flex;align-items:center;gap:4px;padding:3px 12px;
+            border-radius:20px;font-size:.7em;font-weight:700;letter-spacing:.05em;
+            background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.28);
+            backdrop-filter:blur(4px)}}
+    .hero-name{{font-size:1.7em;font-weight:900;color:white;letter-spacing:-.02em;
+                line-height:1.2;word-break:break-word}}
+    .hero-version{{font-size:.9em;color:rgba(255,255,255,.7);margin-top:6px;font-weight:500}}
+    .hero-pkg{{font-size:.75em;color:rgba(255,255,255,.55);margin-top:4px;
+               font-family:'SF Mono',monospace;word-break:break-all}}
+    /* ── Body: two columns ── */
+    .body{{display:grid;grid-template-columns:1fr 280px;gap:0}}
+    @media(max-width:640px){{
+      .hero{{flex-direction:column;gap:20px;padding:28px 24px}}
+      .hero-icon{{width:80px;height:80px}}
+      .hero-name{{font-size:1.4em}}
+      .body{{grid-template-columns:1fr}}
+      .sidebar{{border-left:none!important;border-top:1px solid rgba(255,255,255,.07)}}
+    }}
+    /* ── Left: main content ── */
+    .content{{padding:32px 36px;border-right:1px solid rgba(255,255,255,.07)}}
+    @media(max-width:640px){{.content{{padding:24px 20px}}}}
+    /* Description */
+    .section-label{{font-size:.7em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+                    color:#475569;margin-bottom:10px}}
+    .desc-box{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+               border-radius:12px;padding:16px;font-size:.88em;color:#94a3b8;
+               line-height:1.7;white-space:pre-wrap;word-break:break-word}}
+    /* Meta grid */
+    .meta-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}}
+    @media(max-width:400px){{.meta-grid{{grid-template-columns:1fr}}}}
+    .meta-item{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+                border-radius:12px;padding:14px 16px}}
+    .meta-item-label{{font-size:.7em;color:#475569;font-weight:600;letter-spacing:.06em;
+                      text-transform:uppercase;margin-bottom:4px}}
+    .meta-item-val{{font-size:.9em;color:#cbd5e1;font-weight:600}}
+    /* AI promo */
+    .ai-promo{{margin-top:24px;background:linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.07));
+               border:1px solid rgba(99,102,241,.2);border-radius:14px;padding:20px}}
+    .ai-promo-hd{{font-size:.9em;font-weight:800;margin-bottom:5px;
                   background:linear-gradient(135deg,#60a5fa,#a78bfa);
                   -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
-    .ai-promo-copy{{font-size:.76em;color:#64748b;margin-bottom:9px}}
-    .ai-feats{{list-style:none;display:flex;flex-direction:column;gap:3px;margin-bottom:11px}}
-    .ai-feats li{{font-size:.76em;color:#94a3b8}}
-    .ai-cta{{display:block;background:linear-gradient(135deg,#6366f1,#8b5cf6);
-             color:white!important;padding:9px 16px;border-radius:8px;
-             font-size:.8em;font-weight:800;text-align:center;text-decoration:none!important;
-             transition:opacity .2s}}
+    .ai-promo-copy{{font-size:.8em;color:#64748b;margin-bottom:12px;line-height:1.5}}
+    .ai-feats{{list-style:none;display:flex;flex-direction:column;gap:4px;margin-bottom:12px}}
+    .ai-feats li{{font-size:.78em;color:#94a3b8}}
+    .ai-cta{{display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+             color:white!important;padding:9px 20px;border-radius:8px;font-size:.82em;
+             font-weight:800;text-decoration:none!important;transition:opacity .2s}}
     .ai-cta:hover{{opacity:.85}}
+    /* ── Sidebar ── */
+    .sidebar{{padding:28px 24px;display:flex;flex-direction:column;gap:20px}}
+    /* Download button */
+    .dl-btn{{width:100%;padding:15px;border-radius:14px;
+             background:linear-gradient(135deg,#3b82f6,#7c3aed);color:white;border:none;
+             font-size:1em;font-weight:800;cursor:pointer;text-align:center;
+             box-shadow:0 8px 28px rgba(59,130,246,.35);transition:opacity .2s,transform .1s;
+             display:block;text-decoration:none}}
+    .dl-btn:hover{{opacity:.9;transform:translateY(-1px)}}
+    .dl-btn:active{{transform:translateY(0)}}
+    .dl-btn.disabled{{background:rgba(255,255,255,.07);color:#475569;
+                      box-shadow:none;cursor:default;transform:none}}
+    /* Copy link */
+    .copy-wrap{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+                border-radius:10px;padding:10px 12px;cursor:pointer;
+                display:flex;align-items:center;gap:8px}}
+    .copy-wrap:hover{{background:rgba(255,255,255,.06)}}
+    .copy-url{{flex:1;font-size:.72em;color:#64748b;overflow:hidden;
+               text-overflow:ellipsis;white-space:nowrap;font-family:monospace}}
+    .copy-icon{{flex-shrink:0;font-size:.9em;color:#475569}}
+    /* QR */
+    .qr-box{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+             border-radius:14px;padding:16px;text-align:center}}
+    .qr-box-title{{font-size:.72em;color:#475569;margin-bottom:12px;font-weight:600;
+                   text-transform:uppercase;letter-spacing:.08em}}
+    .qr-container{{position:relative;display:inline-block}}
+    .qr-container img.qr-img{{width:160px;height:160px;border-radius:10px;display:block}}
+    .qr-logo{{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+              width:38px;height:38px;background:white;border-radius:8px;padding:3px;
+              display:flex;align-items:center;justify-content:center;
+              box-shadow:0 2px 8px rgba(0,0,0,.4)}}
+    .qr-logo img{{width:30px;height:30px}}
+    .qr-hint{{font-size:.7em;color:#475569;margin-top:8px}}
     /* ── Overlay modals ── */
     .overlay{{display:none;position:fixed;inset:0;z-index:200;
-              background:rgba(5,11,24,.82);backdrop-filter:blur(8px);
+              background:rgba(6,12,26,.85);backdrop-filter:blur(10px);
               align-items:center;justify-content:center;padding:20px}}
     .overlay.show{{display:flex}}
     .ov-card{{background:#0f172a;border:1px solid rgba(255,255,255,.12);
-              border-radius:20px;padding:36px 32px;max-width:360px;width:100%;
-              text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.6)}}
-    .ov-icon{{font-size:2.6em;margin-bottom:14px}}
-    .ov-title{{font-size:1.15em;font-weight:800;margin-bottom:8px;
+              border-radius:22px;padding:40px 32px;max-width:360px;width:100%;
+              text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.7)}}
+    .ov-icon{{font-size:2.8em;margin-bottom:16px}}
+    .ov-title{{font-size:1.2em;font-weight:800;margin-bottom:10px;
                background:linear-gradient(135deg,#60a5fa,#a78bfa);
                -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
-    .ov-body{{font-size:.88em;color:#94a3b8;margin-bottom:24px;line-height:1.6}}
-    .ov-btn{{display:block;width:100%;padding:13px;border-radius:10px;
+    .ov-body{{font-size:.88em;color:#94a3b8;margin-bottom:26px;line-height:1.65}}
+    .ov-btn{{display:block;width:100%;padding:13px;border-radius:11px;
              font-size:.95em;font-weight:800;text-decoration:none;
              cursor:pointer;border:none;margin-bottom:10px}}
     .ov-btn-primary{{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;
@@ -1572,6 +1642,11 @@ def _dist_preview_html(r: dict) -> str:
     .ov-btn-secondary{{background:rgba(255,255,255,.06);color:#94a3b8;
                        border:1px solid rgba(255,255,255,.1)}}
     .ov-btn:hover{{opacity:.85}}
+    /* ── Footer ── */
+    .footer{{margin-top:28px;font-size:.75em;color:#334155;
+             display:flex;align-items:center;gap:6px;justify-content:center}}
+    .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
+    .footer img{{width:16px;height:16px;opacity:.6}}
   </style>
 </head>
 <body>
@@ -1580,7 +1655,7 @@ def _dist_preview_html(r: dict) -> str:
     <div class="ov-card">
       <div class="ov-icon">🔐</div>
       <div class="ov-title">登录后即可下载</div>
-      <div class="ov-body">请先登录或注册账号，下载无需消耗次数（仅非上传者需要）</div>
+      <div class="ov-body">请先登录或注册账号，下载无需消耗次数（仅非上传者需要 1 Credit）</div>
       <a class="ov-btn ov-btn-primary" href="{site}/app?action=login&return={page_url_enc}">登录账号</a>
       <a class="ov-btn ov-btn-secondary" href="{site}/app?action=register&return={page_url_enc}">注册账号</a>
     </div>
@@ -1590,58 +1665,99 @@ def _dist_preview_html(r: dict) -> str:
     <div class="ov-card">
       <div class="ov-icon">💳</div>
       <div class="ov-title">Credits 不足</div>
-      <div class="ov-body">每次下载消耗 1 Credit，购买套餐即可获得 Credits</div>
+      <div class="ov-body">每次下载消耗 1 Credit，购买套餐即可获得 Credits，上传者下载免费</div>
       <a class="ov-btn ov-btn-primary" href="{site}/app?action=buy&return={page_url_enc}">立即购买 Credits</a>
       <button class="ov-btn ov-btn-secondary" onclick="document.getElementById('ov-credits').classList.remove('show')">取消</button>
     </div>
   </div>
-  <div class="card">
-    <div class="app-icon-wrap">{icon_html}</div>
-    <div class="app-name">{app_name}</div>
-    {ver_html}
-    {pkg_html}
-    <div class="badge">{file_type}</div>
-    {desc_html}
-    <div class="qr-wrap">
-      <div class="qr-container">
-        <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
-        <div class="qr-logo">{f'<img src="data:image/png;base64,{icon_b64}" alt="logo" style="border-radius:18%">' if icon_b64 else f'<img src="{site}/favicon.svg" alt="logo">'}</div>
+
+  <div class="page">
+    <!-- Top bar -->
+    <div class="topbar">
+      <a class="brand" href="{site}" target="_blank" rel="noopener">
+        <img src="{site}/favicon.svg" alt="logo"> AppSec AI
+      </a>
+      <span style="font-size:.75em;color:#334155">安全应用分发平台</span>
+    </div>
+
+    <!-- Main card -->
+    <div class="main-card">
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-icon">
+          {f'<img src="data:image/png;base64,{icon_b64}" alt="icon">' if icon_b64 else f'<div class="hero-icon-ph">{plat_emoji}</div>'}
+        </div>
+        <div class="hero-info">
+          <div class="hero-badges">
+            <span class="badge">{plat_name}</span>
+            <span class="badge">{file_type}</span>
+          </div>
+          <div class="hero-name">{app_name}</div>
+          {f'<div class="hero-version">版本 {html_lib.escape(version)}</div>' if version else ''}
+          {f'<div class="hero-pkg">{pkg_name}</div>' if pkg_name else ''}
+        </div>
       </div>
-      <div class="qr-hint">📱 手机扫码访问</div>
+
+      <!-- Body -->
+      <div class="body">
+        <!-- Left: content -->
+        <div class="content">
+          {f'''<div class="section-label">应用介绍</div>
+          <div class="desc-box">{description}</div>''' if description else ''}
+
+          <div class="meta-grid" style="{'margin-top:0' if not description else ''}">
+            {f'<div class="meta-item"><div class="meta-item-label">版本</div><div class="meta-item-val">v{html_lib.escape(version)}</div></div>' if version else ''}
+            <div class="meta-item"><div class="meta-item-label">文件大小</div><div class="meta-item-val">{size_str}</div></div>
+            <div class="meta-item"><div class="meta-item-label">下载次数</div><div class="meta-item-val">{dl_html}</div></div>
+            <div class="meta-item"><div class="meta-item-label">上传时间</div><div class="meta-item-val">{upload_html}</div></div>
+            <div class="meta-item"><div class="meta-item-label">有效期</div><div class="meta-item-val">{exp_html}</div></div>
+          </div>
+
+          <div class="ai-promo">
+            <div class="ai-promo-hd">🔍 AppSec AI 安全扫描</div>
+            <div class="ai-promo-copy">使用 AI 深度检测此应用的安全风险，保护你的用户</div>
+            <ul class="ai-feats">
+              <li>✓ 深度漏洞扫描 &amp; CVE 检测</li>
+              <li>✓ 隐私数据追踪 &amp; 合规分析</li>
+              <li>✓ 恶意行为 &amp; 后门识别</li>
+            </ul>
+            <a class="ai-cta" href="{site}" target="_blank" rel="noopener">免费扫描此应用 →</a>
+          </div>
+        </div>
+
+        <!-- Right: sidebar -->
+        <div class="sidebar">
+          {btn_html}
+          <div class="copy-wrap" onclick="copyLink()" title="复制链接">
+            <span class="copy-url" id="lnk">{page_url}</span>
+            <span class="copy-icon">📋</span>
+          </div>
+          <div class="qr-box">
+            <div class="qr-box-title">📱 扫码访问</div>
+            <div class="qr-container">
+              <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
+              <div class="qr-logo">{f'<img src="data:image/png;base64,{icon_b64}" alt="logo" style="border-radius:18%">' if icon_b64 else f'<img src="{site}/favicon.svg" alt="logo">'}</div>
+            </div>
+            <div class="qr-hint">手机扫码直接访问</div>
+          </div>
+        </div>
+      </div>
     </div>
-    {btn_html}
-    <button class="copy-btn" onclick="copyLink()" id="lnk">{page_url}</button>
-    <div class="meta">
-      {f'<div class="meta-row"><span class="meta-key">版本号</span><span>v{html_lib.escape(version)}</span></div>' if version else ''}
-      <div class="meta-row"><span class="meta-key">上传时间</span><span>{upload_html}</span></div>
-      <div class="meta-row"><span class="meta-key">文件大小</span><span>{size_str}</span></div>
-      <div class="meta-row"><span class="meta-key">下载次数</span><span>{dl_html}</span></div>
-      <div class="meta-row"><span class="meta-key">有效期</span><span>{exp_html}</span></div>
-    </div>
-    <div class="ai-promo">
-      <div class="ai-promo-hd">🔍 AppSec AI 安全扫描</div>
-      <div class="ai-promo-copy">使用 AI 深度检测此应用的安全风险，保护你的用户</div>
-      <ul class="ai-feats">
-        <li>✓ 深度漏洞扫描 &amp; CVE 检测</li>
-        <li>✓ 隐私数据追踪 &amp; 合规分析</li>
-        <li>✓ 恶意行为 &amp; 后门识别</li>
-      </ul>
-      <a class="ai-cta" href="{site}" target="_blank" rel="noopener">立即免费扫描 →</a>
+
+    <div class="footer">
+      Powered by
+      <a href="{site}" target="_blank" rel="noopener">
+        <img src="{site}/favicon.svg" alt="logo"> AppSec AI
+      </a>
     </div>
   </div>
-  <div class="footer">
-    Powered by
-    <a href="{site}" target="_blank" rel="noopener">
-      <img class="footer-logo" src="{site}/favicon.svg" alt="logo">
-      AppSec AI
-    </a>
-  </div>
+
   <script>
   function copyLink(){{
     navigator.clipboard.writeText('{page_url}').then(()=>{{
-      const b=document.getElementById('lnk');
-      b.textContent='✅ 已复制链接！';
-      setTimeout(()=>b.textContent='{page_url}',2000);
+      const el=document.getElementById('lnk');
+      el.textContent='✅ 链接已复制！';
+      setTimeout(()=>el.textContent='{page_url}',2000);
     }});
   }}
   async function handleDownload(){{
@@ -1656,22 +1772,16 @@ def _dist_preview_html(r: dict) -> str:
       }});
       if (resp.status === 401) {{
         document.getElementById('ov-login').classList.add('show');
-        btn.disabled = false;
-        btn.textContent = '⬇️ 点击下载 {file_type}';
-        return;
+        btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}'; return;
       }}
       if (resp.status === 402) {{
         document.getElementById('ov-credits').classList.add('show');
-        btn.disabled = false;
-        btn.textContent = '⬇️ 点击下载 {file_type}';
-        return;
+        btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}'; return;
       }}
       if (!resp.ok) {{
         const err = await resp.json().catch(()=>({{detail:'下载失败，请稍后重试'}}));
         alert(err.detail || '下载失败，请稍后重试');
-        btn.disabled = false;
-        btn.textContent = '⬇️ 点击下载 {file_type}';
-        return;
+        btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}'; return;
       }}
       const data = await resp.json();
       btn.textContent = '✅ 开始下载…';
@@ -1679,11 +1789,9 @@ def _dist_preview_html(r: dict) -> str:
       setTimeout(()=>{{ btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; }}, 3000);
     }} catch(e) {{
       alert('网络错误，请稍后重试');
-      btn.disabled = false;
-      btn.textContent = '⬇️ 点击下载 {file_type}';
+      btn.disabled = false; btn.textContent = '⬇️ 点击下载 {file_type}';
     }}
   }}
-  // Close overlays on backdrop click
   document.querySelectorAll('.overlay').forEach(el=>{{
     el.addEventListener('click', e=>{{ if(e.target===el) el.classList.remove('show'); }});
   }});
