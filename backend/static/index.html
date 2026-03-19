@@ -564,15 +564,33 @@
     .dist-upload-zone {
       border: 2px dashed rgba(139,92,246,.3); border-radius: 14px;
       padding: 36px 24px; text-align: center; cursor: pointer;
-      transition: all .25s; background: rgba(139,92,246,.03);
+      transition: all .25s; background: rgba(139,92,246,.03); position: relative;
     }
     .dist-upload-zone:hover, .dist-upload-zone.drag-over {
       border-color: var(--purple); background: rgba(139,92,246,.07);
       box-shadow: 0 0 0 4px rgba(139,92,246,.08);
     }
+    .dist-upload-zone.locked {
+      cursor: not-allowed; opacity: .55;
+      border-color: rgba(148,163,184,.2); background: rgba(255,255,255,.02);
+      pointer-events: none;
+    }
     .dist-upload-zone svg { width: 40px; height: 40px; color: #a78bfa; margin-bottom: 12px; }
     .dist-upload-zone h3 { font-size: 1em; font-weight: 700; margin-bottom: 6px; }
     .dist-upload-zone p { font-size: .83em; color: var(--muted); }
+    .dist-no-credits-banner {
+      display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 14px;
+    }
+    .dist-no-credits-banner.show { display: flex; }
+    .dist-no-credits-banner .msg { flex: 1; font-size: .88em; color: #fca5a5; }
+    .dist-no-credits-banner .buy-btn {
+      background: linear-gradient(135deg,#ef4444,#dc2626); color: #fff;
+      border: none; border-radius: 8px; padding: 7px 16px; font-size: .82em;
+      font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .dist-no-credits-banner .buy-btn:hover { opacity: .85; }
     /* Release card rows */
     .dist-release-row {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -1174,7 +1192,12 @@
     <div class="card">
       <h2 class="st" id="dist-upload-title">📦 上传应用</h2>
       <p id="dist-upload-sub" style="margin-bottom:16px;font-size:.9em;color:var(--muted)">将应用文件托管到平台，生成专属下载页面与二维码</p>
-      <div class="dist-upload-zone" id="dist-upload-zone" onclick="document.getElementById('dist-file-input').click()">
+      <!-- No-credits banner -->
+      <div class="dist-no-credits-banner" id="dist-no-credits-banner">
+        <span class="msg" id="dist-no-credits-msg">⚠️ Credits 不足，无法上传文件。请先购买 Credits。</span>
+        <button class="buy-btn" onclick="switchTab('billing')" id="dist-buy-btn">立即购买</button>
+      </div>
+      <div class="dist-upload-zone" id="dist-upload-zone">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"/>
         </svg>
@@ -1726,6 +1749,7 @@ function renderAuthState() {
     hide('user-logged-in');
   }
   renderGate();
+  updateDistUploadGate();
 }
 
 function renderGate() {
@@ -2504,18 +2528,54 @@ function switchTab(tab) {
   }
 }
 
+// ── Distribution: credits gate ───────────────────────────────
+function updateDistUploadGate() {
+  const zone   = document.getElementById('dist-upload-zone');
+  const banner = document.getElementById('dist-no-credits-banner');
+  const btn    = document.getElementById('dist-submit-btn');
+  if (!zone || !banner) return;
+  const hasCredits = userInfo && (userInfo.credits ?? 0) > 0;
+  if (hasCredits) {
+    zone.classList.remove('locked');
+    banner.classList.remove('show');
+    if (btn) btn.disabled = false;
+  } else {
+    zone.classList.add('locked');
+    banner.classList.add('show');
+  }
+}
+
 // ── Distribution: file pick ─────────────────────────────────
 const distFileInput = document.getElementById('dist-file-input');
 const distUploadZone = document.getElementById('dist-upload-zone');
+distUploadZone.addEventListener('click',     () => onDistZoneClick());
+distUploadZone.addEventListener('dragover',  e  => onDistDragOver(e));
+distUploadZone.addEventListener('dragleave', ()  => onDistDragLeave());
+distUploadZone.addEventListener('drop',      e  => onDistDrop(e));
 
-distUploadZone.addEventListener('dragover', e => { e.preventDefault(); distUploadZone.classList.add('drag-over'); });
-distUploadZone.addEventListener('dragleave', () => distUploadZone.classList.remove('drag-over'));
-distUploadZone.addEventListener('drop', e => {
+function _distHasCredits() {
+  return userInfo && (userInfo.credits ?? 0) > 0;
+}
+function onDistZoneClick() {
+  if (!_distHasCredits()) return;
+  distFileInput.click();
+}
+function onDistDragOver(e) {
+  if (!_distHasCredits()) return;
   e.preventDefault();
-  distUploadZone.classList.remove('drag-over');
+  document.getElementById('dist-upload-zone').classList.add('drag-over');
+}
+function onDistDragLeave() {
+  document.getElementById('dist-upload-zone').classList.remove('drag-over');
+}
+function onDistDrop(e) {
+  e.preventDefault();
+  document.getElementById('dist-upload-zone').classList.remove('drag-over');
+  if (!_distHasCredits()) return;
   const f = e.dataTransfer.files[0];
   if (f) setDistFile(f);
-});
+}
+
 distFileInput.addEventListener('change', () => {
   if (distFileInput.files[0]) setDistFile(distFileInput.files[0]);
 });
