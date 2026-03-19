@@ -1364,6 +1364,73 @@ def _extract_app_info(path: Path, ext: str) -> dict:
         except Exception:
             pass
 
+    elif ext in ("exe", "msi"):
+        # ── Version info via pefile ───────────────────────────────
+        try:
+            import pefile as _pefile
+            pe = _pefile.PE(str(path), fast_load=True)
+            pe.parse_data_directories(directories=[
+                _pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"],
+            ])
+            if hasattr(pe, "VS_VERSIONINFO"):
+                for vinfo in pe.VS_VERSIONINFO:
+                    if hasattr(vinfo, "StringTable"):
+                        for st in vinfo.StringTable:
+                            entries = {
+                                k.decode("utf-8", errors="replace"): v.decode("utf-8", errors="replace")
+                                for k, v in st.entries.items()
+                            }
+                            if not info["display_name"]:
+                                info["display_name"] = (
+                                    entries.get("FileDescription") or
+                                    entries.get("ProductName") or ""
+                                ).strip()
+                            if not info["version"]:
+                                info["version"] = (
+                                    entries.get("ProductVersion") or
+                                    entries.get("FileVersion") or ""
+                                ).strip()
+                            if not info["pkg_name"]:
+                                info["pkg_name"] = (
+                                    entries.get("OriginalFilename") or
+                                    entries.get("InternalName") or ""
+                                ).strip()
+            pe.close()
+        except Exception:
+            pass
+        # ── Icon via wrestool + Pillow ────────────────────────────
+        try:
+            import subprocess, tempfile, io as _io
+            with tempfile.TemporaryDirectory() as _tmp:
+                _ico_dir = Path(_tmp) / "ico"
+                _ico_dir.mkdir()
+                subprocess.run(
+                    ["wrestool", "-x", "-t14", str(path), "-o", str(_ico_dir)],
+                    capture_output=True, timeout=30,
+                )
+                _ico_files = sorted(
+                    _ico_dir.glob("*.ico"),
+                    key=lambda f: f.stat().st_size, reverse=True,
+                )
+                if _ico_files:
+                    from PIL import Image as _PILImg
+                    _img = _PILImg.open(str(_ico_files[0]))
+                    # ICO may have multiple sizes; pick the largest
+                    _frames = []
+                    try:
+                        for _i in range(getattr(_img, "n_frames", 1)):
+                            _img.seek(_i)
+                            _frames.append((_img.size[0], _i))
+                    except Exception:
+                        pass
+                    if _frames:
+                        _img.seek(sorted(_frames, reverse=True)[0][1])
+                    _buf = _io.BytesIO()
+                    _img.convert("RGBA").resize((128, 128), _PILImg.LANCZOS).save(_buf, "PNG", optimize=True)
+                    info["icon_b64"] = base64.b64encode(_buf.getvalue()).decode()
+        except Exception:
+            pass
+
     return info
 
 def _gen_slug(n: int = 8) -> str:

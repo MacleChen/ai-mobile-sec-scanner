@@ -9,6 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
   <meta name="cryptomus" content="835d325e" />
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -756,6 +757,13 @@
     }
     .tg-link:hover { background: rgba(0,136,204,.22); color: #7dd3fc; border-color: rgba(0,136,204,.45); }
     .tg-link svg { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; }
+    /* ── Lucide icon helpers ── */
+    .section-icon{width:18px;height:18px;vertical-align:middle;margin-right:7px;
+                  stroke:currentColor;display:inline-block;margin-bottom:2px}
+    .icon-sm{width:14px;height:14px;vertical-align:middle;stroke:currentColor;
+              display:inline-block;margin-right:4px}
+    .icon-btn{width:15px;height:15px;vertical-align:middle;stroke:currentColor;
+               display:inline-block;margin-right:5px}
   </style>
 </head>
 <body>
@@ -781,7 +789,7 @@
     <!-- Logged in (hidden until auth) -->
     <div id="user-logged-in" class="hidden" style="display:flex;align-items:center;gap:8px">
       <div class="credits-badge" id="credits-badge">
-        🔑 <span id="credits-num">0</span> <span id="credits-unit">次</span>
+        <i data-lucide="zap" class="icon-sm" style="stroke:#60a5fa"></i><span id="credits-num">0</span> <span id="credits-unit">次</span>
       </div>
       <button class="buy-btn" id="buy-btn-text" onclick="openBuyModal()">购买</button>
       <div class="user-menu-wrap">
@@ -789,7 +797,7 @@
           <span id="user-email-chip">...</span> ▾
         </div>
         <div class="user-dropdown hidden" id="user-dropdown">
-          <div id="dd-orders" onclick="openOrderHistory()">📋 订单历史</div>
+          <div id="dd-orders" onclick="openOrderHistory()">订单历史</div>
           <div class="divider"></div>
           <div id="dd-logout" onclick="doLogout()" style="color:#f87171">退出登录</div>
         </div>
@@ -813,7 +821,7 @@
   <div class="modal">
     <div class="modal-head">
       <button class="modal-close" onclick="closeLoginModal()">✕</button>
-      <h2 id="login-modal-title">🔐 登录</h2>
+      <h2 id="login-modal-title">登录</h2>
       <p id="login-modal-sub">使用邮箱和密码登录您的账号</p>
     </div>
     <div class="modal-body">
@@ -933,7 +941,7 @@
       </div>
       <div class="pay-btn-row">
         <button class="pay-btn" onclick="doPay('usdt')" style="flex:1">
-          <span class="icon">💎</span><span id="pay-usdt-label">USDT 支付（TRC20）</span>
+          <i data-lucide="gem" class="icon-btn"></i><span id="pay-usdt-label">USDT 支付（TRC20）</span>
         </button>
       </div>
       <div id="buy-msg" class="form-msg"></div>
@@ -1086,7 +1094,7 @@
 
   <!-- ② Processing -->
   <div id="processing-card" class="card hidden">
-    <h2 class="st" id="proc-title">📊 正在分析中</h2>
+    <h2 class="st"><i data-lucide="activity" class="section-icon"></i><span id="proc-title">正在分析中</span></h2>
     <div class="steps">
       <div class="step" id="step-0">
         <div class="step-circle">1</div>
@@ -1109,7 +1117,7 @@
       </div>
       <div class="step-line" id="line-3"></div>
       <div class="step" id="step-4">
-        <div class="step-circle">✓</div>
+        <div class="step-circle"><i data-lucide="check" style="width:12px;height:12px;stroke:white"></i></div>
         <div class="step-label" id="sl-4">完成</div>
       </div>
     </div>
@@ -1146,7 +1154,7 @@
     </div>
 
     <div class="card">
-      <h2 class="st" id="sec-appinfo">📱 应用信息</h2>
+      <h2 class="st"><i data-lucide="smartphone" class="section-icon"></i><span id="sec-appinfo">应用信息</span></h2>
       <div class="info-grid">
         <div class="info-item"><label id="lbl-appname">应用名称</label><p id="r-app-name">-</p></div>
         <div class="info-item"><label id="lbl-package">包名</label><p><span id="r-package">-</span><button class="copy-btn" onclick="copyText('r-package',this)">复制</button></p></div>
@@ -1160,7 +1168,7 @@
     </div>
 
     <div class="card">
-      <h2 class="st" id="sec-risk">⚠️ 风险概览</h2>
+      <h2 class="st"><i data-lucide="alert-triangle" class="section-icon"></i><span id="sec-risk">风险概览</span></h2>
       <div class="risk-grid">
         <div class="risk-box rc"><div class="num" id="r-critical">0</div><div class="lbl" id="lbl-critical">严重</div></div>
         <div class="risk-box rh"><div class="num" id="r-high">0</div><div class="lbl" id="lbl-high">高危</div></div>
@@ -1170,7 +1178,7 @@
     </div>
 
     <div class="card">
-      <h2 class="st" id="r-perm-title">🔐 危险权限</h2>
+      <h2 class="st"><i data-lucide="shield-alert" class="section-icon"></i><span id="r-perm-title">危险权限</span></h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -1185,7 +1193,7 @@
     </div>
 
     <div class="card">
-      <h2 class="st" id="r-issue-title">🛡️ 清单文件安全问题</h2>
+      <h2 class="st"><i data-lucide="shield" class="section-icon"></i><span id="r-issue-title">清单文件安全问题</span></h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -1201,17 +1209,17 @@
     </div>
 
     <div class="card">
-      <h2 class="st" id="sec-ai">🤖 AI 安全分析</h2>
+      <h2 class="st"><i data-lucide="cpu" class="section-icon"></i><span id="sec-ai">AI 安全分析</span></h2>
       <div class="ai-box" id="r-ai">加载中...</div>
     </div>
 
     <div class="card">
       <div class="actions">
         <a id="btn-download" href="#" class="btn-download" target="_blank">
-          📄 下载完整 HTML 报告
+          下载完整 HTML 报告
         </a>
         <button class="btn-rescan" id="btn-rescan" onclick="resetToUpload()">
-          🔄 扫描新文件
+          扫描新文件
         </button>
       </div>
     </div>
@@ -1226,11 +1234,11 @@
 
     <!-- Upload card -->
     <div class="card">
-      <h2 class="st" id="dist-upload-title">📦 上传应用</h2>
+      <h2 class="st"><i data-lucide="upload-cloud" class="section-icon"></i><span id="dist-upload-title">上传应用</span></h2>
       <p id="dist-upload-sub" style="margin-bottom:16px;font-size:.9em;color:var(--muted)">将应用文件托管到平台，生成专属下载页面与二维码</p>
       <!-- No-credits banner -->
       <div class="dist-no-credits-banner" id="dist-no-credits-banner">
-        <span class="msg" id="dist-no-credits-msg">⚠️ Credits 不足，无法上传文件。请先购买 Credits。</span>
+        <span class="msg" id="dist-no-credits-msg">Credits 不足，无法上传文件。请先购买 Credits。</span>
         <button class="buy-btn" onclick="openBuyModal()" id="dist-buy-btn">立即购买</button>
       </div>
       <div class="dist-upload-zone" id="dist-upload-zone">
@@ -1322,7 +1330,7 @@
     <!-- My releases card -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <h2 class="st" id="dist-releases-title" style="margin:0">📋 我的分发</h2>
+        <h2 class="st" style="margin:0"><i data-lucide="layout-list" class="section-icon"></i><span id="dist-releases-title">我的分发</span></h2>
         <button class="auth-btn" onclick="distPage=0;loadDistList()" style="font-size:.8em;padding:5px 12px" id="dist-refresh-btn">↻ 刷新</button>
       </div>
       <!-- Search + filter toolbar -->
@@ -1415,19 +1423,19 @@ const LANG = {
     errUpload:    '上传失败: ',
     errScan:      '扫描失败: ',
     errReport:    '报告加载失败: ',
-    procTitle:    '📊 正在分析中',
+    procTitle:    '正在分析中',
     sl: ['上传', '静态分析', '报告提取', 'AI 摘要', '完成'],
     status: {
       uploading:   '正在上传文件到分析引擎...',
       scanning:    'MobSF 静态分析中（大文件可能需要 5-15 分钟）',
       analyzing:   '正在提取分析报告...',
       summarizing: 'AI 正在生成安全摘要...',
-      done:        '扫描完成 ✅',
+      done:        '扫描完成',
       loading:     '正在加载报告...',
     },
-    secAppInfo:   '📱 应用信息',
-    secRisk:      '⚠️ 风险概览',
-    secAI:        '🤖 AI 安全分析',
+    secAppInfo:   '应用信息',
+    secRisk:      '风险概览',
+    secAI:        'AI 安全分析',
     lblAppName:   '应用名称',
     lblPackage:   '包名',
     lblVersion:   '版本号',
@@ -1445,10 +1453,10 @@ const LANG = {
     sevLabels:    { critical:'严重', high:'高危', warning:'中危', info:'信息' },
     noPerms:      '无危险权限',
     noIssues:     '无问题',
-    btnDownload:  '⬇️ 下载 HTML 报告',
-    btnRescan:    '🔄 扫描新文件',
-    permTitle:    n => `🔐 危险权限（${n} 项）`,
-    issueTitle:   n => `🛡️ 清单文件安全问题（${n} 项）`,
+    btnDownload:  '下载 HTML 报告',
+    btnRescan:    '扫描新文件',
+    permTitle:    n => `危险权限（${n} 项）`,
+    issueTitle:   n => `清单文件安全问题（${n} 项）`,
     htmlLang:     'zh-CN',
     mobsfOk:      'MobSF 已连接，可以开始扫描',
     mobsfDown:    'MobSF 未启动，扫描功能暂不可用。请运行：',
@@ -1471,11 +1479,11 @@ const LANG = {
     scoreDesc:    '基于 MobSF 综合评估（权限、漏洞、追踪器等）',
     scoreLabels:  { safe:'安全', medium:'中等风险', high:'高风险', critical:'严重风险' },
     payUsdt:      'USDT 支付（TRC20）',
-    buyTitle:     '💳 购买扫描次数',
+    buyTitle:     '购买扫描次数',
     buySub:       '一次购买，永久有效，不限使用时间',
     buyFooter:    '购买即同意服务条款 · Credits 不可退款',
-    orderPaid:    '✅ 已支付',
-    orderPending: '⏳ 待支付',
+    orderPaid:    '已支付',
+    orderPending: '待支付',
     footerProduct: 'AI 移动安全扫描器',
     footerSupport: '支持 Android APK / iOS IPA',
     footerCopy:    '© 2026 maclechen.top · Powered by MobSF & Gemini AI',
@@ -1485,11 +1493,11 @@ const LANG = {
     btnHome:    '首页',
     btnLogin:   '登录 / 注册',
     btnBuy:     '购买',
-    ddOrders:   '📋 订单历史',
+    ddOrders:   '订单历史',
     ddLogout:   '退出登录',
     creditsUnit:'次',
     // Login modal
-    loginTitle: '🔐 登录',
+    loginTitle: '登录',
     loginSub:   '使用邮箱和密码登录您的账号',
     labelEmail: '邮箱地址',
     labelPwd:   '密码',
@@ -1509,7 +1517,7 @@ const LANG = {
     verifyBtn:       '验证',
     notReceived:     '没收到？',
     // Order modal
-    orderTitle:   '📋 订单历史',
+    orderTitle:   '订单历史',
     orderSub:     '最近50条订单记录',
     orderLoading: '加载中...',
     orderEmpty:   '暂无订单记录',
@@ -1528,7 +1536,7 @@ const LANG = {
     tabScan: '安全扫描',
     tabDist: '应用分发',
     // Distribution
-    distUploadTitle: '📦 上传应用',
+    distUploadTitle: '上传应用',
     distUploadSub:   '将应用文件托管到平台，生成专属下载页面与二维码',
     distZoneTitle:   '点击或拖拽应用文件到这里',
     distZoneSub:     '支持 Android · iOS · Windows · macOS · Linux · 最大 500 MB',
@@ -1540,15 +1548,15 @@ const LANG = {
     distLabelDesc:   '备注说明',
     distLabelPublic: '上架到应用市场（公开展示，用户可浏览下载）',
     distSubmitText:  '上传并生成分发链接',
-    distReleasesTitle:'📋 我的分发',
+    distReleasesTitle:'我的分发',
     distRefreshBtn:  '↻ 刷新',
     distNoReleases:  '暂无分发记录，先上传一个应用吧',
     distQrHint:      '扫码下载',
     distCopyLink:    '复制链接',
     distClose:       '关闭',
     distUploading:   '上传中…',
-    distSuccess:     '✅ 上传成功，分发链接已生成',
-    distUpdated:     '✅ 已更新，分发链接不变',
+    distSuccess:     '上传成功，分发链接已生成',
+    distUpdated:     '已更新，分发链接不变',
     distErrNoFile:   '请先选择要上传的应用文件',
     distErrLogin:    '请先登录后再上传',
     distErrUpload:   '上传失败：',
@@ -1575,19 +1583,19 @@ const LANG = {
     errUpload:    'Upload failed: ',
     errScan:      'Scan failed: ',
     errReport:    'Failed to load report: ',
-    procTitle:    '📊 Analyzing...',
+    procTitle:    'Analyzing...',
     sl: ['Upload', 'Static Analysis', 'Report', 'AI Summary', 'Done'],
     status: {
       uploading:   'Uploading file to analysis engine...',
       scanning:    'MobSF static analysis in progress (may take 5-15 min for large files)',
       analyzing:   'Extracting analysis report...',
       summarizing: 'AI generating security summary...',
-      done:        'Scan complete ✅',
+      done:        'Scan complete',
       loading:     'Loading report...',
     },
-    secAppInfo:   '📱 App Information',
-    secRisk:      '⚠️ Risk Overview',
-    secAI:        '🤖 AI Security Analysis',
+    secAppInfo:   'App Information',
+    secRisk:      'Risk Overview',
+    secAI:        'AI Security Analysis',
     lblAppName:   'App Name',
     lblPackage:   'Package',
     lblVersion:   'Version',
@@ -1605,10 +1613,10 @@ const LANG = {
     sevLabels:    { critical:'CRITICAL', high:'HIGH', warning:'MEDIUM', info:'INFO' },
     noPerms:      'No dangerous permissions found',
     noIssues:     'No issues found',
-    btnDownload:  '⬇️ Download HTML Report',
-    btnRescan:    '🔄 Scan New File',
-    permTitle:    n => `🔐 Dangerous Permissions (${n})`,
-    issueTitle:   n => `🛡️ Manifest Security Issues (${n})`,
+    btnDownload:  'Download HTML Report',
+    btnRescan:    'Scan New File',
+    permTitle:    n => `Dangerous Permissions (${n})`,
+    issueTitle:   n => `Manifest Security Issues (${n})`,
     htmlLang:     'en',
     mobsfOk:      'MobSF connected — ready to scan',
     mobsfDown:    'MobSF is not running. Scanning is unavailable. To start:',
@@ -1631,11 +1639,11 @@ const LANG = {
     scoreDesc:    'MobSF comprehensive assessment (permissions, vulnerabilities, trackers)',
     scoreLabels:  { safe:'Secure', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' },
     payUsdt:      'Pay with USDT (TRC20)',
-    buyTitle:     '💳 Buy Scan Credits',
+    buyTitle:     'Buy Scan Credits',
     buySub:       'Buy once, use forever — no expiry',
     buyFooter:    'By purchasing you agree to our Terms · Credits are non-refundable',
-    orderPaid:    '✅ Paid',
-    orderPending: '⏳ Pending',
+    orderPaid:    'Paid',
+    orderPending: 'Pending',
     footerProduct: 'AI Mobile Security Scanner',
     footerSupport: 'Supports Android APK / iOS IPA',
     footerCopy:    '© 2026 maclechen.top · Powered by MobSF & Gemini AI',
@@ -1645,11 +1653,11 @@ const LANG = {
     btnHome:    'Home',
     btnLogin:   'Login / Sign Up',
     btnBuy:     'Buy',
-    ddOrders:   '📋 Order History',
+    ddOrders:   'Order History',
     ddLogout:   'Sign Out',
     creditsUnit:'scans',
     // Login modal
-    loginTitle: '🔐 Sign In',
+    loginTitle: 'Sign In',
     loginSub:   'Sign in with your email and password',
     labelEmail: 'Email Address',
     labelPwd:   'Password',
@@ -1669,7 +1677,7 @@ const LANG = {
     verifyBtn:       'Verify',
     notReceived:     "Didn't receive it?",
     // Order modal
-    orderTitle:   '📋 Order History',
+    orderTitle:   'Order History',
     orderSub:     'Last 50 orders',
     orderLoading: 'Loading...',
     orderEmpty:   'No orders yet',
@@ -1688,7 +1696,7 @@ const LANG = {
     tabScan: 'Security Scan',
     tabDist: 'App Distribution',
     // Distribution
-    distUploadTitle: '📦 Upload App',
+    distUploadTitle: 'Upload App',
     distUploadSub:   'Host your app on the platform and generate a download page with QR code',
     distZoneTitle:   'Click or drag app file here',
     distZoneSub:     'Android · iOS · Windows · macOS · Linux · Max 500 MB',
@@ -1700,15 +1708,15 @@ const LANG = {
     distLabelDesc:   'Description',
     distLabelPublic: 'List on App Marketplace (publicly visible)',
     distSubmitText:  'Upload & Generate Link',
-    distReleasesTitle:'📋 My Releases',
+    distReleasesTitle:'My Releases',
     distRefreshBtn:  '↻ Refresh',
     distNoReleases:  'No releases yet — upload your first app',
     distQrHint:      'Scan to download',
     distCopyLink:    'Copy Link',
     distClose:       'Close',
     distUploading:   'Uploading…',
-    distSuccess:     '✅ Upload successful, link generated',
-    distUpdated:     '✅ App updated — link unchanged',
+    distSuccess:     'Upload successful, link generated',
+    distUpdated:     'App updated — link unchanged',
     distErrNoFile:   'Please select an app file first',
     distErrLogin:    'Please sign in before uploading',
     distErrUpload:   'Upload failed: ',
@@ -2691,8 +2699,8 @@ function distUpload() {
         : '';
       msg.className = 'form-msg ok';
       msg.textContent = isUpdate
-        ? (lang === 'en' ? `✅ App updated — link unchanged${creditsHint}` : `✅ 已更新，分发链接不变${creditsHint}`)
-        : (lang === 'en' ? `✅ Upload successful, link generated${creditsHint}` : `✅ 上传成功，分发链接已生成${creditsHint}`);
+        ? (lang === 'en' ? `App updated — link unchanged${creditsHint}` : `已更新，分发链接不变${creditsHint}`)
+        : (lang === 'en' ? `Upload successful, link generated${creditsHint}` : `上传成功，分发链接已生成${creditsHint}`);
       // Reset form
       distFileInput.value = '';
       document.getElementById('dist-file-name').style.display = 'none';
@@ -2946,6 +2954,7 @@ function _maybeRedirectAfterAuth() {
 
 // ── Init ───────────────────────────────────────────────────
 applyI18n();
+if (typeof lucide !== 'undefined') lucide.createIcons();
 checkMobSF();
 if (new URLSearchParams(location.search).get('action')) {
   handleUrlAction();
