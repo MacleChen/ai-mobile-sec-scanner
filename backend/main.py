@@ -1819,9 +1819,10 @@ async function loadMore(){{
   const el=document.getElementById('loading');
   el.style.display='block';
   el.textContent='加载中…';
+  el.onclick=null;
   try{{
-    const qs=currentPlatform?`?platform=${{currentPlatform}}&offset=${{offset}}`:`?offset=${{offset}}`;
-    const r=await fetch(SITE+'/market/list'+qs);
+    const qs='/market/list?platform='+encodeURIComponent(currentPlatform)+'&offset='+offset+'&limit=24';
+    const r=await fetch(qs,{{cache:'no-store'}});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     const apps=d.apps||[];
@@ -1835,7 +1836,7 @@ async function loadMore(){{
       const icon=app.icon_b64?`<img class="icon" src="data:image/png;base64,${{app.icon_b64}}" alt="icon">`:`<div class="icon-ph">📦</div>`;
       const card=document.createElement('a');
       card.className='card';
-      card.href=`${{SITE}}/dist/${{app.slug}}`;
+      card.href='/dist/'+app.slug;
       card.target='_blank';
       card.innerHTML=`${{icon}}<div class="name">${{name}}</div>${{ver}}<span class="badge badge-${{plat}}">${{label}}</span><div class="dl-cnt">⬇️ ${{app.download_count||0}} 次下载</div>`;
       grid.appendChild(card);
@@ -1846,16 +1847,17 @@ async function loadMore(){{
         el.style.display='none';
         document.getElementById('empty').style.display='block';
       }}else{{
-        el.textContent='已加载全部';
+        el.textContent='✅ 已加载全部';
         el.style.display='block';
       }}
     }}else{{
       el.style.display='none';
     }}
   }}catch(e){{
-    el.textContent='加载失败，请刷新重试';
+    el.innerHTML='加载失败 <u style="cursor:pointer">点击重试</u>';
+    el.onclick=()=>{{loading=false;loadMore();}};
     el.style.display='block';
-    console.error(e);
+    console.error('[market]',e);
   }}
   loading=false;
 }}
