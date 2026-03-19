@@ -1262,13 +1262,45 @@
 
     <!-- My releases card -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <h2 class="st" id="dist-releases-title" style="margin:0">📋 我的分发</h2>
-        <button class="auth-btn" onclick="loadDistList()" style="font-size:.8em;padding:5px 12px" id="dist-refresh-btn">↻ 刷新</button>
+        <button class="auth-btn" onclick="distPage=0;loadDistList()" style="font-size:.8em;padding:5px 12px" id="dist-refresh-btn">↻ 刷新</button>
+      </div>
+      <!-- Search + filter toolbar -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
+        <input id="dist-search" type="text" placeholder="搜索应用名称/包名…"
+          style="flex:1;min-width:160px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--fg);font-size:.85em;outline:none"
+          oninput="distPage=0;loadDistList()">
+        <select id="dist-filter-plat"
+          style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--fg);font-size:.82em;cursor:pointer"
+          onchange="distPage=0;loadDistList()">
+          <option value="">全部平台</option>
+          <option value="android">🤖 Android</option>
+          <option value="ios">🍎 iOS</option>
+          <option value="windows">🪟 Windows</option>
+          <option value="macos">🍏 macOS</option>
+          <option value="linux">🐧 Linux</option>
+        </select>
+        <select id="dist-filter-cat"
+          style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--fg);font-size:.82em;cursor:pointer"
+          onchange="distPage=0;loadDistList()">
+          <option value="">全部分类</option>
+          <option value="tools">🔧 工具</option>
+          <option value="social">💬 社交</option>
+          <option value="games">🎮 游戏</option>
+          <option value="finance">💰 金融</option>
+          <option value="entertainment">🎵 娱乐</option>
+          <option value="education">📚 教育</option>
+          <option value="productivity">⚡ 效率</option>
+          <option value="health">❤️ 健康</option>
+          <option value="other">📦 其他</option>
+        </select>
       </div>
       <div id="dist-releases-wrap">
         <div style="text-align:center;color:var(--muted);padding:30px" id="dist-releases-placeholder">暂无分发记录</div>
       </div>
+      <!-- Pagination -->
+      <div id="dist-pagination" style="display:none;justify-content:center;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap"></div>
     </div>
 
   </div>
@@ -2591,21 +2623,53 @@ function distUpload() {
 // ── Distribution: list ──────────────────────────────────────
 let _distReleases = [];  // cache for QR icon lookup
 
+let distPage = 0;
+const DIST_PAGE_SIZE = 20;
+
+function fmtName(raw) {
+  if (!raw) return '';
+  if (raw.indexOf(' ') < 0 && (raw.indexOf('-') >= 0 || raw.indexOf('_') >= 0)) {
+    return raw.split(/[-_]+/).filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+  }
+  return raw;
+}
+
 async function loadDistList() {
   if (!userInfo) return;
   const l = L();
   const wrap = document.getElementById('dist-releases-wrap');
+  const pgEl = document.getElementById('dist-pagination');
   wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>`;
+  pgEl.style.display = 'none';
+  const q    = (document.getElementById('dist-search') || {value:''}).value.trim();
+  const plat = (document.getElementById('dist-filter-plat') || {value:''}).value;
+  const cat  = (document.getElementById('dist-filter-cat') || {value:''}).value;
+  const offset = distPage * DIST_PAGE_SIZE;
+  const params = new URLSearchParams({ offset, limit: DIST_PAGE_SIZE });
+  if (q)    params.set('q', q);
+  if (plat) params.set('platform', plat);
+  if (cat)  params.set('category', cat);
   try {
-    const resp = await fetch('/dist/list', { headers: { Authorization: `Bearer ${jwt}` } });
+    const resp = await fetch(`/dist/list?${params}`, { headers: { Authorization: `Bearer ${jwt}` } });
     const d = await resp.json();
     const list = d.releases || [];
+    const total = d.total || 0;
     _distReleases = list;
     if (!list.length) {
       wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:30px">${l.distNoReleases}</div>`;
       return;
     }
     const now = new Date();
+    const _PLAT_BADGE = {android:'apk-badge',ios:'ipa-badge',windows:'win-badge',macos:'mac-badge',linux:'linux-badge'};
+    const _PLAT_LABEL = {android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
+    const _PLAT_GRAD  = {
+      android:'linear-gradient(135deg,rgba(59,130,246,.4),rgba(99,102,241,.4))',
+      ios:'linear-gradient(135deg,rgba(139,92,246,.4),rgba(168,85,247,.4))',
+      windows:'linear-gradient(135deg,rgba(56,189,248,.4),rgba(99,102,241,.4))',
+      macos:'linear-gradient(135deg,rgba(52,211,153,.4),rgba(16,185,129,.4))',
+      linux:'linear-gradient(135deg,rgba(251,146,60,.4),rgba(249,115,22,.4))',
+    };
+    const _PLAT_EMOJI = {android:'🤖',ios:'🍎',windows:'🪟',macos:'🍏',linux:'🐧'};
     wrap.innerHTML = list.map(r => {
         const previewUrl = `${location.origin}/dist/${r.slug}`;
         const expired    = r.expires_at && new Date(r.expires_at) < now;
@@ -2617,17 +2681,16 @@ async function loadDistList() {
           ? `${r.download_count} / ${r.max_downloads}`
           : `${r.download_count}`;
         const uploadTxt  = r.created_at ? r.created_at.slice(0,16).replace('T',' ') : '';
-        const _PLAT_BADGE = {android:'apk-badge',ios:'ipa-badge',windows:'win-badge',macos:'mac-badge',linux:'linux-badge'};
-        const _PLAT_LABEL = {android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
-        const plat = r.platform || (r.file_type==='apk'?'android':r.file_type==='ipa'?'ios':'other');
-        const platCls = _PLAT_BADGE[plat] || 'other-badge';
-        const platLabel = _PLAT_LABEL[plat] || r.file_type.toUpperCase();
+        const plat2 = r.platform || (r.file_type==='apk'?'android':r.file_type==='ipa'?'ios':'other');
+        const platCls = _PLAT_BADGE[plat2] || 'other-badge';
+        const platLabel = _PLAT_LABEL[plat2] || r.file_type.toUpperCase();
         const apkBadge   = `<span class="upload-badge ${platCls}" style="font-size:.7em;padding:1px 7px;margin-left:4px">${platLabel}</span>`;
         const isPublic   = r.is_public ? true : false;
+        const rawName    = r.display_name || r.app_name || r.slug;
+        const displayName = fmtName(rawName);
         const iconHtml   = r.icon_b64
           ? `<img src="data:image/png;base64,${r.icon_b64}" class="dist-app-icon" alt="">`
-          : `<div class="dist-app-icon dist-app-icon-ph">📱</div>`;
-        const displayName = r.display_name || r.app_name || r.slug;
+          : `<div class="dist-app-icon dist-app-icon-ph" style="background:${_PLAT_GRAD[plat2]||'linear-gradient(135deg,rgba(99,102,241,.4),rgba(139,92,246,.4))'};display:flex;align-items:center;justify-content:center;font-size:1.4em">${_PLAT_EMOJI[plat2]||'📱'}</div>`;
         const pkgLine    = r.pkg_name
           ? `<div class="dist-pkg-name">${esc(r.pkg_name)}</div>` : '';
         const verBadge   = r.version
@@ -2665,6 +2728,22 @@ async function loadDistList() {
           </div>
         </div>`;
       }).join('');
+    // Pagination
+    const totalPages = Math.ceil(total / DIST_PAGE_SIZE);
+    if (totalPages > 1) {
+      pgEl.style.display = 'flex';
+      const btnStyle = (active) => `padding:5px 11px;border-radius:6px;font-size:.8em;cursor:pointer;border:1px solid;${active?'background:rgba(99,102,241,.3);border-color:rgba(99,102,241,.6);color:#a5b4fc':'background:rgba(255,255,255,.05);border-color:var(--border);color:var(--muted)'}`;
+      let html = `<button style="${btnStyle(false)}" onclick="distPage=${distPage-1};loadDistList()" ${distPage===0?'disabled':''}>‹</button>`;
+      for (let i=0;i<totalPages;i++) {
+        if (totalPages<=7 || i===0 || i===totalPages-1 || Math.abs(i-distPage)<=1) {
+          html += `<button style="${btnStyle(i===distPage)}" onclick="distPage=${i};loadDistList()">${i+1}</button>`;
+        } else if (Math.abs(i-distPage)===2) {
+          html += `<span style="color:var(--muted);padding:0 2px">…</span>`;
+        }
+      }
+      html += `<button style="${btnStyle(false)}" onclick="distPage=${distPage+1};loadDistList()" ${distPage>=totalPages-1?'disabled':''}>›</button>`;
+      pgEl.innerHTML = html;
+    }
   } catch(e) {
     wrap.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px">加载失败，请重试</div>`;
   }

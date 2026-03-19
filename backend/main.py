@@ -95,6 +95,25 @@ _PLATFORM_MAP = {
     "appimage": "linux",
     "zip":      "other",
 }
+_PLAT_GRADIENT = {
+    "android": "linear-gradient(135deg,rgba(59,130,246,.4),rgba(99,102,241,.4))",
+    "ios":     "linear-gradient(135deg,rgba(139,92,246,.4),rgba(168,85,247,.4))",
+    "windows": "linear-gradient(135deg,rgba(56,189,248,.4),rgba(99,102,241,.4))",
+    "macos":   "linear-gradient(135deg,rgba(52,211,153,.4),rgba(16,185,129,.4))",
+    "linux":   "linear-gradient(135deg,rgba(251,146,60,.4),rgba(249,115,22,.4))",
+}
+_PLAT_EMOJI = {"android": "🤖", "ios": "🍎", "windows": "🪟", "macos": "🍏", "linux": "🐧"}
+
+def _fmt_name(raw: str) -> str:
+    """Convert filename-style strings to readable app names."""
+    if not raw:
+        return ""
+    # Only reformat if it looks like a filename (no spaces, has separators)
+    if " " not in raw and ("-" in raw or "_" in raw):
+        import re as _re
+        parts = _re.split(r"[-_]+", raw)
+        return " ".join(p.capitalize() for p in parts if p).strip()
+    return raw
 
 # ── SQLite database ────────────────────────────────────────────
 _DB_PATH = Path(os.getenv("DB_PATH", "/app/data/scanner.db"))
@@ -216,6 +235,29 @@ def _migrate_db():
         c.execute("UPDATE app_releases SET platform='windows' WHERE file_type IN ('exe','msi') AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='macos'   WHERE file_type IN ('dmg','pkg') AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='linux'   WHERE file_type IN ('deb','rpm','appimage') AND (platform IS NULL OR platform='')")
+        # Backfill version + icon for existing records that are missing them
+        stale = c.execute(
+            "SELECT slug, file_type FROM app_releases WHERE is_active=1 AND (version='' OR version IS NULL OR icon_b64='' OR icon_b64 IS NULL)"
+        ).fetchall()
+    for row in stale:
+        slug, ext = row["slug"], row["file_type"]
+        fpath = DIST_DIR / f"{slug}.{ext}"
+        if not fpath.exists():
+            continue
+        try:
+            meta = _extract_app_info(fpath, ext)
+            with _db() as c2:
+                c2.execute(
+                    "UPDATE app_releases SET version=COALESCE(NULLIF(?,''),(SELECT version FROM app_releases WHERE slug=?)),"
+                    " icon_b64=COALESCE(NULLIF(?,''),(SELECT icon_b64 FROM app_releases WHERE slug=?)),"
+                    " display_name=COALESCE(NULLIF(?,''),(SELECT display_name FROM app_releases WHERE slug=?)),"
+                    " pkg_name=COALESCE(NULLIF(?,''),(SELECT pkg_name FROM app_releases WHERE slug=?))"
+                    " WHERE slug=?",
+                    (meta["version"], slug, meta["icon_b64"], slug,
+                     meta["display_name"], slug, meta["pkg_name"], slug, slug),
+                )
+        except Exception:
+            pass
 
 _init_db()
 _migrate_db()
@@ -1642,16 +1684,37 @@ async def dist_upload(
 
 
 @app.get("/dist/list")
-async def dist_list(user: dict = Depends(_current_user)):
+async def dist_list(
+    q: str = "",
+    platform: str = "",
+    category: str = "",
+    offset: int = 0,
+    limit: int = 20,
+    user: dict = Depends(_current_user),
+):
+    where = "user_id=? AND is_active=1"
+    params: list = [user["id"]]
+    if platform:
+        where += " AND platform=?"
+        params.append(platform)
+    if category:
+        where += " AND category=?"
+        params.append(category)
+    if q:
+        like = f"%{q}%"
+        where += " AND (app_name LIKE ? OR display_name LIKE ? OR pkg_name LIKE ?)"
+        params.extend([like, like, like])
     with _db() as c:
+        total = c.execute(f"SELECT COUNT(*) FROM app_releases WHERE {where}", params).fetchone()[0]
         rows = c.execute(
-            """SELECT slug, app_name, version, file_type, file_size,
+            f"""SELECT slug, app_name, version, file_type, file_size,
                       created_at, expires_at, max_downloads, download_count, is_active,
-                      pkg_name, display_name, icon_b64, platform, is_public
-               FROM app_releases WHERE user_id=? AND is_active=1 ORDER BY created_at DESC""",
-            (user["id"],),
+                      pkg_name, display_name, icon_b64, platform, is_public, category
+               FROM app_releases WHERE {where}
+               ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            (*params, limit, offset),
         ).fetchall()
-    return {"releases": [dict(r) for r in rows]}
+    return {"releases": [dict(r) for r in rows], "total": total}
 
 
 @app.delete("/dist/{slug}")
