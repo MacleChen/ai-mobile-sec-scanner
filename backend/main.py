@@ -1983,7 +1983,7 @@ def _dist_preview_html(r: dict) -> str:
   // ── Avatar helper ────────────────────────────────────────────
   const _AV_COLORS=['#6366f1','#8b5cf6','#0ea5e9','#10b981','#f59e0b','#ef4444'];
   function avatarHtml(nick, av64){{
-    if(av64) return `<img src="data:image/png;base64,${{av64}}" alt="${{nick}}">`;
+    if(av64) return `<img src="data:image/png;base64,${{av64}}" alt="${{nick}}" style="width:100%;height:100%;object-fit:cover;display:block">`;
     const ch=(nick||'U')[0].toUpperCase();
     const col=_AV_COLORS[(nick||'U').charCodeAt(0)%_AV_COLORS.length];
     return `<span style="background:${{col}};width:100%;height:100%;display:flex;align-items:center;justify-content:center">${{ch}}</span>`;
@@ -2167,10 +2167,11 @@ async def update_avatar(file: UploadFile, user: dict = Depends(_current_user)):
     if len(data) > 5 * 1024 * 1024:
         raise HTTPException(400, "图片太大（最大 5MB）")
     try:
-        from PIL import Image as _PILImg
+        from PIL import Image as _PILImg, ImageOps as _PILOps
         import io as _io
         img = _PILImg.open(_io.BytesIO(data)).convert("RGBA")
-        img = img.resize((80, 80), _PILImg.LANCZOS)
+        # Center-crop to square (preserves aspect ratio, no stretching), then resize
+        img = _PILOps.fit(img, (160, 160), _PILImg.LANCZOS)
         buf = _io.BytesIO()
         img.save(buf, "PNG", optimize=True)
         avatar_b64 = base64.b64encode(buf.getvalue()).decode()
