@@ -412,24 +412,22 @@ def _cryptomus_sign(body_str: str) -> str:
 _CRYPTOMUS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
 
 
-def _get_alipay_client():
-    """Return (AliPay instance, is_sandbox). Raises 503 if not configured."""
-    from alipay import AliPay as _AliPay
-    app_id      = os.getenv("ALIPAY_APP_ID", "").strip()
-    private_key = os.getenv("ALIPAY_PRIVATE_KEY", "").replace("\\n", "\n").strip()
-    public_key  = os.getenv("ALIPAY_PUBLIC_KEY", "").replace("\\n", "\n").strip()
-    sandbox     = os.getenv("ALIPAY_SANDBOX", "false").lower() == "true"
-    if not app_id or not private_key or not public_key:
-        raise HTTPException(status_code=503, detail="支付宝支付暂未开放，请联系管理员")
-    client = _AliPay(
-        appid=app_id,
-        app_notify_url=None,
-        app_private_key_string=private_key,
-        alipay_public_key_string=public_key,
-        sign_type="RSA2",
-        debug=sandbox,
-    )
-    return client, sandbox
+def _epay_sign(params: dict, key: str) -> str:
+    """Epay MD5 signature: sort params (exclude sign/sign_type), join, append key, md5."""
+    filtered = {k: str(v) for k, v in params.items()
+                if k not in ("sign", "sign_type") and v is not None and str(v) != ""}
+    query = "&".join(f"{k}={filtered[k]}" for k in sorted(filtered))
+    return hashlib.md5(f"{query}{key}".encode()).hexdigest()
+
+
+def _epay_cfg():
+    """Return (epay_url, pid, key). Raises 503 if not configured."""
+    url = os.getenv("EPAY_URL", "").rstrip("/")
+    pid = os.getenv("EPAY_PID", "").strip()
+    key = os.getenv("EPAY_KEY", "").strip()
+    if not url or not pid or not key:
+        raise HTTPException(status_code=503, detail="支付功能暂未开放，请联系管理员")
+    return url, pid, key
 
 
 # ── Auth request bodies ─────────────────────────────────────
@@ -898,19 +896,23 @@ async def orders_create(body: OrderCreateBody, user: dict = Depends(_current_use
             (order_no, user["id"], pkg["credits"], pkg["amount"], body.pay_type),
         )
 
-    # ── Alipay ──────────────────────────────────────────────
-    if body.pay_type == "alipay":
-        alipay, sandbox = _get_alipay_client()
-        order_str = alipay.api_alipay_trade_page_pay(
-            out_trade_no=order_no,
-            total_amount=str(pkg["amount"]),
-            subject=f"AI扫描器 {pkg['credits']}Credits",
-            return_url=f"{site_url}/payment/alipay/return",
-            notify_url=f"{site_url}/payment/alipay/notify",
-        )
-        gateway = "https://openapi.alipaydev.com/gateway.do" if sandbox \
-                  else "https://openapi.alipay.com/gateway.do"
-        pay_url = f"{gateway}?{order_str}"
+    # ── Epay（支付宝 / 微信）────────────────────────────────
+    if body.pay_type in ("alipay", "wechat"):
+        from urllib.parse import urlencode as _urlencode
+        epay_url, pid, epay_key = _epay_cfg()
+        epay_type = "alipay" if body.pay_type == "alipay" else "wxpay"
+        params = {
+            "pid":          pid,
+            "type":         epay_type,
+            "out_trade_no": order_no,
+            "notify_url":   f"{site_url}/payment/epay/notify",
+            "return_url":   f"{site_url}/payment/epay/return",
+            "name":         f"AI扫描器 {pkg['credits']}Credits",
+            "money":        f"{pkg['amount']:.2f}",
+        }
+        params["sign"]      = _epay_sign(params, epay_key)
+        params["sign_type"] = "MD5"
+        pay_url = f"{epay_url}/submit.php?{_urlencode(params)}"
         return {"order_no": order_no, "pay_url": pay_url}
 
     # ── Cryptomus USDT ──────────────────────────────────────
@@ -993,31 +995,33 @@ async def payment_return():
     )
 
 
-@app.post("/payment/alipay/notify")
-async def alipay_notify(request: Request):
-    """Alipay async server-to-server POST callback."""
-    form = await request.form()
-    data = dict(form)
-    sign = data.pop("sign", None)
-    data.pop("sign_type", None)
+async def _epay_notify_handler(request: Request):
+    """Shared Epay notify logic (Epay may send GET or POST)."""
+    params = dict(request.query_params)
+    if not params:
+        try:
+            form = await request.form()
+            params = dict(form)
+        except Exception:
+            pass
+    received_sign = params.pop("sign", "")
+    params.pop("sign_type", None)
     try:
-        alipay, _ = _get_alipay_client()
-        verified = alipay.verify(data, sign)
+        _, _, epay_key = _epay_cfg()
     except Exception:
         return Response("fail")
-    if not verified:
+    if not received_sign or received_sign != _epay_sign(params, epay_key):
         return Response("fail")
-    trade_status = data.get("trade_status", "")
-    if trade_status not in ("TRADE_SUCCESS", "TRADE_FINISHED"):
-        return Response("success")  # ack other statuses without crediting
-    order_no = data.get("out_trade_no", "")
-    trade_no = data.get("trade_no", "")
+    if params.get("trade_status") != "TRADE_SUCCESS":
+        return Response("success")
+    order_no = params.get("out_trade_no", "")
+    trade_no = params.get("trade_no", "")
     with _db() as c:
         order = c.execute("SELECT * FROM orders WHERE order_no=?", (order_no,)).fetchone()
         if not order:
             return Response("fail")
         if order["status"] == "paid":
-            return Response("success")  # idempotent
+            return Response("success")
         c.execute(
             "UPDATE orders SET status='paid', pay_trade_no=?, paid_at=datetime('now') WHERE order_no=?",
             (trade_no, order_no),
@@ -1029,25 +1033,32 @@ async def alipay_notify(request: Request):
     return Response("success")
 
 
-@app.get("/payment/alipay/return")
-async def alipay_return(request: Request):
-    """Alipay sync browser redirect after payment — verify and redirect."""
+@app.get("/payment/epay/notify")
+async def epay_notify_get(request: Request):
+    return await _epay_notify_handler(request)
+
+
+@app.post("/payment/epay/notify")
+async def epay_notify_post(request: Request):
+    return await _epay_notify_handler(request)
+
+
+@app.get("/payment/epay/return")
+async def epay_return(request: Request):
+    """Epay sync browser redirect — verify signature then redirect."""
     params = dict(request.query_params)
-    sign = params.pop("sign", None)
+    received_sign = params.pop("sign", "")
     params.pop("sign_type", None)
     try:
-        alipay, _ = _get_alipay_client()
-        verified = alipay.verify(params, sign)
+        _, _, epay_key = _epay_cfg()
+        ok = received_sign == _epay_sign(params, epay_key) \
+             and params.get("trade_status") == "TRADE_SUCCESS"
     except Exception:
-        verified = False
-    if verified:
-        return HTMLResponse(
-            '<html><head><meta http-equiv="refresh" content="0;url=/?payment=success"></head>'
-            "<body>支付成功，正在跳转...</body></html>"
-        )
+        ok = False
+    dest = "/?payment=success" if ok else "/?payment=fail"
     return HTMLResponse(
-        '<html><head><meta http-equiv="refresh" content="0;url=/?payment=fail"></head>'
-        "<body>支付验证失败，正在跳转...</body></html>"
+        f'<html><head><meta http-equiv="refresh" content="0;url={dest}"></head>'
+        "<body>正在跳转...</body></html>"
     )
 
 
