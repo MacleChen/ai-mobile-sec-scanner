@@ -11,3 +11,4 @@ python-jose[cryptography]==3.3.0
 pyaxmlparser==0.3.27
 Pillow==11.1.0
 pefile==2023.2.7
+python-alipay-sdk==3.4.0

@@ -278,6 +278,20 @@
     }
     .pay-btn:hover { border-color: var(--blue); background: linear-gradient(135deg,rgba(59,130,246,.25),rgba(139,92,246,.25)); transform: translateY(-1px); }
     .pay-btn .icon { font-size: 1.5em; display: block; margin-bottom: 5px; }
+    .pay-btn-alipay {
+      background: linear-gradient(135deg,rgba(22,119,255,.18),rgba(0,163,255,.18));
+      border-color: rgba(22,119,255,.4);
+    }
+    .pay-btn-alipay:hover {
+      background: linear-gradient(135deg,rgba(22,119,255,.32),rgba(0,163,255,.32));
+      border-color: #1677ff; transform: translateY(-1px);
+    }
+    .pay-alipay-logo { display:inline-flex;align-items:center;gap:7px;font-size:1em;font-weight:700;color:#1677ff }
+    .pkg .cny-price { font-size:1.2em;font-weight:900;color:var(--text);line-height:1; }
+    .pkg .cny-sub   { font-size:.68em;color:var(--muted);margin:2px 0 6px; }
+    .pkg .usdt-tag  { display:inline-block;font-size:.7em;font-weight:600;color:#a78bfa;
+                      background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);
+                      border-radius:4px;padding:1px 6px;margin-bottom:8px; }
     .redeem-row { display: flex; gap: 8px; margin-top: 16px; }
     .redeem-input {
       flex: 1; background: rgba(255,255,255,.06); border: 1.5px solid var(--border); border-radius: 8px;
@@ -960,8 +974,9 @@
           <div class="pkg-name">入门包</div>
           <div class="scans">10</div>
           <div class="pkg-credits-label">Credits</div>
-          <div class="price">$1.5 USDT</div>
-          <div class="unit">$0.15 / 次</div>
+          <div class="cny-price">¥9.9</div>
+          <div class="cny-sub">¥0.99 / 次</div>
+          <div class="usdt-tag">$1.5 USDT</div>
           <div class="pkg-tag">基础功能</div>
         </div>
         <div class="pkg featured" data-pkg="p50" onclick="selectPkg(this)">
@@ -969,30 +984,39 @@
           <div class="pkg-name">专业包</div>
           <div class="scans">50</div>
           <div class="pkg-credits-label">Credits</div>
-          <div class="price">$5.5 USDT</div>
-          <div class="unit">$0.11 / 次<br>节省 27%</div>
+          <div class="cny-price">¥39.9</div>
+          <div class="cny-sub">¥0.80/次 · 节省19%</div>
+          <div class="usdt-tag">$5.5 USDT</div>
           <div class="pkg-tag">权限分析报告</div>
         </div>
         <div class="pkg" data-pkg="p100" onclick="selectPkg(this)">
           <div class="pkg-name">团队包</div>
           <div class="scans">100</div>
           <div class="pkg-credits-label">Credits</div>
-          <div class="price">$10 USDT</div>
-          <div class="unit">$0.10 / 次<br>节省 33%</div>
+          <div class="cny-price">¥69.9</div>
+          <div class="cny-sub">¥0.70/次 · 节省29%</div>
+          <div class="usdt-tag">$10 USDT</div>
           <div class="pkg-tag">SDK 深度报告</div>
         </div>
         <div class="pkg" data-pkg="p200" onclick="selectPkg(this)">
           <div class="pkg-name">企业包</div>
           <div class="scans">200</div>
           <div class="pkg-credits-label">Credits</div>
-          <div class="price">$18 USDT</div>
-          <div class="unit">$0.09 / 次<br>节省 40%</div>
+          <div class="cny-price">¥129.9</div>
+          <div class="cny-sub">¥0.65/次 · 节省34%</div>
+          <div class="usdt-tag">$18 USDT</div>
           <div class="pkg-tag">专属客服支持</div>
         </div>
       </div>
       <div class="pay-btn-row">
+        <button class="pay-btn pay-btn-alipay" onclick="doPay('alipay')" style="flex:1.2">
+          <span class="pay-alipay-logo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#1677ff"><path d="M21.2 15.88c-2.67-1.12-4.47-1.9-5.42-2.33.62-1.04 1.1-2.2 1.4-3.45H21V8.5h-4.5V6.5H21V4.9h-4.5V2h-2.1v2.9H9V2H6.9v2.9H2.4V4.9h4.5V6.5H2.4V8.5h4.28c-.05.28-.12.55-.2.82C5.4 12.8 3.4 14.9 2 16c1.1 1.3 2.6 2 4.2 2 2.4 0 4.6-1.7 6.3-4.5 2.1.95 5.1 2.37 6.8 3.33.4-2.25-.1 0 1.9-.95zM8.2 9.32c.1-.28.18-.55.24-.82h5.12c-.28 1.28-.76 2.46-1.38 3.5C10.52 11.3 9.04 10.42 8.2 9.32z"/></svg>
+            <span id="pay-alipay-label">支付宝支付</span>
+          </span>
+        </button>
         <button class="pay-btn" onclick="doPay('usdt')" style="flex:1">
-          <i data-lucide="gem" class="icon-btn"></i><span id="pay-usdt-label">USDT 支付（TRC20）</span>
+          <i data-lucide="gem" class="icon-btn"></i><span id="pay-usdt-label">USDT（TRC20）</span>
         </button>
       </div>
       <div id="buy-msg" class="form-msg"></div>
@@ -1572,7 +1596,8 @@ const LANG = {
     scoreTitle:   '安全评分',
     scoreDesc:    '基于 MobSF 综合评估（权限、漏洞、追踪器等）',
     scoreLabels:  { safe:'安全', medium:'中等风险', high:'高风险', critical:'严重风险' },
-    payUsdt:      'USDT 支付（TRC20）',
+    payAlipay:    '支付宝支付',
+    payUsdt:      'USDT（TRC20）',
     buyTitle:     '购买扫描次数',
     buySub:       '一次购买，永久有效，不限使用时间',
     buyFooter:    '购买即同意服务条款 · Credits 不可退款',
@@ -1740,7 +1765,8 @@ const LANG = {
     scoreTitle:   'Security Score',
     scoreDesc:    'MobSF comprehensive assessment (permissions, vulnerabilities, trackers)',
     scoreLabels:  { safe:'Secure', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' },
-    payUsdt:      'Pay with USDT (TRC20)',
+    payAlipay:    'Alipay',
+    payUsdt:      'USDT (TRC20)',
     buyTitle:     'Buy Scan Credits',
     buySub:       'Buy once, use forever — no expiry',
     buyFooter:    'By purchasing you agree to our Terms · Credits are non-refundable',
@@ -2428,6 +2454,7 @@ function applyI18n() {
   // Buy modal
   setText('buy-modal-title',  l.buyTitle);
   setText('buy-modal-sub',    l.buySub);
+  setText('pay-alipay-label', l.payAlipay);
   setText('pay-usdt-label',   l.payUsdt);
   setText('buy-modal-footer', l.buyFooter);
   setText('redeem-label',     l.redeemLabel);

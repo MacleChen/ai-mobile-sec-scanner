@@ -412,6 +412,26 @@ def _cryptomus_sign(body_str: str) -> str:
 _CRYPTOMUS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
 
 
+def _get_alipay_client():
+    """Return (AliPay instance, is_sandbox). Raises 503 if not configured."""
+    from alipay import AliPay as _AliPay
+    app_id      = os.getenv("ALIPAY_APP_ID", "").strip()
+    private_key = os.getenv("ALIPAY_PRIVATE_KEY", "").replace("\\n", "\n").strip()
+    public_key  = os.getenv("ALIPAY_PUBLIC_KEY", "").replace("\\n", "\n").strip()
+    sandbox     = os.getenv("ALIPAY_SANDBOX", "false").lower() == "true"
+    if not app_id or not private_key or not public_key:
+        raise HTTPException(status_code=503, detail="支付宝支付暂未开放，请联系管理员")
+    client = _AliPay(
+        appid=app_id,
+        app_notify_url=None,
+        app_private_key_string=private_key,
+        alipay_public_key_string=public_key,
+        sign_type="RSA2",
+        debug=sandbox,
+    )
+    return client, sandbox
+
+
 # ── Auth request bodies ─────────────────────────────────────
 
 class RegisterBody(BaseModel):
@@ -866,21 +886,39 @@ async def auth_me(user: dict = Depends(_current_user)):
 
 @app.post("/orders/create")
 async def orders_create(body: OrderCreateBody, user: dict = Depends(_current_user)):
-    """Create an order via Cryptomus USDT and return pay_url."""
+    """Create an order (alipay or usdt) and return pay_url."""
     pkg = PACKAGES.get(body.package_id)
     if not pkg:
         raise HTTPException(status_code=400, detail="Invalid package_id")
-    merchant = os.getenv("CRYPTOMUS_MERCHANT", "")
-    api_key  = os.getenv("CRYPTOMUS_API_KEY", "")
     site_url = os.getenv("SITE_URL", "http://localhost:8080").rstrip("/")
-    if not merchant or not api_key:
-        raise HTTPException(status_code=503, detail="支付功能暂未开放")
     order_no = _make_order_no()
     with _db() as c:
         c.execute(
-            "INSERT INTO orders(order_no, user_id, credits, amount) VALUES(?,?,?,?)",
-            (order_no, user["id"], pkg["credits"], pkg["amount"]),
+            "INSERT INTO orders(order_no, user_id, credits, amount, pay_method) VALUES(?,?,?,?,?)",
+            (order_no, user["id"], pkg["credits"], pkg["amount"], body.pay_type),
         )
+
+    # ── Alipay ──────────────────────────────────────────────
+    if body.pay_type == "alipay":
+        alipay, sandbox = _get_alipay_client()
+        order_str = alipay.api_alipay_trade_page_pay(
+            out_trade_no=order_no,
+            total_amount=str(pkg["amount"]),
+            subject=f"AI扫描器 {pkg['credits']}Credits",
+            return_url=f"{site_url}/payment/alipay/return",
+            notify_url=f"{site_url}/payment/alipay/notify",
+        )
+        gateway = "https://openapi.alipaydev.com/gateway.do" if sandbox \
+                  else "https://openapi.alipay.com/gateway.do"
+        pay_url = f"{gateway}?{order_str}"
+        return {"order_no": order_no, "pay_url": pay_url}
+
+    # ── Cryptomus USDT ──────────────────────────────────────
+    merchant = os.getenv("CRYPTOMUS_MERCHANT", "")
+    api_key  = os.getenv("CRYPTOMUS_API_KEY", "")
+    if not merchant or not api_key:
+        raise HTTPException(status_code=503, detail="USDT支付暂未开放")
+    import json as _json
     payload = {
         "amount":       pkg["usdt"],
         "currency":     "USDT",
@@ -892,7 +930,6 @@ async def orders_create(body: OrderCreateBody, user: dict = Depends(_current_use
         "lifetime":     3600,
         "to_currency":  "USDT",
     }
-    import json as _json
     body_str = _json.dumps(payload, separators=(",", ":"))
     sign = _cryptomus_sign(body_str)
     try:
@@ -949,10 +986,68 @@ async def payment_notify(request: Request):
 
 @app.get("/payment/return")
 async def payment_return():
-    """Epay browser redirect after payment; send user back to home page."""
+    """Cryptomus browser redirect after payment."""
     return HTMLResponse(
         '<html><head><meta http-equiv="refresh" content="0;url=/?payment=success"></head>'
         "<body>支付成功，正在跳转...</body></html>"
+    )
+
+
+@app.post("/payment/alipay/notify")
+async def alipay_notify(request: Request):
+    """Alipay async server-to-server POST callback."""
+    form = await request.form()
+    data = dict(form)
+    sign = data.pop("sign", None)
+    data.pop("sign_type", None)
+    try:
+        alipay, _ = _get_alipay_client()
+        verified = alipay.verify(data, sign)
+    except Exception:
+        return Response("fail")
+    if not verified:
+        return Response("fail")
+    trade_status = data.get("trade_status", "")
+    if trade_status not in ("TRADE_SUCCESS", "TRADE_FINISHED"):
+        return Response("success")  # ack other statuses without crediting
+    order_no = data.get("out_trade_no", "")
+    trade_no = data.get("trade_no", "")
+    with _db() as c:
+        order = c.execute("SELECT * FROM orders WHERE order_no=?", (order_no,)).fetchone()
+        if not order:
+            return Response("fail")
+        if order["status"] == "paid":
+            return Response("success")  # idempotent
+        c.execute(
+            "UPDATE orders SET status='paid', pay_trade_no=?, paid_at=datetime('now') WHERE order_no=?",
+            (trade_no, order_no),
+        )
+        c.execute(
+            "UPDATE users_v2 SET credits=credits+?, updated_at=datetime('now') WHERE id=?",
+            (order["credits"], order["user_id"]),
+        )
+    return Response("success")
+
+
+@app.get("/payment/alipay/return")
+async def alipay_return(request: Request):
+    """Alipay sync browser redirect after payment — verify and redirect."""
+    params = dict(request.query_params)
+    sign = params.pop("sign", None)
+    params.pop("sign_type", None)
+    try:
+        alipay, _ = _get_alipay_client()
+        verified = alipay.verify(params, sign)
+    except Exception:
+        verified = False
+    if verified:
+        return HTMLResponse(
+            '<html><head><meta http-equiv="refresh" content="0;url=/?payment=success"></head>'
+            "<body>支付成功，正在跳转...</body></html>"
+        )
+    return HTMLResponse(
+        '<html><head><meta http-equiv="refresh" content="0;url=/?payment=fail"></head>'
+        "<body>支付验证失败，正在跳转...</body></html>"
     )
 
 
