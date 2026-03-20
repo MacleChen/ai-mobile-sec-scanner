@@ -13,7 +13,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8080:8080"
+      - "8081:8080"
     depends_on:
       - mobsf
     volumes:
@@ -33,6 +33,9 @@ services:
       - CRYPTOMUS_MERCHANT=${CRYPTOMUS_MERCHANT}
       - CRYPTOMUS_API_KEY=${CRYPTOMUS_API_KEY}
       - SITE_URL=${SITE_URL}
+      - EPAY_URL=${EPAY_URL}
+      - EPAY_PID=${EPAY_PID}
+      - EPAY_KEY=${EPAY_KEY}
 
 volumes:
   mobsf-data:
