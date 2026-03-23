@@ -1129,6 +1129,36 @@
         <span id="profile-save-text">保存资料</span>
       </button>
 
+      <!-- Referral section -->
+      <div class="pm-section" style="margin-top:18px">
+        <div class="pm-section-line"></div>
+        <div class="pm-section-label">推广邀请</div>
+        <div class="pm-section-line"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin:12px 0 14px">
+        <div style="flex:1;background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+          <div id="pm-ref-count" style="font-size:1.5em;font-weight:800;color:var(--accent)">—</div>
+          <div style="font-size:.7em;color:var(--muted);margin-top:2px">已邀请用户</div>
+        </div>
+        <div style="flex:1;background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+          <div id="pm-ref-credits" style="font-size:1.5em;font-weight:800;color:#f59e0b">—</div>
+          <div style="font-size:.7em;color:var(--muted);margin-top:2px">已获奖励</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="pm-ref-link" readonly class="form-input"
+               style="font-size:.78em;padding:8px 10px;flex:1;cursor:pointer;color:var(--accent)"
+               onclick="this.select()" placeholder="加载中...">
+        <button onclick="copyPmRefLink()"
+                style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.8em;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+          复制链接
+        </button>
+      </div>
+      <div id="pm-ref-copy-msg" style="font-size:.75em;color:#10b981;min-height:16px;margin-top:4px"></div>
+      <div style="font-size:.75em;color:var(--muted);margin-top:4px;line-height:1.5">
+        每成功邀请一位新用户注册验证邮箱，您立即获得 <strong style="color:#f59e0b">5 Credits</strong> 奖励
+      </div>
+
       <div style="height:4px"></div>
     </div>
   </div>
@@ -2369,22 +2399,53 @@ async function openProfileModal() {
   show('profile-modal');
   const msg = document.getElementById('profile-msg');
   if (msg) { msg.textContent = ''; msg.className = 'form-msg'; }
+  // Reset referral fields while loading
+  document.getElementById('pm-ref-count').textContent = '—';
+  document.getElementById('pm-ref-credits').textContent = '—';
+  document.getElementById('pm-ref-link').value = '';
+  document.getElementById('pm-ref-copy-msg').textContent = '';
   if (window.lucide) lucide.createIcons();
   try {
-    const resp = await fetch('/auth/profile', { headers: { Authorization: `Bearer ${jwt}` } });
-    if (!resp.ok) return;
-    const d = await resp.json();
-    document.getElementById('profile-nickname').value = d.nickname || '';
-    document.getElementById('profile-bio').value = d.bio || '';
-    const emailEl = document.getElementById('profile-email-val');
-    if (emailEl) emailEl.textContent = d.email || '';
-    const prev = document.getElementById('profile-avatar-preview');
-    if (prev) {
-      prev.style.background = d.avatar_b64 ? 'transparent' : 'linear-gradient(135deg,#6366f1,#8b5cf6)';
-      prev.innerHTML = _avatarPreviewHtml(d.nickname || d.email, d.avatar_b64);
-      if (window.lucide) lucide.createIcons({ nodes: [prev] });
+    const [profResp, refResp] = await Promise.all([
+      fetch('/auth/profile',   { headers: { Authorization: `Bearer ${jwt}` } }),
+      fetch('/auth/referral',  { headers: { Authorization: `Bearer ${jwt}` } }),
+    ]);
+    if (profResp.ok) {
+      const d = await profResp.json();
+      document.getElementById('profile-nickname').value = d.nickname || '';
+      document.getElementById('profile-bio').value = d.bio || '';
+      const emailEl = document.getElementById('profile-email-val');
+      if (emailEl) emailEl.textContent = d.email || '';
+      const prev = document.getElementById('profile-avatar-preview');
+      if (prev) {
+        prev.style.background = d.avatar_b64 ? 'transparent' : 'linear-gradient(135deg,#6366f1,#8b5cf6)';
+        prev.innerHTML = _avatarPreviewHtml(d.nickname || d.email, d.avatar_b64);
+        if (window.lucide) lucide.createIcons({ nodes: [prev] });
+      }
+    }
+    if (refResp.ok) {
+      const r = await refResp.json();
+      document.getElementById('pm-ref-count').textContent = r.referred_count ?? 0;
+      document.getElementById('pm-ref-credits').textContent = `${r.credits_earned ?? 0} C`;
+      document.getElementById('pm-ref-link').value = `${location.origin}/?ref=${r.referral_code}`;
     }
   } catch(_) {}
+}
+
+function copyPmRefLink() {
+  const inp = document.getElementById('pm-ref-link');
+  const msg = document.getElementById('pm-ref-copy-msg');
+  if (!inp.value) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(inp.value).then(() => {
+      msg.textContent = '✓ 链接已复制！';
+      setTimeout(() => { msg.textContent = ''; }, 2500);
+    });
+  } else {
+    inp.select(); document.execCommand('copy');
+    msg.textContent = '✓ 链接已复制！';
+    setTimeout(() => { msg.textContent = ''; }, 2500);
+  }
 }
 
 function closeProfileModal() { hide('profile-modal'); }

@@ -958,6 +958,70 @@
     .mobile-menu a:hover { color: var(--blue-l); }
     .mobile-menu-divider { width: 40px; height: 1px; background: var(--border); }
     .mobile-menu .btn-primary-sm { font-size: 1em; padding: 12px 32px; }
+
+    /* ── Referral section ────────────────────── */
+    #referral {
+      padding: 100px 0;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, transparent, rgba(245,158,11,.03), transparent);
+    }
+    .ref-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+    }
+    @media (max-width: 900px) {
+      .ref-inner { grid-template-columns: 1fr; gap: 40px; }
+    }
+    .ref-steps { display: flex; flex-direction: column; gap: 20px; margin-top: 28px; }
+    .ref-step { display: flex; align-items: flex-start; gap: 16px; }
+    .ref-step-num {
+      width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px;
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: .95em; color: #fff;
+    }
+    .ref-step-text strong { display: block; font-size: .95em; font-weight: 700; margin-bottom: 2px; }
+    .ref-step-text span { font-size: .82em; color: var(--muted); line-height: 1.5; }
+    .ref-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px;
+    }
+    .ref-card-title { font-size: 1.1em; font-weight: 800; margin-bottom: 6px; }
+    .ref-card-sub { font-size: .82em; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+    .ref-stats { display: flex; gap: 12px; margin-bottom: 24px; }
+    .ref-stat {
+      flex: 1; background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.18);
+      border-radius: 12px; padding: 14px; text-align: center;
+    }
+    .ref-stat-num { font-size: 1.6em; font-weight: 900; color: #f59e0b; }
+    .ref-stat-label { font-size: .7em; color: var(--muted); margin-top: 3px; }
+    .ref-link-row { display: flex; gap: 8px; align-items: center; }
+    .ref-link-input {
+      flex: 1; background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px; font-size: .82em; color: var(--blue-l);
+      outline: none; cursor: pointer; min-width: 0;
+    }
+    .ref-copy-btn {
+      padding: 11px 18px; background: linear-gradient(135deg,#f59e0b,#f97316);
+      color: #fff; border: none; border-radius: 10px; font-size: .82em;
+      font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: opacity .2s;
+    }
+    .ref-copy-btn:hover { opacity: .88; }
+    .ref-login-cta {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ref-login-cta a {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 24px; border-radius: 12px; font-weight: 700; font-size: .9em;
+      text-decoration: none; transition: opacity .2s;
+    }
+    .ref-login-cta a:hover { opacity: .85; }
+    .ref-cta-primary {
+      background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff;
+    }
+    .ref-cta-ghost {
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+    }
   </style>
 </head>
 <body>
@@ -980,6 +1044,7 @@
     <a href="#dist-marketing">应用分发</a>
     <a href="#market-section">应用市场</a>
     <a href="#pricing">定价</a>
+    <a href="#referral">推广奖励</a>
     <a href="#faq">FAQ</a>
   </div>
   <div class="nav-cta">
@@ -1001,6 +1066,7 @@
   <a href="#dist-marketing" onclick="closeMobileMenu()">应用分发</a>
   <a href="#market-section" onclick="closeMobileMenu()">应用市场</a>
   <a href="#pricing" onclick="closeMobileMenu()">定价</a>
+  <a href="#referral" onclick="closeMobileMenu()">推广奖励</a>
   <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
   <div class="mobile-menu-divider"></div>
   <a href="/app" class="btn-primary-sm">免费开始，赠 1 次扫描 →</a>
@@ -1870,6 +1936,90 @@
 </section>
 
 <!-- ═══ CTA BANNER ═════════════════════════════════════════ -->
+<section id="referral">
+  <div class="container">
+    <div class="ref-inner">
+      <!-- Left: description -->
+      <div class="fade-in">
+        <div class="section-eyebrow" style="color:#f59e0b">推广奖励计划</div>
+        <h2 style="margin-bottom:12px">邀请好友，<span style="background:linear-gradient(135deg,#f59e0b,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent">双向获益</span></h2>
+        <p style="color:var(--muted);font-size:.95em;line-height:1.7;margin-bottom:0">
+          将您的专属链接分享给开发者朋友，每当他们完成注册验证，您立即到账 <strong style="color:#f59e0b">5 Credits</strong>，邀请越多奖励越多，无上限。
+        </p>
+        <div class="ref-steps">
+          <div class="ref-step">
+            <div class="ref-step-num">1</div>
+            <div class="ref-step-text">
+              <strong>复制专属推广链接</strong>
+              <span>登录后在个人资料页一键获取您的专属链接</span>
+            </div>
+          </div>
+          <div class="ref-step">
+            <div class="ref-step-num">2</div>
+            <div class="ref-step-text">
+              <strong>分享给开发者朋友</strong>
+              <span>微信群、技术社区、朋友圈，任何渠道均可</span>
+            </div>
+          </div>
+          <div class="ref-step">
+            <div class="ref-step-num">3</div>
+            <div class="ref-step-text">
+              <strong>好友注册即时到账</strong>
+              <span>好友通过链接注册并验证邮箱后，5 Credits 立即到您账户</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right: referral card (dynamic) -->
+      <div class="ref-card fade-in fade-in-d1">
+        <!-- Logged-in state -->
+        <div id="landing-ref-logged-in" style="display:none">
+          <div class="ref-card-title">🎁 我的推广链接</div>
+          <div class="ref-card-sub">分享以下链接，好友注册后您自动获得 5 Credits 奖励</div>
+          <div class="ref-stats">
+            <div class="ref-stat">
+              <div class="ref-stat-num" id="landing-ref-count">—</div>
+              <div class="ref-stat-label">已邀请用户</div>
+            </div>
+            <div class="ref-stat">
+              <div class="ref-stat-num" id="landing-ref-credits">—</div>
+              <div class="ref-stat-label">已获奖励</div>
+            </div>
+          </div>
+          <div class="ref-link-row">
+            <input id="landing-ref-link" class="ref-link-input" readonly onclick="this.select()" placeholder="加载中...">
+            <button class="ref-copy-btn" onclick="copyLandingRefLink()">复制链接</button>
+          </div>
+          <div id="landing-ref-copy-msg" style="font-size:.75em;color:#10b981;min-height:18px;margin-top:6px"></div>
+        </div>
+        <!-- Logged-out state -->
+        <div id="landing-ref-logged-out">
+          <div class="ref-card-title">🚀 立即参与推广计划</div>
+          <div class="ref-card-sub">注册账号后获取您的专属推广链接，开始邀请好友，无限制获取 Credits 奖励。</div>
+          <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);border-radius:12px;padding:16px;margin-bottom:24px">
+            <div style="font-size:.82em;color:var(--muted);line-height:1.7">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+                <span>每次成功邀请奖励</span><strong style="color:#f59e0b">+5 Credits</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+                <span>邀请人数上限</span><strong style="color:#10b981">无限制</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0">
+                <span>Credits 有效期</span><strong style="color:#60a5fa">永不过期</strong>
+              </div>
+            </div>
+          </div>
+          <div class="ref-login-cta">
+            <a href="/app?action=register" class="ref-cta-primary">🎁 注册账号，获取推广链接</a>
+            <a href="/app" class="ref-cta-ghost">已有账号？直接登录 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA BANNER ═════════════════════════════════════════ -->
 <section id="cta">
   <div class="container">
     <div class="cta-inner">
@@ -2041,6 +2191,42 @@ if (scanEl) {
     });
   }, { threshold: 0.4 });
   scanObserver.observe(scanEl);
+}
+
+// ── Referral section: load link if user is logged in ────────
+(async function() {
+  const jwt = localStorage.getItem('jwt');
+  const loggedIn  = document.getElementById('landing-ref-logged-in');
+  const loggedOut = document.getElementById('landing-ref-logged-out');
+  if (!jwt) return; // show default logged-out card
+  try {
+    const resp = await fetch('/auth/referral', {
+      headers: { Authorization: `Bearer ${jwt}` }
+    });
+    if (!resp.ok) return;
+    const d = await resp.json();
+    document.getElementById('landing-ref-count').textContent   = d.referred_count ?? 0;
+    document.getElementById('landing-ref-credits').textContent = `${d.credits_earned ?? 0} C`;
+    document.getElementById('landing-ref-link').value = `${location.origin}/?ref=${d.referral_code}`;
+    loggedOut.style.display = 'none';
+    loggedIn.style.display  = '';
+  } catch(_) {}
+})();
+
+function copyLandingRefLink() {
+  const inp = document.getElementById('landing-ref-link');
+  const msg = document.getElementById('landing-ref-copy-msg');
+  if (!inp.value) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(inp.value).then(() => {
+      msg.textContent = '✓ 链接已复制！';
+      setTimeout(() => { msg.textContent = ''; }, 2500);
+    });
+  } else {
+    inp.select(); document.execCommand('copy');
+    msg.textContent = '✓ 链接已复制！';
+    setTimeout(() => { msg.textContent = ''; }, 2500);
+  }
 }
 </script>
 </body>
