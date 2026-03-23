@@ -881,6 +881,7 @@
         <div class="user-dropdown hidden" id="user-dropdown">
           <div id="dd-profile" onclick="openProfileModal()">个人资料</div>
           <div id="dd-change-pw" onclick="openChangePwModal()">修改密码</div>
+          <div id="dd-referral" onclick="openReferralModal()">推广邀请</div>
           <div id="dd-orders" onclick="openOrderHistory()">订单历史</div>
           <div class="divider"></div>
           <div id="dd-logout" onclick="doLogout()" style="color:#f87171">退出登录</div>
@@ -945,6 +946,7 @@
         <input class="form-input" id="reg-password" type="password" placeholder="请输入密码" autocomplete="new-password"
                onkeydown="if(event.key==='Enter')doRegister()">
       </div>
+      <div id="reg-ref-hint" style="display:none;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:9px 12px;font-size:.82em;color:#10b981;margin-bottom:10px">🎁 好友邀请 · 通过邀请链接注册</div>
       <div class="form-msg" id="reg-msg"></div>
       <button class="form-btn" id="reg-submit-btn" onclick="doRegister()">发送验证码</button>
       <div class="modal-alt">
@@ -1156,6 +1158,50 @@
       </div>
       <div class="form-msg" id="cpw-msg"></div>
       <button class="form-btn" id="cpw-btn" onclick="changePassword()">确认修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- Referral Modal -->
+<div class="modal-overlay hidden" id="referral-modal" onclick="if(event.target===this)closeReferralModal()">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head" style="background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;border-radius:14px 14px 0 0;padding:22px 24px 20px">
+      <button class="modal-close" onclick="closeReferralModal()" style="color:#fff;opacity:.8">✕</button>
+      <h2 id="ref-modal-title" style="color:#fff;margin:0 0 4px">🎁 推广邀请</h2>
+      <p id="ref-modal-sub" style="color:rgba(255,255,255,.75);margin:0;font-size:.85em">每成功邀请一位新用户注册，您将获得 5 Credits 奖励</p>
+    </div>
+    <div class="modal-body" style="padding:24px">
+      <!-- Stats row -->
+      <div style="display:flex;gap:12px;margin-bottom:20px">
+        <div style="flex:1;background:var(--surface2);border-radius:10px;padding:14px;text-align:center">
+          <div id="ref-count" style="font-size:1.6em;font-weight:800;color:var(--accent)">—</div>
+          <div id="ref-count-label" style="font-size:.72em;color:var(--muted);margin-top:2px">已邀请用户</div>
+        </div>
+        <div style="flex:1;background:var(--surface2);border-radius:10px;padding:14px;text-align:center">
+          <div id="ref-credits" style="font-size:1.6em;font-weight:800;color:#f59e0b">—</div>
+          <div id="ref-credits-label" style="font-size:.72em;color:var(--muted);margin-top:2px">已获得奖励</div>
+        </div>
+      </div>
+      <!-- Link box -->
+      <div style="font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px" id="ref-link-label">我的推广链接</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="ref-link-input" readonly class="form-input" style="font-size:.82em;padding:9px 12px;flex:1;cursor:pointer;color:var(--accent)"
+               onclick="this.select()" value="">
+        <button onclick="copyRefLink()" id="ref-copy-btn"
+                style="padding:9px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.82em;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+          复制
+        </button>
+      </div>
+      <div id="ref-copy-msg" style="font-size:.78em;color:#10b981;margin-top:6px;min-height:18px"></div>
+      <!-- How it works -->
+      <div style="margin-top:18px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px">
+        <div style="font-size:.8em;font-weight:700;color:#f59e0b;margin-bottom:8px" id="ref-how-title">📋 如何使用</div>
+        <ol style="margin:0;padding-left:18px;font-size:.8em;color:var(--muted);line-height:1.7">
+          <li id="ref-step1">分享您的专属链接给朋友</li>
+          <li id="ref-step2">朋友通过链接注册并验证邮箱</li>
+          <li id="ref-step3">您立即获得 5 Credits 奖励到账</li>
+        </ol>
+      </div>
     </div>
   </div>
 </div>
@@ -1679,6 +1725,7 @@ const LANG = {
     btnLogin:   '登录 / 注册',
     btnBuy:     '购买',
     ddProfile:  '个人资料',
+    ddReferral: '推广邀请',
     ddOrders:   '订单历史',
     ddLogout:   '退出登录',
     profileTitle:     '个人资料',
@@ -1848,6 +1895,7 @@ const LANG = {
     btnLogin:   'Login / Sign Up',
     btnBuy:     'Buy',
     ddProfile:  'Profile',
+    ddReferral: 'Invite Friends',
     ddOrders:   'Order History',
     ddLogout:   'Sign Out',
     profileTitle:     'My Profile',
@@ -2135,6 +2183,9 @@ function openRegisterModal() {
   setText('reg-msg', '');
   document.getElementById('reg-email').value = '';
   document.getElementById('reg-password').value = '';
+  // Show referral hint if user arrived via invite link
+  const hasRef = !!localStorage.getItem('_ref_code');
+  document.getElementById('reg-ref-hint').style.display = hasRef ? '' : 'none';
   setTimeout(() => document.getElementById('reg-email').focus(), 50);
 }
 function closeRegisterModal() { hide('register-modal'); }
@@ -2150,10 +2201,11 @@ async function doRegister() {
   btn.disabled = true;
   msg.className='form-msg'; msg.textContent='发送中...';
   try {
+    const refCode = localStorage.getItem('_ref_code') || '';
     const resp = await fetch('/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pw }),
+      body: JSON.stringify({ email, password: pw, ref_code: refCode }),
     });
     const d = await resp.json();
     if (d.ok) {
@@ -2193,9 +2245,11 @@ async function doVerify() {
       jwt = d.token;
       localStorage.setItem('jwt', jwt);
       userInfo = d.user;
+      const wasReferred = !!localStorage.getItem('_ref_code');
+      localStorage.removeItem('_ref_code');  // clear referral code after successful registration
       hide('verify-modal');
       renderAuthState();
-      showToast('注册成功！欢迎使用');
+      showToast(wasReferred ? '注册成功！感谢您的好友邀请 🎁' : '注册成功！欢迎使用');
       _maybeRedirectAfterAuth();
     } else {
       msg.className='form-msg err'; msg.textContent = d.error || '验证失败';
@@ -2372,6 +2426,43 @@ function openChangePwModal() {
 }
 function closeChangePwModal() { hide('change-pw-modal'); }
 
+// ── Referral Modal ────────────────────────────────────────────
+async function openReferralModal() {
+  hide('user-dropdown');
+  const siteUrl = location.origin;
+  document.getElementById('ref-link-input').value = '';
+  document.getElementById('ref-count').textContent = '—';
+  document.getElementById('ref-credits').textContent = '—';
+  document.getElementById('ref-copy-msg').textContent = '';
+  show('referral-modal');
+  try {
+    const resp = await fetch('/auth/referral', { headers: { Authorization: `Bearer ${jwt}` } });
+    if (!resp.ok) return;
+    const d = await resp.json();
+    document.getElementById('ref-link-input').value = `${siteUrl}/?ref=${d.referral_code}`;
+    document.getElementById('ref-count').textContent = d.referred_count;
+    document.getElementById('ref-credits').textContent = `${d.credits_earned} Credits`;
+  } catch(_) {}
+}
+function closeReferralModal() { hide('referral-modal'); }
+
+function copyRefLink() {
+  const inp = document.getElementById('ref-link-input');
+  const msg = document.getElementById('ref-copy-msg');
+  const val = inp.value;
+  if (!val) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(val).then(() => {
+      msg.textContent = '✓ 链接已复制！';
+      setTimeout(() => { msg.textContent = ''; }, 2500);
+    });
+  } else {
+    inp.select(); document.execCommand('copy');
+    msg.textContent = '✓ 链接已复制！';
+    setTimeout(() => { msg.textContent = ''; }, 2500);
+  }
+}
+
 async function changePassword() {
   const cur  = document.getElementById('cpw-cur').value;
   const nw   = document.getElementById('cpw-new').value;
@@ -2493,6 +2584,7 @@ function applyI18n() {
   setText('login-btn-text', l.btnLogin);
   setText('buy-btn-text',   l.btnBuy);
   setText('dd-profile',     l.ddProfile);
+  setText('dd-referral',    l.ddReferral);
   setText('dd-orders',      l.ddOrders);
   setText('dd-logout',      l.ddLogout);
   setText('profile-modal-title', l.profileTitle);
@@ -3326,6 +3418,18 @@ function _maybeRedirectAfterAuth() {
 applyI18n();
 if (typeof lucide !== 'undefined') lucide.createIcons();
 checkMobSF();
+
+// Save referral code from ?ref= URL param into localStorage
+(function() {
+  const refParam = new URLSearchParams(location.search).get('ref');
+  if (refParam) {
+    localStorage.setItem('_ref_code', refParam.trim().toUpperCase());
+    // Clean ?ref from URL without reloading
+    const clean = location.pathname + (location.hash || '');
+    history.replaceState(null, '', clean);
+  }
+})();
+
 if (new URLSearchParams(location.search).get('action')) {
   handleUrlAction();
 } else {

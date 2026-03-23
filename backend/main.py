@@ -240,9 +240,12 @@ def _migrate_db():
         "ALTER TABLE app_releases ADD COLUMN platform     TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN is_public    INTEGER DEFAULT 0",
         "ALTER TABLE app_releases ADD COLUMN category     TEXT DEFAULT ''",
-        "ALTER TABLE users_v2 ADD COLUMN nickname   TEXT DEFAULT ''",
-        "ALTER TABLE users_v2 ADD COLUMN bio        TEXT DEFAULT ''",
-        "ALTER TABLE users_v2 ADD COLUMN avatar_b64 TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN nickname         TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN bio              TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN avatar_b64       TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN referral_code    TEXT DEFAULT ''",
+        "ALTER TABLE users_v2 ADD COLUMN referred_by      INTEGER DEFAULT 0",
+        "ALTER TABLE users_v2 ADD COLUMN ref_reward_given INTEGER DEFAULT 0",
     ]
     with _db() as c:
         for sql in migrations:
@@ -256,6 +259,19 @@ def _migrate_db():
         c.execute("UPDATE app_releases SET platform='windows' WHERE file_type IN ('exe','msi') AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='macos'   WHERE file_type IN ('dmg','pkg') AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='linux'   WHERE file_type IN ('deb','rpm','appimage') AND (platform IS NULL OR platform='')")
+        # Backfill referral codes for existing users that don't have one
+        _charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        users_no_code = c.execute(
+            "SELECT id FROM users_v2 WHERE referral_code='' OR referral_code IS NULL"
+        ).fetchall()
+        for u in users_no_code:
+            for _ in range(10):
+                code = "".join(random.choices(_charset, k=8))
+                try:
+                    c.execute("UPDATE users_v2 SET referral_code=? WHERE id=? AND (referral_code='' OR referral_code IS NULL)", (code, u["id"]))
+                    break
+                except Exception:
+                    continue
         pass  # backfill runs in startup_event after all functions are defined
 
 _init_db()
@@ -435,6 +451,7 @@ def _epay_cfg():
 class RegisterBody(BaseModel):
     email: str
     password: str
+    ref_code: str = ""
 
 class VerifyBody(BaseModel):
     email: str
@@ -813,6 +830,12 @@ async def admin_reextract_release(slug: str, _: None = Depends(_require_admin)):
 
 # ── Auth Endpoints ─────────────────────────────────────────
 
+_REF_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+def _gen_ref_code() -> str:
+    """Generate an 8-char unique referral code."""
+    return "".join(random.choices(_REF_CHARS, k=8))
+
 @app.post("/auth/register")
 async def auth_register(body: RegisterBody):
     """Register with email + password; send 6-digit verification code."""
@@ -822,11 +845,27 @@ async def auth_register(body: RegisterBody):
     if len(body.password) < 6:
         return JSONResponse({"ok": False, "error": "密码至少6位"}, status_code=400)
     pw_hash = _hash_pw(body.password)
+
+    # Look up referrer by ref_code (must be an existing verified user)
+    referred_by = 0
+    ref_code_in = body.ref_code.strip().upper()
+    if ref_code_in:
+        with _db() as c:
+            ref_row = c.execute(
+                "SELECT id FROM users_v2 WHERE referral_code=? AND is_verified=1",
+                (ref_code_in,)
+            ).fetchone()
+        if ref_row:
+            referred_by = ref_row["id"]
+
+    # Generate a unique referral code for the new user
+    new_ref_code = _gen_ref_code()
+
     try:
         with _db() as c:
             c.execute(
-                "INSERT INTO users_v2(email, password_hash) VALUES(?,?)",
-                (email, pw_hash),
+                "INSERT INTO users_v2(email, password_hash, referred_by, referral_code) VALUES(?,?,?,?)",
+                (email, pw_hash, referred_by, new_ref_code),
             )
     except sqlite3.IntegrityError:
         # Email already exists — allow re-registration if not verified
@@ -834,9 +873,12 @@ async def auth_register(body: RegisterBody):
             row = c.execute("SELECT is_verified FROM users_v2 WHERE email=?", (email,)).fetchone()
         if row and row["is_verified"]:
             return JSONResponse({"ok": False, "error": "该邮箱已注册，请直接登录"}, status_code=400)
-        # Update password hash and re-send verification
+        # Update password hash and referred_by (if not already set) for unverified account
         with _db() as c:
-            c.execute("UPDATE users_v2 SET password_hash=? WHERE email=?", (pw_hash, email))
+            c.execute(
+                "UPDATE users_v2 SET password_hash=?, referred_by=CASE WHEN referred_by=0 THEN ? ELSE referred_by END WHERE email=?",
+                (pw_hash, referred_by, email)
+            )
     code = str(random.randint(100000, 999999))
     expires = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
     with _db() as c:
@@ -860,14 +902,29 @@ async def auth_verify(body: VerifyBody):
         return JSONResponse({"ok": False, "error": "验证码已过期，请重新发送"}, status_code=400)
     if row["code"] != body.code.strip():
         return JSONResponse({"ok": False, "error": "验证码错误"}, status_code=400)
+    _REF_REWARD = 5
+    ref_rewarded = False
     with _db() as c:
         c.execute("UPDATE users_v2 SET is_verified=1, updated_at=datetime('now') WHERE email=?", (email,))
         c.execute("DELETE FROM verify_codes WHERE email=?", (email,))
         user = c.execute("SELECT * FROM users_v2 WHERE email=?", (email,)).fetchone()
+        # Award referral reward atomically in the same transaction
+        if user and user["referred_by"] and not user["ref_reward_given"]:
+            c.execute(
+                "UPDATE users_v2 SET credits=credits+?, updated_at=datetime('now') WHERE id=?",
+                (_REF_REWARD, user["referred_by"]),
+            )
+            c.execute(
+                "UPDATE users_v2 SET ref_reward_given=1 WHERE id=?",
+                (user["id"],),
+            )
+            ref_rewarded = True
+
     token = _make_jwt(user["id"])
     return {
         "ok": True,
         "token": token,
+        "ref_rewarded": ref_rewarded,
         "user": {"id": user["id"], "email": user["email"], "credits": user["credits"], "total_scans": user["total_scans"]},
     }
 
@@ -2410,6 +2467,26 @@ async def update_profile(body: ProfileUpdate, user: dict = Depends(_current_user
         c.execute("UPDATE users_v2 SET nickname=?, bio=? WHERE id=?",
                   (nickname, bio, user["id"]))
     return {"ok": True, "nickname": nickname, "bio": bio}
+
+@app.get("/auth/referral")
+async def get_referral(user: dict = Depends(_current_user)):
+    """Return user's referral code and referral stats."""
+    with _db() as c:
+        ref_code = c.execute(
+            "SELECT referral_code FROM users_v2 WHERE id=?", (user["id"],)
+        ).fetchone()["referral_code"] or ""
+        # Count how many verified users were referred by this user AND reward was given
+        referred_count = c.execute(
+            "SELECT COUNT(*) FROM users_v2 WHERE referred_by=? AND ref_reward_given=1",
+            (user["id"],)
+        ).fetchone()[0]
+    credits_earned = referred_count * 5  # 5 credits per successful referral
+    return {
+        "referral_code": ref_code,
+        "referred_count": referred_count,
+        "credits_earned": credits_earned,
+    }
+
 
 @app.post("/auth/change-password")
 async def change_password(body: ChangePasswordBody, user: dict = Depends(_current_user)):
