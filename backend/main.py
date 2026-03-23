@@ -2055,34 +2055,56 @@ def _dist_preview_html(r: dict) -> str:
     }});
   }}
 
-  // ── Download ─────────────────────────────────────────────────
+  // ── Download / iOS OTA Install ───────────────────────────────
+  const _IS_IPA = '{r["file_type"].lower()}' === 'ipa';
+  const _IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const _USE_OTA = _IS_IPA && _IS_IOS;
+
+  // Update button label for iOS
+  (function(){{
+    const btn = document.getElementById('dl-btn');
+    if (_USE_OTA && btn) btn.textContent = '📲 安装到 iPhone / iPad';
+  }})();
+
   async function handleDownload(){{
     const btn = document.getElementById('dl-btn');
-    btn.disabled = true; btn.textContent = '⏳ 准备中…';
+    const defaultLabel = _USE_OTA ? '📲 安装到 iPhone / iPad' : '⬇️ 点击下载 {file_type}';
+    btn.disabled = true;
+    btn.textContent = _USE_OTA ? '⏳ 准备安装…' : '⏳ 准备中…';
     try {{
       const resp = await fetch('/dist/{slug}/request-download', {{
         method: 'POST', headers: _authHdr()
       }});
       if (resp.status === 401) {{
         document.getElementById('ov-login').classList.add('show');
-        btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; return;
+        btn.disabled=false; btn.textContent=defaultLabel; return;
       }}
       if (resp.status === 402) {{
         document.getElementById('ov-credits').classList.add('show');
-        btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; return;
+        btn.disabled=false; btn.textContent=defaultLabel; return;
       }}
       if (!resp.ok) {{
         const err = await resp.json().catch(()=>({{detail:'下载失败，请稍后重试'}}));
         alert(err.detail||'下载失败，请稍后重试');
-        btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}'; return;
+        btn.disabled=false; btn.textContent=defaultLabel; return;
       }}
       const data = await resp.json();
-      btn.textContent='✅ 开始下载…';
-      window.location.href='/dist/{slug}/download?token='+data.token;
-      setTimeout(()=>{{btn.disabled=false;btn.textContent='⬇️ 点击下载 {file_type}';}},3000);
+      if (_USE_OTA) {{
+        // iOS OTA install via itms-services://
+        btn.textContent = '📲 正在启动安装…';
+        const manifestUrl = encodeURIComponent(
+          window.location.origin + '/dist/{slug}/manifest.plist?token=' + data.token
+        );
+        window.location.href = 'itms-services://?action=download-manifest&url=' + manifestUrl;
+        setTimeout(()=>{{btn.disabled=false; btn.textContent=defaultLabel;}}, 5000);
+      }} else {{
+        btn.textContent = '✅ 开始下载…';
+        window.location.href = '/dist/{slug}/download?token=' + data.token;
+        setTimeout(()=>{{btn.disabled=false; btn.textContent=defaultLabel;}}, 3000);
+      }}
     }} catch(e){{
       alert('网络错误，请稍后重试');
-      btn.disabled=false; btn.textContent='⬇️ 点击下载 {file_type}';
+      btn.disabled=false; btn.textContent=defaultLabel;
     }}
   }}
 
@@ -2651,6 +2673,59 @@ async def dist_download(slug: str, token: str = ""):
     media       = "application/vnd.android.package-archive" if ext == "apk" else "application/octet-stream"
     return FileResponse(str(file_path), media_type=media,
                         headers={"Content-Disposition": disp})
+
+
+@app.get("/dist/{slug}/manifest.plist")
+async def dist_ios_manifest(slug: str, token: str = ""):
+    """Generate OTA install manifest.plist for iOS. Token is validated but NOT consumed here
+    (the actual IPA download endpoint consumes it)."""
+    if not token:
+        raise HTTPException(403, "无效链接")
+    entry = _dl_tokens.get(token)
+    if not entry or entry["slug"] != slug:
+        raise HTTPException(403, "下载链接已失效，请重新从详情页发起安装")
+    if time.time() > entry["expires_at"]:
+        _dl_tokens.pop(token, None)
+        raise HTTPException(403, "下载链接已过期，请重新从详情页发起安装")
+
+    with _db() as c:
+        row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
+    if not row or row["file_type"].lower() != "ipa":
+        raise HTTPException(404, "文件不存在")
+
+    r = dict(row)
+    bundle_id = (r.get("pkg_name") or f"top.maclechen.{slug}").strip()
+    version   = (r.get("version") or "1.0").strip()
+    app_name  = (r.get("app_name") or r.get("display_name") or slug).strip()
+    site      = os.getenv("SITE_URL", "https://maclechen.top").rstrip("/")
+    ipa_url   = f"{site}/dist/{slug}/download?token={token}"
+
+    plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>items</key>
+  <array>
+    <dict>
+      <key>assets</key>
+      <array>
+        <dict>
+          <key>kind</key><string>software-package</string>
+          <key>url</key><string>{ipa_url}</string>
+        </dict>
+      </array>
+      <key>metadata</key>
+      <dict>
+        <key>bundle-identifier</key><string>{bundle_id}</string>
+        <key>bundle-version</key><string>{version}</string>
+        <key>kind</key><string>software</string>
+        <key>title</key><string>{app_name}</string>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>"""
+    return Response(content=plist, media_type="application/xml")
 
 
 @app.get("/dist/{slug}", response_class=HTMLResponse)
