@@ -1869,9 +1869,9 @@ def _dist_preview_html(r: dict) -> str:
     exhausted  = _dist_exhausted(r)
     unavail    = expired or exhausted or not r.get('is_active', 1)
     btn_html   = (
-        '<div class="dl-btn disabled">⚠️ 链接已失效</div>'
+        '<div class="dl-btn disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> 链接已失效</div>'
         if unavail else
-        f'<button class="dl-btn" id="dl-btn" onclick="handleDownload()">⬇️ 点击下载 {file_type}</button>'
+        f'<button class="dl-btn" id="dl-btn" onclick="handleDownload()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 下载 {file_type}</button>'
     )
     # page_url_enc for use inside JS (no f-string conflict)
     page_url_enc = urllib.parse.quote(page_url, safe='')
@@ -1881,8 +1881,15 @@ def _dist_preview_html(r: dict) -> str:
     plat_grad = {"android":"135deg,#22c55e,#16a34a","ios":"135deg,#a78bfa,#7c3aed",
                  "windows":"135deg,#38bdf8,#0284c7","macos":"135deg,#34d399,#059669",
                  "linux":"135deg,#fb923c,#ea580c"}.get(platform,"135deg,#60a5fa,#3b82f6")
-    # Platform placeholder emoji (pre-computed to avoid nested dict in f-string)
-    plat_emoji = {"android":"🤖","ios":"🍏","windows":"🪟","macos":"🍎","linux":"🐧"}.get(platform,"📦")
+    # Platform placeholder SVG icon
+    _plat_svgs = {
+        "android": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>',
+        "ios":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>',
+        "windows": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+        "macos":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+        "linux":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
+    }
+    plat_emoji = _plat_svgs.get(platform, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>')
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1920,7 +1927,7 @@ def _dist_preview_html(r: dict) -> str:
                 overflow:hidden;background:rgba(255,255,255,.12)}}
     .hero-icon img{{width:100%;height:100%;object-fit:cover;display:block}}
     .hero-icon-ph{{width:100%;height:100%;display:flex;align-items:center;
-                   justify-content:center;font-size:3em}}
+                   justify-content:center;color:rgba(255,255,255,.7)}}
     .hero-info{{flex:1;min-width:0}}
     .hero-badges{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}}
     .badge{{display:inline-flex;align-items:center;gap:4px;padding:3px 12px;
@@ -2012,7 +2019,7 @@ def _dist_preview_html(r: dict) -> str:
     .ov-card{{background:#0f172a;border:1px solid rgba(255,255,255,.12);
               border-radius:22px;padding:40px 32px;max-width:360px;width:100%;
               text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.7)}}
-    .ov-icon{{font-size:2.8em;margin-bottom:16px}}
+    .ov-icon{{width:56px;height:56px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border-radius:16px;background:rgba(255,255,255,.07)}}
     .ov-title{{font-size:1.2em;font-weight:800;margin-bottom:10px;
                background:linear-gradient(135deg,#60a5fa,#a78bfa);
                -webkit-background-clip:text;-webkit-text-fill-color:transparent}}
@@ -2095,7 +2102,7 @@ def _dist_preview_html(r: dict) -> str:
   <!-- Login overlay -->
   <div class="overlay" id="ov-login">
     <div class="ov-card">
-      <div class="ov-icon">🔐</div>
+      <div class="ov-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <div class="ov-title">登录后即可下载</div>
       <div class="ov-body">请先登录或注册账号，下载无需消耗次数（仅非上传者需要 1 Credit）</div>
       <a class="ov-btn ov-btn-primary" href="{site}/app?action=login&return={page_url_enc}">登录账号</a>
@@ -2105,7 +2112,7 @@ def _dist_preview_html(r: dict) -> str:
   <!-- Credits overlay -->
   <div class="overlay" id="ov-credits">
     <div class="ov-card">
-      <div class="ov-icon">💳</div>
+      <div class="ov-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
       <div class="ov-title">Credits 不足</div>
       <div class="ov-body">每次下载消耗 1 Credit，购买套餐即可获得 Credits，上传者下载免费</div>
       <a class="ov-btn ov-btn-primary" href="{site}/app?action=buy&return={page_url_enc}">立即购买 Credits</a>
@@ -2138,7 +2145,7 @@ def _dist_preview_html(r: dict) -> str:
           {f'<div class="hero-version">版本 {html_lib.escape(version)}</div>' if version else ''}
           {f'<div class="hero-pkg">{pkg_name}</div>' if pkg_name else ''}
           <div class="social-stats">
-            <div class="sstat">❤ <span class="sstat-val" id="ss-likes">…</span> 喜欢</div>
+            <div class="sstat"><svg viewBox="0 0 24 24" fill="#f87171" stroke="none" width="13" height="13" style="margin-right:3px;vertical-align:-2px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="sstat-val" id="ss-likes">…</span> 喜欢</div>
             <div class="sstat-sep"></div>
             <div class="sstat" id="ss-avg-wrap">★ <span class="sstat-val" id="ss-avg">…</span></div>
             <div class="sstat-sep"></div>
@@ -2163,12 +2170,12 @@ def _dist_preview_html(r: dict) -> str:
           </div>
 
           <div class="ai-promo">
-            <div class="ai-promo-hd">🔍 AppSec AI 安全扫描</div>
+            <div class="ai-promo-hd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>AppSec AI 安全扫描</div>
             <div class="ai-promo-copy">使用 AI 深度检测此应用的安全风险，保护你的用户</div>
             <ul class="ai-feats">
-              <li>✓ 深度漏洞扫描 &amp; CVE 检测</li>
-              <li>✓ 隐私数据追踪 &amp; 合规分析</li>
-              <li>✓ 恶意行为 &amp; 后门识别</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>深度漏洞扫描 &amp; CVE 检测</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>隐私数据追踪 &amp; 合规分析</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>恶意行为 &amp; 后门识别</li>
             </ul>
             <a class="ai-cta" href="{site}" target="_blank" rel="noopener">免费扫描此应用 →</a>
           </div>
@@ -2193,16 +2200,16 @@ def _dist_preview_html(r: dict) -> str:
           {btn_html}
           <!-- Like button -->
           <button class="like-btn" id="like-btn" onclick="toggleLike()">
-            <span class="heart">♥</span>
+            <span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
             <span id="like-btn-text">喜欢</span>
             <span id="like-btn-count"></span>
           </button>
           <div class="copy-wrap" onclick="copyLink()" title="复制链接">
             <span class="copy-url" id="lnk">{page_url}</span>
-            <span class="copy-icon">📋</span>
+            <span class="copy-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
           </div>
           <div class="qr-box">
-            <div class="qr-box-title">📱 扫码访问</div>
+            <div class="qr-box-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>扫码访问</div>
             <div class="qr-container">
               <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
               <div class="qr-logo">{f'<img src="data:image/png;base64,{icon_b64}" alt="logo" style="border-radius:18%">' if icon_b64 else f'<img src="{site}/favicon.svg" alt="logo">'}</div>
@@ -2229,7 +2236,7 @@ def _dist_preview_html(r: dict) -> str:
   function copyLink(){{
     navigator.clipboard.writeText('{page_url}').then(()=>{{
       const el=document.getElementById('lnk');
-      el.textContent='✅ 链接已复制！';
+      el.textContent='链接已复制';
       setTimeout(()=>el.textContent='{page_url}',2000);
     }});
   }}
@@ -2242,48 +2249,50 @@ def _dist_preview_html(r: dict) -> str:
   // Update button label for iOS
   (function(){{
     const btn = document.getElementById('dl-btn');
-    if (_USE_OTA && btn) btn.textContent = '📲 安装到 iPhone / iPad';
+    if (_USE_OTA && btn) btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z"/><path d="M12 14v-4"/><path d="M10 12h4"/></svg> 安装到 iPhone / iPad';
   }})();
 
   async function handleDownload(){{
     const btn = document.getElementById('dl-btn');
-    const defaultLabel = _USE_OTA ? '📲 安装到 iPhone / iPad' : '⬇️ 点击下载 {file_type}';
+    const _dlSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    const _iosSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z"/><path d="M12 14v-4"/><path d="M10 12h4"/></svg>';
+    const defaultLabel = _USE_OTA ? _iosSvg + ' 安装到 iPhone / iPad' : _dlSvg + ' 下载 {file_type}';
     btn.disabled = true;
-    btn.textContent = _USE_OTA ? '⏳ 准备安装…' : '⏳ 准备中…';
+    btn.innerHTML = _USE_OTA ? _iosSvg + ' 准备安装…' : _dlSvg + ' 准备中…';
     try {{
       const resp = await fetch('/dist/{slug}/request-download', {{
         method: 'POST', headers: _authHdr()
       }});
       if (resp.status === 401) {{
         document.getElementById('ov-login').classList.add('show');
-        btn.disabled=false; btn.textContent=defaultLabel; return;
+        btn.disabled=false; btn.innerHTML=defaultLabel; return;
       }}
       if (resp.status === 402) {{
         document.getElementById('ov-credits').classList.add('show');
-        btn.disabled=false; btn.textContent=defaultLabel; return;
+        btn.disabled=false; btn.innerHTML=defaultLabel; return;
       }}
       if (!resp.ok) {{
         const err = await resp.json().catch(()=>({{detail:'下载失败，请稍后重试'}}));
         alert(err.detail||'下载失败，请稍后重试');
-        btn.disabled=false; btn.textContent=defaultLabel; return;
+        btn.disabled=false; btn.innerHTML=defaultLabel; return;
       }}
       const data = await resp.json();
       if (_USE_OTA) {{
         // iOS OTA install via itms-services://
-        btn.textContent = '📲 正在启动安装…';
+        btn.innerHTML = _iosSvg + ' 正在启动安装…';
         const manifestUrl = encodeURIComponent(
           window.location.origin + '/dist/{slug}/manifest.plist?token=' + data.token
         );
         window.location.href = 'itms-services://?action=download-manifest&url=' + manifestUrl;
-        setTimeout(()=>{{btn.disabled=false; btn.textContent=defaultLabel;}}, 5000);
+        setTimeout(()=>{{btn.disabled=false; btn.innerHTML=defaultLabel;}}, 5000);
       }} else {{
-        btn.textContent = '✅ 开始下载…';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg> 开始下载…';
         window.location.href = '/dist/{slug}/download?token=' + data.token;
-        setTimeout(()=>{{btn.disabled=false; btn.textContent=defaultLabel;}}, 3000);
+        setTimeout(()=>{{btn.disabled=false; btn.innerHTML=defaultLabel;}}, 3000);
       }}
     }} catch(e){{
       alert('网络错误，请稍后重试');
-      btn.disabled=false; btn.textContent=defaultLabel;
+      btn.disabled=false; btn.innerHTML=defaultLabel;
     }}
   }}
 
@@ -3045,7 +3054,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-f
 .acard:hover{transform:translateY(-3px);border-color:rgba(99,102,241,.32);box-shadow:0 10px 36px rgba(0,0,0,.55)}
 .acard:hover::before{opacity:1}
 .ac-icon{width:64px;height:64px;border-radius:14px;margin-bottom:10px;object-fit:cover;display:block;box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.ac-icon-ph{width:64px;height:64px;border-radius:14px;margin-bottom:10px;background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(139,92,246,.22));border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:1.6em}
+.ac-icon-ph{width:64px;height:64px;border-radius:14px;margin-bottom:10px;background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(139,92,246,.22));border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center}
 .ac-name{font-weight:700;font-size:.85em;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;width:100%}
 .ac-ver{font-size:.64em;color:var(--muted);margin-bottom:6px}
 .ac-badges{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
@@ -3071,7 +3080,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-f
 .sk{background:rgba(255,255,255,.06);border-radius:6px;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
 .empty{text-align:center;padding:80px 20px;max-width:360px;margin:0 auto}
-.empty-em{font-size:3.2em;margin-bottom:14px}
+.empty-em{margin-bottom:14px;display:flex;justify-content:center}
 .empty-t{font-size:1em;font-weight:700;color:var(--muted2);margin-bottom:8px}
 .empty-s{font-size:.83em;color:var(--muted);line-height:1.7}
 footer{text-align:center;padding:24px;font-size:.73em;color:#1e293b;border-top:1px solid var(--border)}
@@ -3080,7 +3089,7 @@ footer a{color:#3b82f6}"""
 let q='',plat='',cat='',srt='newest',pg=1,total=0;
 const PL={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
 const CL={tools:'工具',social:'社交',games:'游戏',finance:'金融',entertainment:'娱乐',education:'教育',productivity:'效率',health:'健康',other:'其他'};
-const CI={tools:'🔧',social:'💬',games:'🎮',finance:'💰',entertainment:'🎬',education:'📚',productivity:'⚡',health:'💪',other:'📦'};
+const CI={tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',social:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',games:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>',finance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',entertainment:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>',education:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',productivity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',health:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',other:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>'};
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function showProg(on){document.getElementById('prog').classList.toggle('show',on)}
 function doSearch(){q=document.getElementById('si').value.trim();pg=1;load()}
@@ -3103,13 +3112,13 @@ function renderCards(apps){
     const ver=app.version?`<div class="ac-ver">v${esc(app.version)}</div>`:'';
     const p=app.platform||'other';
     const c=app.category||'';
-    const icon=app.icon_b64?`<img class="ac-icon" src="data:image/png;base64,${app.icon_b64}" alt="${name}" loading="lazy">`:`<div class="ac-icon-ph">📦</div>`;
+    const icon=app.icon_b64?`<img class="ac-icon" src="data:image/png;base64,${app.icon_b64}" alt="${name}" loading="lazy">`:`<div class="ac-icon-ph"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(148,163,184,.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>`;
     const catBadge=c&&CL[c]?`<span class="badge b-cat">${CI[c]||''} ${CL[c]}</span>`:'';
     const platBadge=`<span class="badge b-${p}">${PL[p]||p}</span>`;
     const desc=app.description?`<div class="ac-desc">${esc(app.description)}</div>`:'';
     const a=document.createElement('a');
     a.className='acard';a.href='/dist/'+app.slug;a.target='_blank';a.rel='noopener';
-    a.innerHTML=`${icon}<div class="ac-name">${name}</div>${ver}<div class="ac-badges">${catBadge}${platBadge}</div>${desc}<div class="ac-dl">⬇️ ${app.download_count||0} 次下载</div><div class="ac-btn">查看详情</div>`;
+    a.innerHTML=`${icon}<div class="ac-name">${name}</div>${ver}<div class="ac-badges">${catBadge}${platBadge}</div>${desc}<div class="ac-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10" style="vertical-align:-1px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${app.download_count||0} 次下载</div><div class="ac-btn">查看详情 →</div>`;
     g.appendChild(a);
   });
 }
@@ -3153,7 +3162,7 @@ async function load(){
       document.getElementById('stats').textContent=`共 ${total} 个应用  第 ${s}–${e} 个`;
     }
   }catch(e){
-    document.getElementById('grid').innerHTML=`<div style="padding:40px;color:#ef4444;grid-column:1/-1;text-align:center">⚠️ 加载失败，<u style="cursor:pointer" onclick="load()">点击重试</u></div>`;
+    document.getElementById('grid').innerHTML=`<div style="padding:40px;color:#ef4444;grid-column:1/-1;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> 加载失败，<u style="cursor:pointer" onclick="load()">点击重试</u></div>`;
     console.error('[market]',e);
   }
   showProg(false);
@@ -3179,19 +3188,19 @@ load();"""
   </a>
   <div class="h-search">
     <input id="si" type="search" placeholder="搜索应用名称、包名…" onkeydown="if(event.key==='Enter')doSearch()">
-    <button class="h-sbtn" onclick="doSearch()">↵</button>
+    <button class="h-sbtn" onclick="doSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
   </div>
-  <a class="h-cta" href="{site}/app">⬆️ 上传应用</a>
+  <a class="h-cta" href="{site}/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传应用</a>
 </header>
 <section class="hero">
   <h1 class="hero-title">发现 · 下载 · 安全</h1>
   <p class="hero-sub">所有应用均可通过 AppSec AI 进行专业安全扫描，放心下载</p>
   <div class="hero-tags">
-    <div class="hero-tag">🤖 <b>AI 安全检测</b></div>
-    <div class="hero-tag">🌐 <b>多平台支持</b></div>
-    <div class="hero-tag">⚡ <b>极速分发</b></div>
-    <div class="hero-tag">🔒 <b>隐私安全</b></div>
-    <div class="hero-tag">📦 <b>10+ 应用分类</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><b>AI 安全检测</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><b>多平台支持</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><b>极速分发</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><b>隐私安全</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><b>10+ 应用分类</b></div>
   </div>
 </section>
 <div class="filters">
@@ -3199,26 +3208,26 @@ load();"""
     <span class="flbl">分类</span>
     <div class="chips" id="cc">
       <button class="chip on" onclick="setCat('',this)">全部</button>
-      <button class="chip" onclick="setCat('tools',this)">🔧 工具</button>
-      <button class="chip" onclick="setCat('social',this)">💬 社交</button>
-      <button class="chip" onclick="setCat('games',this)">🎮 游戏</button>
-      <button class="chip" onclick="setCat('finance',this)">💰 金融</button>
-      <button class="chip" onclick="setCat('entertainment',this)">🎬 娱乐</button>
-      <button class="chip" onclick="setCat('education',this)">📚 教育</button>
-      <button class="chip" onclick="setCat('productivity',this)">⚡ 效率</button>
-      <button class="chip" onclick="setCat('health',this)">💪 健康</button>
-      <button class="chip" onclick="setCat('other',this)">📦 其他</button>
+      <button class="chip" onclick="setCat('tools',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>工具</button>
+      <button class="chip" onclick="setCat('social',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>社交</button>
+      <button class="chip" onclick="setCat('games',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>游戏</button>
+      <button class="chip" onclick="setCat('finance',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>金融</button>
+      <button class="chip" onclick="setCat('entertainment',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>娱乐</button>
+      <button class="chip" onclick="setCat('education',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>教育</button>
+      <button class="chip" onclick="setCat('productivity',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>效率</button>
+      <button class="chip" onclick="setCat('health',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>健康</button>
+      <button class="chip" onclick="setCat('other',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>其他</button>
     </div>
   </div>
   <div class="frow">
     <span class="flbl">平台</span>
     <div class="chips" id="pc">
       <button class="chip on" onclick="setPlat('',this)">全部</button>
-      <button class="chip" onclick="setPlat('android',this)">🤖 Android</button>
-      <button class="chip" onclick="setPlat('ios',this)">🍎 iOS</button>
-      <button class="chip" onclick="setPlat('windows',this)">🪟 Windows</button>
-      <button class="chip" onclick="setPlat('macos',this)">🍏 macOS</button>
-      <button class="chip" onclick="setPlat('linux',this)">🐧 Linux</button>
+      <button class="chip" onclick="setPlat('android',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Android</button>
+      <button class="chip" onclick="setPlat('ios',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>iOS</button>
+      <button class="chip" onclick="setPlat('windows',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Windows</button>
+      <button class="chip" onclick="setPlat('macos',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>macOS</button>
+      <button class="chip" onclick="setPlat('linux',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Linux</button>
     </div>
   </div>
 </div>
@@ -3231,7 +3240,7 @@ load();"""
 </div>
 <div id="grid" class="grid"></div>
 <div id="empty" class="empty" hidden>
-  <div class="empty-em">📭</div>
+  <div class="empty-em"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="52" height="52"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>
   <div class="empty-t">暂无应用</div>
   <div class="empty-s">当前筛选条件下没有找到应用<br>换个分类或平台试试？</div>
 </div>
