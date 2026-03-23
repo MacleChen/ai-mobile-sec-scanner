@@ -240,6 +240,8 @@ def _migrate_db():
         "ALTER TABLE app_releases ADD COLUMN platform     TEXT DEFAULT ''",
         "ALTER TABLE app_releases ADD COLUMN is_public    INTEGER DEFAULT 0",
         "ALTER TABLE app_releases ADD COLUMN category     TEXT DEFAULT ''",
+        "ALTER TABLE app_releases ADD COLUMN is_featured   INTEGER DEFAULT 0",
+        "ALTER TABLE app_releases ADD COLUMN featured_label TEXT    DEFAULT ''",
         "ALTER TABLE users_v2 ADD COLUMN nickname         TEXT DEFAULT ''",
         "ALTER TABLE users_v2 ADD COLUMN bio              TEXT DEFAULT ''",
         "ALTER TABLE users_v2 ADD COLUMN avatar_b64       TEXT DEFAULT ''",
@@ -3007,6 +3009,51 @@ async def market_list(
     return {"apps": [dict(r) for r in rows], "total": total}
 
 
+@app.get("/market/spotlight")
+async def market_spotlight():
+    """Returns featured (hand-picked) and hot (top downloads) apps for the market banner sections."""
+    with _db() as c:
+        featured = c.execute("""
+            SELECT slug, app_name, display_name, version, file_type, platform,
+                   category, description, icon_b64, download_count, featured_label
+            FROM app_releases
+            WHERE is_active=1 AND is_public=1 AND is_featured=1
+            ORDER BY created_at DESC LIMIT 8
+        """).fetchall()
+        # Weekly hot: try last 7 days first, fall back to all-time top
+        hot = c.execute("""
+            SELECT slug, app_name, display_name, version, file_type, platform,
+                   category, icon_b64, download_count
+            FROM app_releases
+            WHERE is_active=1 AND is_public=1
+              AND created_at >= datetime('now', '-7 days')
+            ORDER BY download_count DESC, created_at DESC LIMIT 6
+        """).fetchall()
+        if len(hot) < 3:
+            hot = c.execute("""
+                SELECT slug, app_name, display_name, version, file_type, platform,
+                       category, icon_b64, download_count
+                FROM app_releases
+                WHERE is_active=1 AND is_public=1
+                ORDER BY download_count DESC, created_at DESC LIMIT 6
+            """).fetchall()
+    return {"featured": [dict(r) for r in featured], "hot": [dict(r) for r in hot]}
+
+
+class FeatureAppBody(BaseModel):
+    is_featured: int = 0
+    featured_label: str = ""
+
+@app.post("/admin/apps/{slug}/feature")
+async def admin_feature_app(slug: str, body: FeatureAppBody, _: None = Depends(_require_admin)):
+    with _db() as c:
+        c.execute(
+            "UPDATE app_releases SET is_featured=?, featured_label=? WHERE slug=?",
+            (body.is_featured, body.featured_label[:60], slug),
+        )
+    return {"ok": True, "slug": slug, "is_featured": bool(body.is_featured)}
+
+
 def _market_html() -> str:  # noqa: PLR0915
     site = os.getenv("SITE_URL", "https://maclechen.top")
     css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -3084,7 +3131,56 @@ header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-f
 .empty-t{font-size:1em;font-weight:700;color:var(--muted2);margin-bottom:8px}
 .empty-s{font-size:.83em;color:var(--muted);line-height:1.7}
 footer{text-align:center;padding:24px;font-size:.73em;color:#1e293b;border-top:1px solid var(--border)}
-footer a{color:#3b82f6}"""
+footer a{color:#3b82f6}
+/* ── Spotlight sections ────────────────────────────────── */
+.spot-section{max-width:1440px;margin:0 auto;padding:20px 20px 4px}
+.spot-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.spot-title{display:flex;align-items:center;gap:8px;font-size:.95em;font-weight:800;letter-spacing:-.01em}
+.spot-title-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.spot-view-all{font-size:.75em;color:var(--muted);cursor:pointer;transition:color .15s;text-decoration:none}
+.spot-view-all:hover{color:var(--text)}
+/* Featured rail */
+.feat-rail{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.feat-rail::-webkit-scrollbar{display:none}
+.feat-card{flex-shrink:0;width:280px;border-radius:16px;overflow:hidden;position:relative;cursor:pointer;scroll-snap-align:start;border:1px solid rgba(255,255,255,.1);transition:transform .2s,box-shadow .2s;text-decoration:none;color:inherit;display:block}
+.feat-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.feat-card-bg{position:absolute;inset:0;opacity:.85}
+.feat-card-inner{position:relative;padding:18px;display:flex;flex-direction:column;gap:10px;height:100%;min-height:148px}
+.feat-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:.62em;font-weight:800;letter-spacing:.06em;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);color:white;align-self:flex-start;text-transform:uppercase}
+.feat-row{display:flex;align-items:center;gap:12px}
+.feat-icon{width:52px;height:52px;border-radius:13px;overflow:hidden;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.4);background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+.feat-icon img{width:100%;height:100%;object-fit:cover;display:block}
+.feat-meta{flex:1;min-width:0}
+.feat-name{font-size:.92em;font-weight:800;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feat-label{font-size:.68em;color:rgba(255,255,255,.65);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feat-plat{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:8px;font-size:.6em;font-weight:700;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.2)}
+.feat-desc{font-size:.72em;color:rgba(255,255,255,.7);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feat-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.feat-dl{font-size:.65em;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:3px}
+.feat-cta{padding:5px 14px;border-radius:20px;font-size:.7em;font-weight:800;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);color:white;transition:background .15s}
+.feat-card:hover .feat-cta{background:rgba(255,255,255,.32)}
+/* Hot strip */
+.hot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.hot-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:360px){.hot-grid{grid-template-columns:1fr}}
+.hot-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .2s,transform .15s;text-decoration:none;color:inherit;position:relative;overflow:hidden}
+.hot-card:hover{border-color:rgba(99,102,241,.35);transform:translateY(-2px)}
+.hot-rank{font-size:1.1em;font-weight:900;width:22px;flex-shrink:0;text-align:center;line-height:1;letter-spacing:-.02em}
+.hot-rank.r1{background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hot-rank.r2{background:linear-gradient(135deg,#94a3b8,#cbd5e1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hot-rank.r3{background:linear-gradient(135deg,#fb923c,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hot-rank.r4,.hot-rank.r5,.hot-rank.r6{color:#334155}
+.hot-icon{width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,rgba(59,130,246,.25),rgba(139,92,246,.25));display:flex;align-items:center;justify-content:center}
+.hot-icon img{width:100%;height:100%;object-fit:cover;display:block}
+.hot-meta{flex:1;min-width:0}
+.hot-name{font-size:.8em;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hot-sub{font-size:.64em;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:4px}
+.hot-trend{color:#34d399;display:flex;align-items:center;gap:2px}
+/* Divider */
+.spot-divider{max-width:1440px;margin:16px auto 0;border:none;border-top:1px solid var(--border)}
+/* Skeleton spot */
+.feat-card-sk{flex-shrink:0;width:280px;height:148px;border-radius:16px;background:var(--card);border:1px solid var(--border);animation:pulse 1.6s ease-in-out infinite}
+.hot-card-sk{background:var(--card);border:1px solid var(--border);border-radius:12px;height:62px;animation:pulse 1.6s ease-in-out infinite}"""
     js = """const PS=24;
 let q='',plat='',cat='',srt='newest',pg=1,total=0;
 const PL={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
@@ -3167,6 +3263,96 @@ async function load(){
   }
   showProg(false);
 }
+// ── Platform gradient map ─────────────────────────────────
+const _PLAT_GRAD={android:'135deg,#22c55e,#15803d',ios:'135deg,#8b5cf6,#6d28d9',windows:'135deg,#38bdf8,#0284c7',macos:'135deg,#34d399,#059669',linux:'135deg,#fb923c,#ea580c',other:'135deg,#6366f1,#4f46e5'};
+const _PLAT_NAME={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
+// ── Spotlight: Featured + Hot ─────────────────────────────
+function renderFeatured(apps){
+  const rail=document.getElementById('feat-rail');
+  rail.innerHTML='';
+  apps.forEach(app=>{
+    const name=esc(app.display_name||app.app_name||'未命名');
+    const p=app.platform||'other';
+    const grad=_PLAT_GRAD[p]||_PLAT_GRAD.other;
+    const icon=app.icon_b64
+      ?`<img src="data:image/png;base64,${app.icon_b64}" alt="${name}">`
+      :`<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+    const label=esc(app.featured_label||'编辑推荐');
+    const desc=app.description?`<div class="feat-desc">${esc(app.description)}</div>`:'';
+    const a=document.createElement('a');
+    a.className='feat-card'; a.href='/dist/'+app.slug; a.target='_blank'; a.rel='noopener';
+    a.innerHTML=`
+      <div class="feat-card-bg" style="background:linear-gradient(${grad})"></div>
+      <div class="feat-card-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="feat-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            ${label}
+          </div>
+          <div class="feat-plat">${_PLAT_NAME[p]||p}</div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-icon">${icon}</div>
+          <div class="feat-meta">
+            <div class="feat-name">${name}</div>
+            ${app.version?`<div class="feat-label">v${esc(app.version)}</div>`:''}
+          </div>
+        </div>
+        ${desc}
+        <div class="feat-footer">
+          <div class="feat-dl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ${app.download_count||0} 次
+          </div>
+          <div class="feat-cta">查看详情 →</div>
+        </div>
+      </div>`;
+    rail.appendChild(a);
+  });
+  document.getElementById('sec-featured').style.display='';
+}
+function renderHot(apps){
+  const grid=document.getElementById('hot-grid');
+  grid.innerHTML='';
+  const rankCls=['r1','r2','r3','r4','r5','r6'];
+  apps.forEach((app,i)=>{
+    const name=esc(app.display_name||app.app_name||'未命名');
+    const p=app.platform||'other';
+    const icon=app.icon_b64
+      ?`<img src="data:image/png;base64,${app.icon_b64}" alt="${name}">`
+      :`<svg viewBox="0 0 24 24" fill="none" stroke="rgba(148,163,184,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+    const a=document.createElement('a');
+    a.className='hot-card'; a.href='/dist/'+app.slug; a.target='_blank'; a.rel='noopener';
+    a.innerHTML=`
+      <div class="hot-rank ${rankCls[i]||'r6'}">${String(i+1).padStart(2,'0')}</div>
+      <div class="hot-icon">${icon}</div>
+      <div class="hot-meta">
+        <div class="hot-name">${name}</div>
+        <div class="hot-sub">
+          <span>${_PLAT_NAME[p]||p}</span>
+          <span>·</span>
+          <span class="hot-trend">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="9" height="9"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            ${app.download_count||0}
+          </span>
+        </div>
+      </div>`;
+    grid.appendChild(a);
+  });
+  document.getElementById('sec-hot').style.display='';
+}
+async function loadSpotlight(){
+  try{
+    const r=await fetch('/market/spotlight',{cache:'no-store'});
+    if(!r.ok) return;
+    const d=await r.json();
+    let shown=false;
+    if(d.featured&&d.featured.length){renderFeatured(d.featured);shown=true;}
+    if(d.hot&&d.hot.length){renderHot(d.hot);shown=true;}
+    if(shown) document.getElementById('spot-divider').style.display='';
+  }catch(e){}
+}
+loadSpotlight();
 load();"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -3203,6 +3389,39 @@ load();"""
     <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><b>10+ 应用分类</b></div>
   </div>
 </section>
+
+<!-- ── Spotlight: Featured + Hot ───────────────────────── -->
+<div id="spot-wrap">
+  <!-- Featured (官方推荐) -->
+  <div class="spot-section" id="sec-featured" style="display:none">
+    <div class="spot-hd">
+      <div class="spot-title">
+        <div class="spot-title-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <span>官方推荐</span>
+      </div>
+      <a class="spot-view-all" onclick="setCat('',document.querySelector('#cc .chip'));setSort('newest');window.scrollTo({{top:400,behavior:'smooth'}})">查看全部 →</a>
+    </div>
+    <div class="feat-rail" id="feat-rail"></div>
+  </div>
+
+  <!-- Hot this week (本周热门) -->
+  <div class="spot-section" id="sec-hot" style="display:none">
+    <div class="spot-hd">
+      <div class="spot-title">
+        <div class="spot-title-icon" style="background:linear-gradient(135deg,#ef4444,#f97316)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <span>本周热门</span>
+      </div>
+    </div>
+    <div class="hot-grid" id="hot-grid"></div>
+  </div>
+
+  <hr class="spot-divider" id="spot-divider" style="display:none">
+</div>
+
 <div class="filters">
   <div class="frow">
     <span class="flbl">分类</span>
