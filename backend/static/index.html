@@ -880,6 +880,7 @@
         </div>
         <div class="user-dropdown hidden" id="user-dropdown">
           <div id="dd-profile" onclick="openProfileModal()">个人资料</div>
+          <div id="dd-change-pw" onclick="openChangePwModal()">修改密码</div>
           <div id="dd-orders" onclick="openOrderHistory()">订单历史</div>
           <div class="divider"></div>
           <div id="dd-logout" onclick="doLogout()" style="color:#f87171">退出登录</div>
@@ -1126,29 +1127,35 @@
         <span id="profile-save-text">保存资料</span>
       </button>
 
-      <!-- Section: 修改密码 -->
-      <div class="pm-section" style="margin-top:28px">
-        <div class="pm-section-line"></div>
-        <div class="pm-section-label">修改密码</div>
-        <div class="pm-section-line"></div>
-      </div>
+      <div style="height:4px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay hidden" id="change-pw-modal" onclick="if(event.target===this)closeChangePwModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <button class="modal-close" onclick="closeChangePwModal()">✕</button>
+      <h2 id="change-pw-title">🔑 修改密码</h2>
+      <p id="change-pw-sub">请输入当前密码和新密码</p>
+    </div>
+    <div class="modal-body">
       <div class="form-field">
         <label class="form-label">当前密码</label>
-        <input class="form-input" id="profile-cur-pw" type="password" placeholder="输入当前密码">
+        <input class="form-input" id="cpw-cur" type="password" placeholder="输入当前密码">
       </div>
       <div class="form-field">
         <label class="form-label">新密码</label>
-        <input class="form-input" id="profile-new-pw" type="password" placeholder="至少6位">
+        <input class="form-input" id="cpw-new" type="password" placeholder="至少6位">
       </div>
       <div class="form-field">
         <label class="form-label">确认新密码</label>
-        <input class="form-input" id="profile-confirm-pw" type="password" placeholder="再次输入新密码">
+        <input class="form-input" id="cpw-confirm" type="password" placeholder="再次输入新密码"
+               onkeydown="if(event.key==='Enter')changePassword()">
       </div>
-      <div class="form-msg" id="profile-pw-msg"></div>
-      <button class="form-btn pm-pw-btn" id="profile-pw-btn" onclick="changePassword()">
-        <span>修改密码</span>
-      </button>
-      <div style="height:8px"></div>
+      <div class="form-msg" id="cpw-msg"></div>
+      <button class="form-btn" id="cpw-btn" onclick="changePassword()">确认修改</button>
     </div>
   </div>
 </div>
@@ -2306,14 +2313,8 @@ function _avatarPreviewHtml(nick, av64) {
 async function openProfileModal() {
   hide('user-dropdown');
   show('profile-modal');
-  // Reset messages & password fields
-  ['profile-msg','profile-pw-msg'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.textContent = ''; el.className = 'form-msg'; }
-  });
-  ['profile-cur-pw','profile-new-pw','profile-confirm-pw'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  const msg = document.getElementById('profile-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'form-msg'; }
   if (window.lucide) lucide.createIcons();
   try {
     const resp = await fetch('/auth/profile', { headers: { Authorization: `Bearer ${jwt}` } });
@@ -2361,16 +2362,26 @@ async function saveProfile() {
   btn.disabled = false;
 }
 
+function openChangePwModal() {
+  hide('user-dropdown');
+  ['cpw-cur','cpw-new','cpw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+  const m = document.getElementById('cpw-msg');
+  m.textContent = ''; m.className = 'form-msg';
+  show('change-pw-modal');
+  setTimeout(() => document.getElementById('cpw-cur').focus(), 80);
+}
+function closeChangePwModal() { hide('change-pw-modal'); }
+
 async function changePassword() {
-  const cur  = document.getElementById('profile-cur-pw').value;
-  const nw   = document.getElementById('profile-new-pw').value;
-  const conf = document.getElementById('profile-confirm-pw').value;
-  const msg  = document.getElementById('profile-pw-msg');
-  const btn  = document.getElementById('profile-pw-btn');
+  const cur  = document.getElementById('cpw-cur').value;
+  const nw   = document.getElementById('cpw-new').value;
+  const conf = document.getElementById('cpw-confirm').value;
+  const msg  = document.getElementById('cpw-msg');
+  const btn  = document.getElementById('cpw-btn');
   msg.className = 'form-msg'; msg.textContent = '';
-  if (!cur)           { msg.className='form-msg err'; msg.textContent='请输入当前密码'; return; }
-  if (nw.length < 6)  { msg.className='form-msg err'; msg.textContent='新密码至少6位'; return; }
-  if (nw !== conf)    { msg.className='form-msg err'; msg.textContent='两次密码不一致'; return; }
+  if (!cur)          { msg.className='form-msg err'; msg.textContent='请输入当前密码'; return; }
+  if (nw.length < 6) { msg.className='form-msg err'; msg.textContent='新密码至少6位'; return; }
+  if (nw !== conf)   { msg.className='form-msg err'; msg.textContent='两次密码不一致'; return; }
   btn.disabled = true;
   try {
     const resp = await fetch('/auth/change-password', {
@@ -2381,8 +2392,8 @@ async function changePassword() {
     const d = await resp.json();
     if (resp.ok && d.ok) {
       msg.className = 'form-msg ok'; msg.textContent = '✓ 密码修改成功';
-      ['profile-cur-pw','profile-new-pw','profile-confirm-pw'].forEach(id =>
-        { document.getElementById(id).value = ''; });
+      ['cpw-cur','cpw-new','cpw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+      setTimeout(closeChangePwModal, 1500);
     } else {
       msg.className = 'form-msg err'; msg.textContent = d.detail || '修改失败，请重试';
     }
