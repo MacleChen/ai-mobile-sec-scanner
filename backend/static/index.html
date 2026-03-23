@@ -159,9 +159,26 @@
     }
     .modal-close {
       float: right; background: none; border: none;
-      font-size: 1.4em; cursor: pointer; color: var(--muted); line-height: 1; padding: 0;
+      width: 28px; height: 28px; cursor: pointer; color: var(--muted);
+      padding: 0; display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; transition: background .15s, color .15s;
     }
-    .modal-close:hover { color: var(--text); }
+    .modal-close:hover { background: rgba(255,255,255,.08); color: var(--text); }
+    .modal-close svg { width: 16px; height: 16px; }
+    .modal-icon-badge {
+      width: 42px; height: 42px; border-radius: 11px; margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mib-blue   { background: rgba(99,102,241,.14); color: #818cf8; }
+    .mib-green  { background: rgba(16,185,129,.14); color: #34d399; }
+    .mib-amber  { background: rgba(245,158,11,.14); color: #fbbf24; }
+    .mib-violet { background: rgba(139,92,246,.14); color: #a78bfa; }
+    .gate-card .gate-icon {
+      width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(99,102,241,.1);
+    }
+    .gate-card .gate-icon svg { width: 34px; height: 34px; }
 
     /* ── Form fields ─────────────────── */
     .form-field { margin-bottom: 14px; }
@@ -349,7 +366,6 @@
 
     /* ── Gate card ──────────────────── */
     .gate-card { text-align: center; padding: 64px 32px; }
-    .gate-card .gate-icon { font-size: 3.5em; margin-bottom: 20px; }
     .gate-card h3 { font-size: 1.4em; font-weight: 700; margin-bottom: 10px; }
     .gate-card p  { color: var(--muted); margin-bottom: 24px; }
     .gate-buy-btn {
@@ -905,7 +921,8 @@
 <div class="modal-overlay hidden" id="login-modal" onclick="if(event.target===this)closeLoginModal()">
   <div class="modal">
     <div class="modal-head">
-      <button class="modal-close" onclick="closeLoginModal()">✕</button>
+      <button class="modal-close" onclick="closeLoginModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-icon-badge mib-blue"><i data-lucide="log-in" style="width:20px;height:20px"></i></div>
       <h2 id="login-modal-title">登录</h2>
       <p id="login-modal-sub">使用邮箱和密码登录您的账号</p>
     </div>
@@ -932,8 +949,9 @@
 <div class="modal-overlay hidden" id="register-modal" onclick="if(event.target===this)closeRegisterModal()">
   <div class="modal">
     <div class="modal-head">
-      <button class="modal-close" onclick="closeRegisterModal()">✕</button>
-      <h2 id="reg-modal-title">✉️ 注册账号</h2>
+      <button class="modal-close" onclick="closeRegisterModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-icon-badge mib-blue"><i data-lucide="mail" style="width:20px;height:20px"></i></div>
+      <h2 id="reg-modal-title">注册账号</h2>
       <p id="reg-modal-sub">注册后即可获得扫描次数并查看订单</p>
     </div>
     <div class="modal-body">
@@ -946,7 +964,10 @@
         <input class="form-input" id="reg-password" type="password" placeholder="请输入密码" autocomplete="new-password"
                onkeydown="if(event.key==='Enter')doRegister()">
       </div>
-      <div id="reg-ref-hint" style="display:none;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:9px 12px;font-size:.82em;color:#10b981;margin-bottom:10px">🎁 好友邀请 · 通过邀请链接注册</div>
+      <div id="reg-ref-hint" style="display:none;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:9px 12px;font-size:.82em;color:#10b981;margin-bottom:10px;display:none;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" style="width:14px;height:14px;flex-shrink:0"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7m0 0H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zm0 0h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        好友邀请 · 通过邀请链接注册
+      </div>
       <div class="form-msg" id="reg-msg"></div>
       <button class="form-btn" id="reg-submit-btn" onclick="doRegister()">发送验证码</button>
       <div class="modal-alt">
@@ -960,8 +981,9 @@
 <div class="modal-overlay hidden" id="verify-modal">
   <div class="modal">
     <div class="modal-head">
-      <button class="modal-close" onclick="hide('verify-modal');openRegisterModal()">✕</button>
-      <h2 id="verify-modal-title">📬 邮箱验证</h2>
+      <button class="modal-close" onclick="hide('verify-modal');openRegisterModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-icon-badge mib-green"><i data-lucide="mail-check" style="width:20px;height:20px"></i></div>
+      <h2 id="verify-modal-title">邮箱验证</h2>
       <p id="verify-email-hint">验证码已发送到您的邮箱</p>
     </div>
     <div class="modal-body">
@@ -985,8 +1007,9 @@
 <div class="modal-overlay hidden" id="buy-modal" onclick="if(event.target===this)closeBuyModal()">
   <div class="modal buy-modal-wide">
     <div class="modal-head">
-      <button class="modal-close" onclick="closeBuyModal()">✕</button>
-      <h2 id="buy-modal-title">💳 购买 Credits</h2>
+      <button class="modal-close" onclick="closeBuyModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-icon-badge mib-amber"><i data-lucide="credit-card" style="width:20px;height:20px"></i></div>
+      <h2 id="buy-modal-title">购买 Credits</h2>
       <p id="buy-modal-sub">1 Credit = 1次安全扫描 或 1次应用分发上传 · 永不过期</p>
     </div>
     <div class="modal-body">
@@ -1066,8 +1089,9 @@
 <div class="modal-overlay hidden" id="order-modal" onclick="if(event.target===this)closeOrderModal()">
   <div class="modal" style="max-width:540px">
     <div class="modal-head">
-      <button class="modal-close" onclick="closeOrderModal()">✕</button>
-      <h2 id="order-modal-title">📋 订单历史</h2>
+      <button class="modal-close" onclick="closeOrderModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-icon-badge mib-violet"><i data-lucide="receipt" style="width:20px;height:20px"></i></div>
+      <h2 id="order-modal-title">订单历史</h2>
       <p id="order-modal-sub">最近50条订单记录</p>
     </div>
     <div class="modal-body" style="max-height:400px;overflow-y:auto" id="order-list">
@@ -1168,8 +1192,9 @@
 <div class="modal-overlay hidden" id="change-pw-modal" onclick="if(event.target===this)closeChangePwModal()">
   <div class="modal" style="max-width:400px">
     <div class="modal-head">
-      <button class="modal-close" onclick="closeChangePwModal()">✕</button>
-      <h2 id="change-pw-title">🔑 修改密码</h2>
+      <button class="modal-close" onclick="closeChangePwModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-icon-badge mib-violet"><i data-lucide="key-round" style="width:20px;height:20px"></i></div>
+      <h2 id="change-pw-title">修改密码</h2>
       <p id="change-pw-sub">请输入当前密码和新密码</p>
     </div>
     <div class="modal-body">
@@ -1196,8 +1221,13 @@
 <div class="modal-overlay hidden" id="referral-modal" onclick="if(event.target===this)closeReferralModal()">
   <div class="modal" style="max-width:460px">
     <div class="modal-head" style="background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;border-radius:14px 14px 0 0;padding:22px 24px 20px">
-      <button class="modal-close" onclick="closeReferralModal()" style="color:#fff;opacity:.8">✕</button>
-      <h2 id="ref-modal-title" style="color:#fff;margin:0 0 4px">🎁 推广邀请</h2>
+      <button class="modal-close" onclick="closeReferralModal()" style="color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i data-lucide="gift" style="width:18px;height:18px;color:#fff"></i>
+        </div>
+        <h2 id="ref-modal-title" style="color:#fff;margin:0">推广邀请</h2>
+      </div>
       <p id="ref-modal-sub" style="color:rgba(255,255,255,.75);margin:0;font-size:.85em">每成功邀请一位新用户注册，您将获得 5 Credits 奖励</p>
     </div>
     <div class="modal-body" style="padding:24px">
@@ -1306,7 +1336,7 @@
 
   <!-- ① Gate (not logged in / no credits) -->
   <div id="gate-card" class="card gate-card hidden">
-    <div class="gate-icon" id="gate-icon">🔒</div>
+    <div class="gate-icon" id="gate-icon"></div>
     <h3 id="gate-title">请先登录</h3>
     <p  id="gate-desc">登录后购买扫描次数，即可使用 AI 安全扫描服务</p>
     <button class="gate-login-btn" id="gate-login-btn" onclick="openLoginModal()">登录 / 注册</button>
@@ -1776,13 +1806,13 @@ const LANG = {
     noAccount:  '没有账号？',
     linkReg:    '立即注册',
     // Register modal
-    regTitle:   '✉️ 注册账号',
+    regTitle:   '注册账号',
     regSub:     '注册后即可获得扫描次数并查看订单',
     regBtn:     '发送验证码',
     hasAccount: '已有账号？',
     linkLogin:  '立即登录',
     // Verify modal
-    verifyTitle:     '📬 邮箱验证',
+    verifyTitle:     '邮箱验证',
     verifyCodeLabel: '请输入6位验证码',
     verifyBtn:       '验证',
     notReceived:     '没收到？',
@@ -1946,13 +1976,13 @@ const LANG = {
     noAccount:  "Don't have an account?",
     linkReg:    'Sign Up',
     // Register modal
-    regTitle:   '✉️ Create Account',
+    regTitle:   'Create Account',
     regSub:     'Register to get scan credits and track orders',
     regBtn:     'Send Code',
     hasAccount: 'Already have an account?',
     linkLogin:  'Sign In',
     // Verify modal
-    verifyTitle:     '📬 Email Verification',
+    verifyTitle:     'Email Verification',
     verifyCodeLabel: 'Enter 6-digit code',
     verifyBtn:       'Verify',
     notReceived:     "Didn't receive it?",
@@ -2089,6 +2119,9 @@ function renderAuthState() {
   updateDistUploadGate();
 }
 
+const _GATE_LOCK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const _GATE_CARD_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
+
 function renderGate() {
   if (taskId || lastReport) return;  // scan in progress — don't show gate
   const l = L();
@@ -2097,7 +2130,8 @@ function renderGate() {
   if (!loggedIn) {
     show('gate-card');
     hide('upload-card');
-    setText('gate-icon',      '🔒');
+    document.getElementById('gate-icon').innerHTML = _GATE_LOCK_SVG;
+    document.getElementById('gate-icon').style.background = 'rgba(99,102,241,.1)';
     setText('gate-title',     l.gateLoginTitle);
     setText('gate-desc',      l.gateLoginDesc);
     setText('gate-login-btn', l.gateBtnLogin);
@@ -2106,7 +2140,8 @@ function renderGate() {
   } else if (!hasCredits) {
     show('gate-card');
     hide('upload-card');
-    setText('gate-icon',    '💳');
+    document.getElementById('gate-icon').innerHTML = _GATE_CARD_SVG;
+    document.getElementById('gate-icon').style.background = 'rgba(245,158,11,.1)';
     setText('gate-title',   l.gateBuyTitle);
     setText('gate-desc',    l.gateBuyDesc);
     setText('gate-buy-btn', l.gateBtnBuy);
@@ -2215,7 +2250,7 @@ function openRegisterModal() {
   document.getElementById('reg-password').value = '';
   // Show referral hint if user arrived via invite link
   const hasRef = !!localStorage.getItem('_ref_code');
-  document.getElementById('reg-ref-hint').style.display = hasRef ? '' : 'none';
+  document.getElementById('reg-ref-hint').style.display = hasRef ? 'flex' : 'none';
   setTimeout(() => document.getElementById('reg-email').focus(), 50);
 }
 function closeRegisterModal() { hide('register-modal'); }
@@ -3066,7 +3101,7 @@ async function checkMobSF() {
 (function checkPaymentReturn() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('payment') === 'success') {
-    showToast('🎉 支付成功！次数已到账', 5000);
+    showToast('支付成功！次数已到账', 5000);
     // Remove query param from URL without reload
     history.replaceState(null, '', '/');
     // Refresh credits

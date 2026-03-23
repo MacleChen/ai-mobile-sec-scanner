@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>管理后台 · AI 移动安全扫描器</title>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -15,7 +16,7 @@
     .login-card { background: white; border-radius: 16px; padding: 40px 36px;
                   width: 100%; max-width: 380px;
                   box-shadow: 0 8px 32px rgba(0,0,0,.1); }
-    .login-logo  { font-size: 2.4em; text-align: center; margin-bottom: 6px; }
+    .login-logo  { display: flex; align-items: center; justify-content: center; margin-bottom: 6px; color: #2563eb; }
     .login-title { text-align: center; font-size: 1.25em; font-weight: 800; margin-bottom: 2px; }
     .login-sub   { text-align: center; font-size: .84em; color: #64748b; margin-bottom: 28px; }
 
@@ -198,7 +199,7 @@
 <!-- ═══════════════════════════════════════════ LOGIN ══ -->
 <div class="login-wrap" id="login-screen">
   <div class="login-card">
-    <div class="login-logo">🛡️</div>
+    <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
     <div class="login-title">管理后台</div>
     <div class="login-sub">AI 移动安全扫描器</div>
     <div class="field">
@@ -222,8 +223,9 @@
 
   <!-- Top nav -->
   <nav class="topnav">
-    <div class="nav-brand">
-      🛡️ AI Scanner
+    <div class="nav-brand" style="display:flex;align-items:center;gap:7px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      AI Scanner
       <span class="nav-badge">管理后台</span>
     </div>
     <div class="nav-user">
@@ -235,10 +237,10 @@
 
   <!-- Tab bar -->
   <div class="tabs-bar">
-    <button class="tab-btn active" onclick="switchTab('stats',   this)">📊 概览</button>
-    <button class="tab-btn"        onclick="switchTab('generate', this)">🔑 生成兑换码</button>
-    <button class="tab-btn"        onclick="switchTab('codes',   this)">📋 兑换码管理</button>
-    <button class="tab-btn"        onclick="switchTab('settings', this)">⚙️ 账号设置</button>
+    <button class="tab-btn active" onclick="switchTab('stats',   this)"><i data-lucide="bar-chart-2" style="width:14px;height:14px"></i> 概览</button>
+    <button class="tab-btn"        onclick="switchTab('generate', this)"><i data-lucide="key-round"  style="width:14px;height:14px"></i> 生成兑换码</button>
+    <button class="tab-btn"        onclick="switchTab('codes',   this)"><i data-lucide="list"        style="width:14px;height:14px"></i> 兑换码管理</button>
+    <button class="tab-btn"        onclick="switchTab('settings', this)"><i data-lucide="settings"   style="width:14px;height:14px"></i> 账号设置</button>
   </div>
 
   <div class="content">
@@ -326,8 +328,8 @@
             <div class="result-empty">生成的兑换码将显示在这里</div>
           </div>
           <div class="result-actions" id="result-actions" style="display:none">
-            <button class="btn btn-sm btn-outline" onclick="copyAll()">📋 复制全部</button>
-            <button class="btn btn-sm btn-ghost"   onclick="exportTxt()">⬇️ 导出 TXT</button>
+            <button class="btn btn-sm btn-outline" onclick="copyAll()"><i data-lucide="copy" style="width:12px;height:12px"></i> 复制全部</button>
+            <button class="btn btn-sm btn-ghost"   onclick="exportTxt()"><i data-lucide="download" style="width:12px;height:12px"></i> 导出 TXT</button>
           </div>
         </div>
 
@@ -386,7 +388,7 @@
 
         <!-- Change password -->
         <div class="card">
-          <div class="card-title">🔒 修改密码</div>
+          <div class="card-title" style="display:flex;align-items:center;gap:7px"><i data-lucide="key-round" style="width:16px;height:16px;color:#2563eb"></i> 修改密码</div>
           <div class="field">
             <label>当前密码</label>
             <input type="password" id="cp-old" placeholder="••••••" autocomplete="current-password">
@@ -861,6 +863,7 @@ function toast(msg) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
+if (window.lucide) lucide.createIcons();
 </script>
 </body>
 </html>
