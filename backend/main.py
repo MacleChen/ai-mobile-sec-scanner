@@ -765,6 +765,52 @@ async def admin_stats(_: None = Depends(_require_admin)):
     }
 
 
+@app.post("/admin/releases/{slug}/reextract")
+async def admin_reextract_release(slug: str, _: None = Depends(_require_admin)):
+    """Force re-extract icon/display_name/version for a specific release."""
+    with _db() as c:
+        row = c.execute(
+            "SELECT slug, file_type, app_name FROM app_releases WHERE slug=? AND is_active=1",
+            (slug,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "Release not found")
+    ext = row["file_type"]
+    app_name = row["app_name"] or ""
+    fpath = Path("/app/data/releases") / f"{slug}.{ext}"
+    if not fpath.exists():
+        raise HTTPException(404, "File not found on disk")
+    meta = _extract_app_info(fpath, ext)
+    if not meta["version"] and app_name:
+        m = re.search(r'[._\-](\d+(?:[._\-]\d+){1,3})', app_name)
+        if m:
+            meta["version"] = m.group(1).replace('_', '.').replace('-', '.')
+    if not meta["display_name"] and app_name:
+        meta["display_name"] = _fmt_name(app_name)
+    with _db() as c2:
+        # Force-overwrite all extracted fields (including icon)
+        c2.execute(
+            "UPDATE app_releases SET"
+            " version=CASE WHEN ?!='' THEN ? ELSE version END,"
+            " icon_b64=CASE WHEN ?!='' THEN ? ELSE '' END,"
+            " display_name=CASE WHEN ?!='' THEN ? ELSE display_name END,"
+            " pkg_name=CASE WHEN ?!='' THEN ? ELSE pkg_name END"
+            " WHERE slug=?",
+            (meta["version"], meta["version"],
+             meta["icon_b64"], meta["icon_b64"],
+             meta["display_name"], meta["display_name"],
+             meta["pkg_name"], meta["pkg_name"],
+             slug),
+        )
+    return {
+        "slug": slug,
+        "version": meta["version"],
+        "display_name": meta["display_name"],
+        "icon": bool(meta["icon_b64"]),
+        "pkg_name": meta["pkg_name"],
+    }
+
+
 # ── Auth Endpoints ─────────────────────────────────────────
 
 @app.post("/auth/register")
@@ -1483,25 +1529,97 @@ def _extract_app_info(path: Path, ext: str) -> dict:
             pass
 
     elif ext in ("dmg", "pkg"):
-        # Extract .icns from DMG/PKG via 7z (best-effort; requires p7zip installed)
+        # Extract icon + display name from DMG/PKG via 7z (best-effort; requires p7zip)
         try:
             import subprocess, tempfile, io as _io
             with tempfile.TemporaryDirectory() as tmp:
+                tmp_path = Path(tmp)
+
+                # ── Step 0: list entries to find .app name ────────────────
+                list_res = subprocess.run(
+                    ["7z", "l", "-ba", str(path)],
+                    capture_output=True, text=True, timeout=30,
+                )
+                app_name = None
+                for line in list_res.stdout.splitlines():
+                    # lines end with the path; grab top-level *.app
+                    m = re.search(r'([^/\\]+\.app)(?:[/\\]|$)', line, re.I)
+                    if m:
+                        candidate = m.group(1)
+                        # prefer top-level (no preceding path separator)
+                        if not app_name or line.count("/") < 3:
+                            app_name = candidate
+                if app_name and not info.get("display_name"):
+                    info["display_name"] = re.sub(r'\.app$', '', app_name, flags=re.I)
+
+                # ── Step 1: extract .icns files ───────────────────────────
                 subprocess.run(
                     ["7z", "e", str(path), f"-o{tmp}", "*.icns", "-r", "-y"],
-                    capture_output=True, timeout=30,
+                    capture_output=True, timeout=60,
                 )
                 icns_files = sorted(
-                    Path(tmp).glob("*.icns"),
+                    tmp_path.glob("*.icns"),
                     key=lambda f: f.stat().st_size, reverse=True,
                 )
+
+                icon_set = False
                 if icns_files:
-                    from PIL import Image as _PILImage
-                    with _PILImage.open(str(icns_files[0])) as img:
-                        img = img.convert("RGBA").resize((128, 128), _PILImage.LANCZOS)
-                        buf = _io.BytesIO()
-                        img.save(buf, format="PNG", optimize=True)
-                        info["icon_b64"] = base64.b64encode(buf.getvalue()).decode()
+                    # Prefer the largest non-volume icon; fall back to volume icon
+                    best_icns = next(
+                        (f for f in icns_files if f.name != ".VolumeIcon.icns"),
+                        icns_files[0]
+                    )
+                    # ── Strategy A: Pillow direct (handles most modern ICNS) ──
+                    try:
+                        from PIL import Image as _PILImage, ImageOps as _IOps
+                        with _PILImage.open(str(best_icns)) as img:
+                            img = _IOps.fit(img.convert("RGBA"), (128, 128), _PILImage.LANCZOS)
+                            buf = _io.BytesIO()
+                            img.save(buf, format="PNG", optimize=True)
+                            info["icon_b64"] = base64.b64encode(buf.getvalue()).decode()
+                            icon_set = True
+                    except Exception:
+                        pass
+
+                    # ── Strategy B: ImageMagick convert ───────────────────
+                    if not icon_set:
+                        try:
+                            out_png = str(tmp_path / "icon_convert.png")
+                            subprocess.run(
+                                ["convert", f"{best_icns}[0]", "-resize", "128x128", out_png],
+                                capture_output=True, timeout=15,
+                            )
+                            pf = tmp_path / "icon_convert.png"
+                            if pf.exists():
+                                raw = pf.read_bytes()
+                                info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+                                icon_set = True
+                        except (FileNotFoundError, Exception):
+                            pass
+
+                # ── Step 2: extract PNG directly as fallback ──────────────
+                if not icon_set:
+                    subprocess.run(
+                        ["7z", "e", str(path), f"-o{tmp}", "*.png", "-r", "-y"],
+                        capture_output=True, timeout=60,
+                    )
+                    png_files = sorted(
+                        tmp_path.glob("*.png"),
+                        key=lambda f: f.stat().st_size, reverse=True,
+                    )
+                    for pf in png_files:
+                        try:
+                            raw = pf.read_bytes()
+                            from PIL import Image as _PILImage3
+                            import io as _io3
+                            with _PILImage3.open(_io3.BytesIO(raw)) as _chk:
+                                w, h = _chk.size
+                            if w >= 32:  # skip tiny icons
+                                info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+                                icon_set = True
+                                break
+                        except Exception:
+                            continue
         except Exception:
             pass
 
