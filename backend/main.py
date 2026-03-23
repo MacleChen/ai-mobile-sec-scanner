@@ -3062,25 +3062,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 a{text-decoration:none;color:inherit}
 #prog{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--pr),var(--pr2),#06b6d4);transform:scaleX(0);transform-origin:left;transition:transform .35s;z-index:9999}
 #prog.show{transform:scaleX(.88)}
-header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;gap:14px}
+header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;gap:10px}
 .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1em;white-space:nowrap;flex-shrink:0}
 .logo img{width:24px;height:24px}
 .logo-sep{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0}
 .logo-sub{font-weight:400;font-size:.88em;color:var(--muted)}
-.h-search{flex:1;max-width:420px;position:relative}
-.h-search input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:22px;padding:7px 40px 7px 16px;color:var(--text);font-size:.85em;outline:none;transition:border-color .2s,background .2s}
-.h-search input:focus{border-color:rgba(99,102,241,.5);background:rgba(255,255,255,.09)}
-.h-search input::placeholder{color:var(--muted)}
-.h-sbtn{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:rgba(99,102,241,.2);border:none;color:#a5b4fc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9em;transition:background .15s}
-.h-sbtn:hover{background:rgba(99,102,241,.38)}
 .h-cta{flex-shrink:0;background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff;padding:6px 14px;border-radius:20px;font-size:.8em;font-weight:700;white-space:nowrap;transition:opacity .2s}
 .h-cta:hover{opacity:.83}
-.hero{text-align:center;padding:44px 20px 28px;background:radial-gradient(ellipse 90% 60% at 50% -10%,rgba(99,102,241,.1) 0%,transparent 65%)}
-.hero-title{font-size:1.9em;font-weight:900;letter-spacing:-.025em;background:linear-gradient(135deg,#93c5fd 20%,#c4b5fd 60%,#6ee7b7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
-.hero-sub{color:var(--muted);font-size:.9em;margin-bottom:20px}
-.hero-tags{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
-.hero-tag{padding:5px 12px;border-radius:20px;font-size:.75em;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted)}
+#sticky-bar{position:fixed;top:-64px;left:0;right:0;z-index:99;background:rgba(6,13,28,.97);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:10px 20px;transition:top .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center}
+#sticky-bar.show{top:58px}
+.sb-wrap{flex:1;max-width:560px;margin:0 auto;position:relative}
+.sb-input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:9px 46px 9px 18px;color:var(--text);font-size:.88em;outline:none;transition:border-color .2s,background .2s}
+.sb-input:focus{border-color:rgba(99,102,241,.55);background:rgba(255,255,255,.1)}
+.sb-input::placeholder{color:var(--muted)}
+.sb-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+.sb-btn:hover{opacity:.85}
+.hero{text-align:center;padding:72px 20px 48px;background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(99,102,241,.13) 0%,transparent 70%);display:flex;flex-direction:column;align-items:center}
+.hero-logo{width:72px;height:72px;margin-bottom:22px;filter:drop-shadow(0 4px 24px rgba(99,102,241,.45))}
+.hero-title{font-size:2.6em;font-weight:900;letter-spacing:-.035em;background:linear-gradient(135deg,#93c5fd 20%,#c4b5fd 60%,#6ee7b7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero-sub{color:var(--muted);font-size:.9em;margin-bottom:32px}
+.hero-search-wrap{width:100%;max-width:580px;position:relative;margin-bottom:18px}
+.hero-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.14);border-radius:32px;padding:14px 128px 14px 52px;color:var(--text);font-size:1em;outline:none;transition:border-color .25s,background .25s,box-shadow .25s}
+.hero-input:focus{border-color:rgba(99,102,241,.6);background:rgba(255,255,255,.1);box-shadow:0 4px 32px rgba(99,102,241,.18)}
+.hero-input::placeholder{color:var(--muted)}
+.hero-si{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;display:flex;align-items:center}
+.hero-sbtn{position:absolute;right:7px;top:50%;transform:translateY(-50%);height:40px;padding:0 20px;border-radius:26px;background:linear-gradient(135deg,var(--pr),var(--pr2));border:none;color:#fff;font-size:.85em;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:opacity .15s,box-shadow .15s;white-space:nowrap}
+.hero-sbtn:hover{opacity:.88;box-shadow:0 4px 18px rgba(99,102,241,.4)}
+.hero-plat-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.hero-plat-chip{padding:6px 14px;border-radius:20px;font-size:.78em;font-weight:600;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.hero-plat-chip.on{background:rgba(99,102,241,.18);border-color:rgba(99,102,241,.4);color:#a5b4fc}
+.hero-plat-chip:hover:not(.on){background:rgba(255,255,255,.07);color:var(--text);border-color:rgba(255,255,255,.16)}
+.hero-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.hero-tag{padding:4px 11px;border-radius:20px;font-size:.72em;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted)}
 .hero-tag b{color:var(--text)}
+@media(max-width:640px){.hero{padding:52px 16px 36px}.hero-title{font-size:1.9em}.hero-input{padding:12px 108px 12px 44px;font-size:.92em}.hero-sbtn{padding:0 14px;font-size:.78em}.hero-logo{width:56px;height:56px;margin-bottom:16px}}
 .filters{border-bottom:1px solid var(--border);padding:2px 20px 0;max-width:1440px;margin:0 auto}
 .frow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.04)}
 .frow:first-child{border-top:none}
@@ -3188,9 +3203,11 @@ const CL={tools:'工具',social:'社交',games:'游戏',finance:'金融',enterta
 const CI={tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',social:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',games:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>',finance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',entertainment:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>',education:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',productivity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',health:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',other:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>'};
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function showProg(on){document.getElementById('prog').classList.toggle('show',on)}
-function doSearch(){q=document.getElementById('si').value.trim();pg=1;load()}
+function doSearch(){q=document.getElementById('si').value.trim();const s2=document.getElementById('si2');if(s2)s2.value=q;pg=1;const fl=document.querySelector('.filters');if(fl&&q)window.scrollTo({top:fl.offsetTop-70,behavior:'smooth'});load()}
+function doSearch2(){q=document.getElementById('si2').value.trim();const s=document.getElementById('si');if(s)s.value=q;pg=1;load()}
 function setCat(c,el){cat=c;pg=1;document.querySelectorAll('#cc .chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');load()}
-function setPlat(p,el){plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');load()}
+function setPlat(p,el){plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));if(el)el.classList.add('on');document.querySelectorAll('#hpc .hero-plat-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-p')===(p||'')));load()}
+function setHPlat(p,el){document.querySelectorAll('#hpc .hero-plat-chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');const pc=document.querySelector('#pc [data-p="'+(p||'')+'"]');if(pc){setPlat(p,pc);}else{plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));load();}}
 function setSort(s){srt=s;pg=1;load()}
 function goPage(p){pg=p;load();window.scrollTo({top:300,behavior:'smooth'})}
 function renderSkeleton(){
@@ -3352,6 +3369,8 @@ async function loadSpotlight(){
     if(shown) document.getElementById('spot-divider').style.display='';
   }catch(e){}
 }
+const _heroEl=document.getElementById('hero-sec');
+if(_heroEl){const _obs=new IntersectionObserver(([e])=>{document.getElementById('sticky-bar').classList.toggle('show',!e.isIntersecting);},{rootMargin:'-58px 0px 0px 0px'});_obs.observe(_heroEl);}
 loadSpotlight();
 load();"""
     return f"""<!DOCTYPE html>
@@ -3372,21 +3391,37 @@ load();"""
     <div class="logo-sep"></div>
     <span class="logo-sub">应用市场</span>
   </a>
-  <div class="h-search">
-    <input id="si" type="search" placeholder="搜索应用名称、包名…" onkeydown="if(event.key==='Enter')doSearch()">
-    <button class="h-sbtn" onclick="doSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
-  </div>
+  <div style="flex:1"></div>
   <a class="h-cta" href="{site}/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传应用</a>
 </header>
-<section class="hero">
-  <h1 class="hero-title">发现 · 下载 · 安全</h1>
-  <p class="hero-sub">所有应用均可通过 AppSec AI 进行专业安全扫描，放心下载</p>
+<div id="sticky-bar">
+  <div class="sb-wrap">
+    <input id="si2" class="sb-input" type="search" placeholder="搜索应用名称、包名…" onkeydown="if(event.key==='Enter')doSearch2()">
+    <button class="sb-btn" onclick="doSearch2()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+  </div>
+</div>
+<section class="hero" id="hero-sec">
+  <img src="/favicon.svg" alt="AppSec AI" class="hero-logo">
+  <h1 class="hero-title">应用市场</h1>
+  <p class="hero-sub">发现、下载经 AppSec AI 安全验证的多平台应用</p>
+  <div class="hero-search-wrap">
+    <div class="hero-si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <input id="si" class="hero-input" type="search" placeholder="搜索应用名称、包名、分类…" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="hero-sbtn" onclick="doSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 搜索</button>
+  </div>
+  <div class="hero-plat-chips" id="hpc">
+    <button class="hero-plat-chip on" data-p="" onclick="setHPlat('',this)">全部平台</button>
+    <button class="hero-plat-chip" data-p="android" onclick="setHPlat('android',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Android</button>
+    <button class="hero-plat-chip" data-p="ios" onclick="setHPlat('ios',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>iOS</button>
+    <button class="hero-plat-chip" data-p="windows" onclick="setHPlat('windows',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Windows</button>
+    <button class="hero-plat-chip" data-p="macos" onclick="setHPlat('macos',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>macOS</button>
+    <button class="hero-plat-chip" data-p="linux" onclick="setHPlat('linux',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Linux</button>
+  </div>
   <div class="hero-tags">
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><b>AI 安全检测</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><b>多平台支持</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><b>极速分发</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><b>隐私安全</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:3px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><b>10+ 应用分类</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><b>AI 安全检测</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><b>多平台支持</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><b>极速分发</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><b>隐私安全</b></div>
   </div>
 </section>
 
@@ -3441,12 +3476,12 @@ load();"""
   <div class="frow">
     <span class="flbl">平台</span>
     <div class="chips" id="pc">
-      <button class="chip on" onclick="setPlat('',this)">全部</button>
-      <button class="chip" onclick="setPlat('android',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Android</button>
-      <button class="chip" onclick="setPlat('ios',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>iOS</button>
-      <button class="chip" onclick="setPlat('windows',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Windows</button>
-      <button class="chip" onclick="setPlat('macos',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>macOS</button>
-      <button class="chip" onclick="setPlat('linux',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Linux</button>
+      <button class="chip on" data-p="" onclick="setPlat('',this)">全部</button>
+      <button class="chip" data-p="android" onclick="setPlat('android',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Android</button>
+      <button class="chip" data-p="ios" onclick="setPlat('ios',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>iOS</button>
+      <button class="chip" data-p="windows" onclick="setPlat('windows',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Windows</button>
+      <button class="chip" data-p="macos" onclick="setPlat('macos',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>macOS</button>
+      <button class="chip" data-p="linux" onclick="setPlat('linux',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Linux</button>
     </div>
   </div>
 </div>
