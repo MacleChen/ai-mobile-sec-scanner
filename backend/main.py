@@ -459,6 +459,10 @@ class ProfileUpdate(BaseModel):
     nickname: str = ""
     bio: str = ""
 
+class ChangePasswordBody(BaseModel):
+    current_password: str
+    new_password: str
+
 
 # ── Report HTML labels (zh / en) ──────────────────────────────
 _LABELS = {
@@ -2288,6 +2292,18 @@ async def update_profile(body: ProfileUpdate, user: dict = Depends(_current_user
         c.execute("UPDATE users_v2 SET nickname=?, bio=? WHERE id=?",
                   (nickname, bio, user["id"]))
     return {"ok": True, "nickname": nickname, "bio": bio}
+
+@app.post("/auth/change-password")
+async def change_password(body: ChangePasswordBody, user: dict = Depends(_current_user)):
+    if not _verify_pw(body.current_password, user["password_hash"]):
+        raise HTTPException(400, "当前密码错误")
+    if len(body.new_password) < 6:
+        raise HTTPException(400, "新密码至少6位")
+    new_hash = _hash_pw(body.new_password)
+    with _db() as c:
+        c.execute("UPDATE users_v2 SET password_hash=? WHERE id=?", (new_hash, user["id"]))
+    return {"ok": True}
+
 
 @app.post("/auth/avatar")
 async def update_avatar(file: UploadFile, user: dict = Depends(_current_user)):

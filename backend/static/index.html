@@ -237,6 +237,20 @@
       margin-bottom:22px; display:flex; align-items:center; justify-content:center; gap:5px;
     }
     .pm-upload-hint svg { opacity:.6; }
+    .pm-section {
+      display:flex; align-items:center; gap:10px; margin:20px 0 16px;
+    }
+    .pm-section-line { flex:1; height:1px; background:var(--border); }
+    .pm-section-label { font-size:.72em; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
+    .pm-email-row {
+      display:flex; align-items:center; gap:10px;
+      background:rgba(255,255,255,.04); border:1px solid var(--border);
+      border-radius:8px; padding:10px 14px; margin-bottom:14px;
+    }
+    .pm-email-row svg { flex-shrink:0; opacity:.5; }
+    .pm-email-val { font-size:.92em; color:var(--text); flex:1; word-break:break-all; }
+    .pm-email-badge { font-size:.68em; font-weight:700; color:#10b981; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.25); border-radius:4px; padding:1px 6px; white-space:nowrap; }
+    .pm-pw-btn { background:rgba(255,255,255,.06); border:1px solid var(--border); }
 
     /* ── Purchase modal ─────────────── */
     .buy-modal-wide { max-width: 820px !important; }
@@ -1085,6 +1099,19 @@
         <i data-lucide="image" style="width:13px;height:13px"></i>
         <span id="profile-avatar-btn">点击头像更换 · 支持任意比例，自动居中裁切</span>
       </div>
+
+      <!-- Section: 基本信息 -->
+      <div class="pm-section">
+        <div class="pm-section-line"></div>
+        <div class="pm-section-label">基本信息</div>
+        <div class="pm-section-line"></div>
+      </div>
+      <!-- Email (read-only) -->
+      <div class="pm-email-row">
+        <i data-lucide="mail" style="width:15px;height:15px"></i>
+        <span class="pm-email-val" id="profile-email-val">—</span>
+        <span class="pm-email-badge">已验证</span>
+      </div>
       <div class="form-field">
         <label class="form-label" id="profile-nickname-label">昵称</label>
         <input class="form-input" id="profile-nickname" maxlength="32" placeholder="设置你的昵称（最多32字符）">
@@ -1098,6 +1125,30 @@
       <button class="form-btn" id="profile-save-btn" onclick="saveProfile()">
         <span id="profile-save-text">保存资料</span>
       </button>
+
+      <!-- Section: 修改密码 -->
+      <div class="pm-section" style="margin-top:28px">
+        <div class="pm-section-line"></div>
+        <div class="pm-section-label">修改密码</div>
+        <div class="pm-section-line"></div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">当前密码</label>
+        <input class="form-input" id="profile-cur-pw" type="password" placeholder="输入当前密码">
+      </div>
+      <div class="form-field">
+        <label class="form-label">新密码</label>
+        <input class="form-input" id="profile-new-pw" type="password" placeholder="至少6位">
+      </div>
+      <div class="form-field">
+        <label class="form-label">确认新密码</label>
+        <input class="form-input" id="profile-confirm-pw" type="password" placeholder="再次输入新密码">
+      </div>
+      <div class="form-msg" id="profile-pw-msg"></div>
+      <button class="form-btn pm-pw-btn" id="profile-pw-btn" onclick="changePassword()">
+        <span>修改密码</span>
+      </button>
+      <div style="height:8px"></div>
     </div>
   </div>
 </div>
@@ -2255,18 +2306,28 @@ function _avatarPreviewHtml(nick, av64) {
 async function openProfileModal() {
   hide('user-dropdown');
   show('profile-modal');
-  const msg = document.getElementById('profile-msg');
-  if (msg) { msg.textContent = ''; msg.className = 'form-msg'; }
+  // Reset messages & password fields
+  ['profile-msg','profile-pw-msg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.className = 'form-msg'; }
+  });
+  ['profile-cur-pw','profile-new-pw','profile-confirm-pw'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  if (window.lucide) lucide.createIcons();
   try {
     const resp = await fetch('/auth/profile', { headers: { Authorization: `Bearer ${jwt}` } });
     if (!resp.ok) return;
     const d = await resp.json();
     document.getElementById('profile-nickname').value = d.nickname || '';
     document.getElementById('profile-bio').value = d.bio || '';
+    const emailEl = document.getElementById('profile-email-val');
+    if (emailEl) emailEl.textContent = d.email || '';
     const prev = document.getElementById('profile-avatar-preview');
     if (prev) {
       prev.style.background = d.avatar_b64 ? 'transparent' : 'linear-gradient(135deg,#6366f1,#8b5cf6)';
       prev.innerHTML = _avatarPreviewHtml(d.nickname || d.email, d.avatar_b64);
+      if (window.lucide) lucide.createIcons({ nodes: [prev] });
     }
   } catch(_) {}
 }
@@ -2295,6 +2356,35 @@ async function saveProfile() {
       setTimeout(() => { msg.textContent = ''; msg.className = 'form-msg'; }, 2000);
     } else {
       msg.className = 'form-msg err'; msg.textContent = '保存失败，请重试';
+    }
+  } catch(_) { msg.className = 'form-msg err'; msg.textContent = '网络错误'; }
+  btn.disabled = false;
+}
+
+async function changePassword() {
+  const cur  = document.getElementById('profile-cur-pw').value;
+  const nw   = document.getElementById('profile-new-pw').value;
+  const conf = document.getElementById('profile-confirm-pw').value;
+  const msg  = document.getElementById('profile-pw-msg');
+  const btn  = document.getElementById('profile-pw-btn');
+  msg.className = 'form-msg'; msg.textContent = '';
+  if (!cur)           { msg.className='form-msg err'; msg.textContent='请输入当前密码'; return; }
+  if (nw.length < 6)  { msg.className='form-msg err'; msg.textContent='新密码至少6位'; return; }
+  if (nw !== conf)    { msg.className='form-msg err'; msg.textContent='两次密码不一致'; return; }
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ current_password: cur, new_password: nw }),
+    });
+    const d = await resp.json();
+    if (resp.ok && d.ok) {
+      msg.className = 'form-msg ok'; msg.textContent = '✓ 密码修改成功';
+      ['profile-cur-pw','profile-new-pw','profile-confirm-pw'].forEach(id =>
+        { document.getElementById(id).value = ''; });
+    } else {
+      msg.className = 'form-msg err'; msg.textContent = d.detail || '修改失败，请重试';
     }
   } catch(_) { msg.className = 'form-msg err'; msg.textContent = '网络错误'; }
   btn.disabled = false;
