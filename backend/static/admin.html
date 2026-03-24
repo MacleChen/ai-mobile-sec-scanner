@@ -246,6 +246,14 @@
     [data-theme=dark] .theme-btn { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
     [data-theme=light] .theme-btn { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.12); color: #64748b; }
     [data-theme=light] .theme-btn:hover { background: rgba(0,0,0,.08); color: #1e293b; }
+
+    /* ── Lang toggle ─────────────────────────────── */
+    .lang-toggle { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 8px;
+                   height: 30px; padding: 0 10px; cursor: pointer; font-size: .78em; font-weight: 700;
+                   color: rgba(255,255,255,.8); transition: all .2s; flex-shrink: 0; white-space: nowrap; }
+    .lang-toggle:hover { background: rgba(255,255,255,.2); }
+    [data-theme=light] .lang-toggle { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.12); color: #64748b; }
+    [data-theme=light] .lang-toggle:hover { background: rgba(0,0,0,.08); }
   </style>
 </head>
 <body>
@@ -254,19 +262,19 @@
 <div class="login-wrap" id="login-screen">
   <div class="login-card">
     <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-    <div class="login-title">管理后台</div>
+    <div class="login-title" data-i18n="loginTitle">管理后台</div>
     <div class="login-sub">AI 移动安全扫描器</div>
     <div class="field">
-      <label>用户名</label>
+      <label data-i18n="loginLabelUser">用户名</label>
       <input type="text" id="login-user" autocomplete="username" value="admin">
     </div>
     <div class="field">
-      <label>密码</label>
+      <label data-i18n="loginLabelPass">密码</label>
       <input type="password" id="login-pass" autocomplete="current-password"
              placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="err-msg" id="login-err"></div>
-    <button class="btn btn-full" id="login-btn" style="margin-top:6px" onclick="doLogin()">
+    <button class="btn btn-full" id="login-btn" style="margin-top:6px" onclick="doLogin()" data-i18n="btnLogin">
       登录
     </button>
   </div>
@@ -280,22 +288,23 @@
     <div class="nav-brand" style="display:flex;align-items:center;gap:7px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       AI Scanner
-      <span class="nav-badge">管理后台</span>
+      <span class="nav-badge" data-i18n="adminBadge">管理后台</span>
     </div>
     <div class="nav-user">
       <div class="nav-avatar" id="nav-avatar">A</div>
       <span class="nav-uname" id="nav-uname">admin</span>
     </div>
-    <button class="nav-logout" onclick="doLogout()">退出登录</button>
+    <button class="nav-logout" data-i18n="logout" onclick="doLogout()">退出登录</button>
     <button class="theme-btn" id="theme-btn-admin" onclick="_toggleTheme()" title="切换主题" style="margin-left:8px"></button>
+    <button class="lang-toggle" id="lang-btn-admin" onclick="toggleLangPage()" style="margin-left:4px">EN</button>
   </nav>
 
   <!-- Tab bar -->
   <div class="tabs-bar">
-    <button class="tab-btn active" onclick="switchTab('stats',   this)"><i data-lucide="bar-chart-2" style="width:14px;height:14px"></i> 概览</button>
-    <button class="tab-btn"        onclick="switchTab('generate', this)"><i data-lucide="key-round"  style="width:14px;height:14px"></i> 生成兑换码</button>
-    <button class="tab-btn"        onclick="switchTab('codes',   this)"><i data-lucide="list"        style="width:14px;height:14px"></i> 兑换码管理</button>
-    <button class="tab-btn"        onclick="switchTab('settings', this)"><i data-lucide="settings"   style="width:14px;height:14px"></i> 账号设置</button>
+    <button class="tab-btn active" onclick="switchTab('stats',   this)"><i data-lucide="bar-chart-2" style="width:14px;height:14px"></i> <span data-i18n="tabStats">概览</span></button>
+    <button class="tab-btn"        onclick="switchTab('generate', this)"><i data-lucide="key-round"  style="width:14px;height:14px"></i> <span data-i18n="tabGenerate">生成兑换码</span></button>
+    <button class="tab-btn"        onclick="switchTab('codes',   this)"><i data-lucide="list"        style="width:14px;height:14px"></i> <span data-i18n="tabCodes">兑换码管理</span></button>
+    <button class="tab-btn"        onclick="switchTab('settings', this)"><i data-lucide="settings"   style="width:14px;height:14px"></i> <span data-i18n="tabSettings">账号设置</span></button>
   </div>
 
   <div class="content">
@@ -304,33 +313,33 @@
     <div id="tab-stats">
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">注册用户</div>
+          <div class="stat-label" data-i18n="statUsers">注册用户</div>
           <div class="stat-val" id="s-users">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">总扫描次数</div>
+          <div class="stat-label" data-i18n="statScans">总扫描次数</div>
           <div class="stat-val" id="s-scans">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">有效兑换码</div>
+          <div class="stat-label" data-i18n="statActiveCodes">有效兑换码</div>
           <div class="stat-val" id="s-active">—</div>
-          <div class="stat-sub">可继续兑换</div>
+          <div class="stat-sub" data-i18n="statActiveCodesHint">可继续兑换</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">累计兑换次数</div>
+          <div class="stat-label" data-i18n="statTotalUses">累计兑换次数</div>
           <div class="stat-val" id="s-uses">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">总码数</div>
+          <div class="stat-label" data-i18n="statTotalCodes">总码数</div>
           <div class="stat-val" id="s-total">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">已撤销</div>
+          <div class="stat-label" data-i18n="statRevoked">已撤销</div>
           <div class="stat-val" id="s-revoked">—</div>
         </div>
       </div>
       <div class="refresh-row">
-        <button class="btn btn-sm btn-ghost" onclick="loadStats()">🔄 刷新数据</button>
+        <button class="btn btn-sm btn-ghost" onclick="loadStats()">🔄 <span data-i18n="btnRefresh">刷新数据</span></button>
       </div>
     </div>
 
@@ -340,35 +349,35 @@
 
         <!-- Form -->
         <div class="card">
-          <div class="card-title">生成兑换码</div>
+          <div class="card-title" data-i18n="cardGenerate">生成兑换码</div>
           <div class="form-grid">
             <div class="field">
-              <label>Credits 数量</label>
+              <label data-i18n="labelCredits">Credits 数量</label>
               <input type="number" id="g-credits" value="10" min="1" max="10000">
-              <div class="field-hint">每码赠送的扫描次数</div>
+              <div class="field-hint" data-i18n="hintCredits">每码赠送的扫描次数</div>
             </div>
             <div class="field">
-              <label>生成数量</label>
+              <label data-i18n="labelCount">生成数量</label>
               <input type="number" id="g-count" value="1" min="1" max="500">
-              <div class="field-hint">最多 500 个 / 次</div>
+              <div class="field-hint" data-i18n="hintCount">最多 500 个 / 次</div>
             </div>
             <div class="field">
-              <label>每码可用次数</label>
+              <label data-i18n="labelMaxUses">每码可用次数</label>
               <input type="number" id="g-maxuses" value="1" min="1" max="100000">
-              <div class="field-hint">1 = 一次性；> 1 = 多人共享</div>
+              <div class="field-hint" data-i18n="hintMaxUses">1 = 一次性；> 1 = 多人共享</div>
             </div>
             <div class="field">
-              <label>有效天数</label>
+              <label data-i18n="labelExpires">有效天数</label>
               <input type="number" id="g-expires" value="0" min="0">
-              <div class="field-hint">0 = 永不过期</div>
+              <div class="field-hint" data-i18n="hintExpires">0 = 永不过期</div>
             </div>
             <div class="field full">
-              <label>备注</label>
+              <label data-i18n="labelNote">备注</label>
               <input type="text" id="g-note" placeholder="可选，如：新用户福利、内测专属…">
             </div>
           </div>
           <div style="margin-top:18px">
-            <button class="btn btn-full" id="gen-btn" onclick="doGenerate()">生成兑换码</button>
+            <button class="btn btn-full" id="gen-btn" onclick="doGenerate()" data-i18n="btnGenerate">生成兑换码</button>
           </div>
           <div class="err-msg" id="gen-err"></div>
         </div>
@@ -376,15 +385,15 @@
         <!-- Result -->
         <div class="card">
           <div class="card-title">
-            生成结果
+            <span data-i18n="cardResult">生成结果</span>
             <span id="gen-meta"></span>
           </div>
           <div class="result-area" id="result-area">
-            <div class="result-empty">生成的兑换码将显示在这里</div>
+            <div class="result-empty" data-i18n="resultEmpty">生成的兑换码将显示在这里</div>
           </div>
           <div class="result-actions" id="result-actions" style="display:none">
-            <button class="btn btn-sm btn-outline" onclick="copyAll()"><i data-lucide="copy" style="width:12px;height:12px"></i> 复制全部</button>
-            <button class="btn btn-sm btn-ghost"   onclick="exportTxt()"><i data-lucide="download" style="width:12px;height:12px"></i> 导出 TXT</button>
+            <button class="btn btn-sm btn-outline" onclick="copyAll()"><i data-lucide="copy" style="width:12px;height:12px"></i> <span data-i18n="btnCopyAll">复制全部</span></button>
+            <button class="btn btn-sm btn-ghost"   onclick="exportTxt()"><i data-lucide="download" style="width:12px;height:12px"></i> <span data-i18n="btnExportTxt">导出 TXT</span></button>
           </div>
         </div>
 
@@ -404,21 +413,21 @@
             <option value="expired">🔴 已过期</option>
             <option value="revoked">⬛ 已撤销</option>
           </select>
-          <button class="btn btn-sm btn-ghost" onclick="loadCodes()">🔄 刷新</button>
+          <button class="btn btn-sm btn-ghost" onclick="loadCodes()">🔄 <span data-i18n="btnRefreshShort">刷新</span></button>
         </div>
 
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>兑换码</th>
-                <th>Credits</th>
-                <th>使用情况</th>
-                <th>状态</th>
-                <th>有效期</th>
-                <th>备注</th>
-                <th>创建时间</th>
-                <th>操作</th>
+                <th data-i18n="thCode">兑换码</th>
+                <th data-i18n="thCredits">Credits</th>
+                <th data-i18n="thUsage">使用情况</th>
+                <th data-i18n="thStatus">状态</th>
+                <th data-i18n="thExpiry">有效期</th>
+                <th data-i18n="thNote">备注</th>
+                <th data-i18n="thCreated">创建时间</th>
+                <th data-i18n="thActions">操作</th>
               </tr>
             </thead>
             <tbody id="codes-tbody">
@@ -431,8 +440,8 @@
 
         <div class="pagination">
           <span id="page-info"></span>
-          <button class="page-btn" id="prev-btn" onclick="changePage(-1)" disabled>‹ 上一页</button>
-          <button class="page-btn" id="next-btn" onclick="changePage(1)"  disabled>下一页 ›</button>
+          <button class="page-btn" id="prev-btn" onclick="changePage(-1)" disabled>‹ <span data-i18n="btnPrev">上一页</span></button>
+          <button class="page-btn" id="next-btn" onclick="changePage(1)"  disabled><span data-i18n="btnNext">下一页</span> ›</button>
         </div>
       </div>
     </div><!-- tab-codes -->
@@ -443,44 +452,44 @@
 
         <!-- Change password -->
         <div class="card">
-          <div class="card-title" style="display:flex;align-items:center;gap:7px"><i data-lucide="key-round" style="width:16px;height:16px;color:#2563eb"></i> 修改密码</div>
+          <div class="card-title" style="display:flex;align-items:center;gap:7px"><i data-lucide="key-round" style="width:16px;height:16px;color:#2563eb"></i> <span data-i18n="cardChangePassword">修改密码</span></div>
           <div class="field">
-            <label>当前密码</label>
+            <label data-i18n="labelOldPassword">当前密码</label>
             <input type="password" id="cp-old" placeholder="••••••" autocomplete="current-password">
           </div>
           <div class="field">
-            <label>新密码</label>
+            <label data-i18n="labelNewPassword">新密码</label>
             <input type="password" id="cp-new" placeholder="至少 6 位" autocomplete="new-password">
           </div>
           <div class="field">
-            <label>确认新密码</label>
+            <label data-i18n="labelConfirmPassword">确认新密码</label>
             <input type="password" id="cp-confirm" placeholder="再次输入新密码" autocomplete="new-password"
                    onkeydown="if(event.key==='Enter')doChangePassword()">
           </div>
           <div class="err-msg" id="cp-err"></div>
-          <button class="btn btn-full" id="cp-btn" onclick="doChangePassword()" style="margin-top:4px">
+          <button class="btn btn-full" id="cp-btn" onclick="doChangePassword()" style="margin-top:4px" data-i18n="btnChangePassword">
             修改密码
           </button>
         </div>
 
         <!-- Add admin -->
         <div class="card">
-          <div class="card-title">➕ 添加管理员</div>
+          <div class="card-title" data-i18n="cardAddAdmin">➕ 添加管理员</div>
           <div class="field">
-            <label>用户名</label>
+            <label data-i18n="labelUsername">用户名</label>
             <input type="text" id="na-user" placeholder="至少 2 个字符" autocomplete="off">
           </div>
           <div class="field">
-            <label>密码</label>
+            <label data-i18n="labelPassword">密码</label>
             <input type="password" id="na-pass" placeholder="至少 6 位" autocomplete="new-password">
           </div>
           <div class="field">
-            <label>确认密码</label>
+            <label data-i18n="labelConfirmPwd">确认密码</label>
             <input type="password" id="na-confirm" placeholder="再次输入密码" autocomplete="new-password"
                    onkeydown="if(event.key==='Enter')doAddAdmin()">
           </div>
           <div class="err-msg" id="na-err"></div>
-          <button class="btn btn-full" id="na-btn" onclick="doAddAdmin()" style="margin-top:4px">
+          <button class="btn btn-full" id="na-btn" onclick="doAddAdmin()" style="margin-top:4px" data-i18n="btnAddAdmin">
             添加管理员
           </button>
         </div>
@@ -488,8 +497,8 @@
         <!-- Admin list -->
         <div class="card full-col">
           <div class="card-title">
-            👥 管理员列表
-            <button class="btn btn-sm btn-ghost" onclick="loadAdmins()">🔄 刷新</button>
+            <span data-i18n="cardAdminList">👥 管理员列表</span>
+            <button class="btn btn-sm btn-ghost" onclick="loadAdmins()">🔄 <span data-i18n="btnRefreshShort">刷新</span></button>
           </div>
           <div id="acct-list">
             <div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">加载中…</div>
@@ -919,6 +928,155 @@ function toast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
 if (window.lucide) lucide.createIcons();
+
+// ── i18n ─────────────────────────────────────────
+const LANG_ADMIN = {
+  zh: {
+    // Login
+    loginTitle: '管理后台',
+    loginLabelUser: '用户名',
+    loginLabelPass: '密码',
+    btnLogin: '登录',
+    // Nav
+    adminBadge: '管理后台',
+    logout: '退出登录',
+    langBtn: 'EN',
+    // Tabs
+    tabStats: '概览',
+    tabGenerate: '生成兑换码',
+    tabCodes: '兑换码管理',
+    tabSettings: '账号设置',
+    // Stats
+    statUsers: '注册用户',
+    statScans: '总扫描次数',
+    statActiveCodes: '有效兑换码',
+    statActiveCodesHint: '可继续兑换',
+    statTotalUses: '累计兑换次数',
+    statTotalCodes: '总码数',
+    statRevoked: '已撤销',
+    btnRefresh: '刷新数据',
+    // Generate
+    cardGenerate: '生成兑换码',
+    labelCredits: 'Credits 数量',
+    hintCredits: '每码赠送的扫描次数',
+    labelCount: '生成数量',
+    hintCount: '最多 500 个 / 次',
+    labelMaxUses: '每码可用次数',
+    hintMaxUses: '1 = 一次性；> 1 = 多人共享',
+    labelExpires: '有效天数',
+    hintExpires: '0 = 永不过期',
+    labelNote: '备注',
+    btnGenerate: '生成兑换码',
+    cardResult: '生成结果',
+    resultEmpty: '生成的兑换码将显示在这里',
+    btnCopyAll: '复制全部',
+    btnExportTxt: '导出 TXT',
+    // Codes table
+    btnRefreshShort: '刷新',
+    thCode: '兑换码',
+    thCredits: 'Credits',
+    thUsage: '使用情况',
+    thStatus: '状态',
+    thExpiry: '有效期',
+    thNote: '备注',
+    thCreated: '创建时间',
+    thActions: '操作',
+    btnPrev: '上一页',
+    btnNext: '下一页',
+    // Settings
+    cardChangePassword: '修改密码',
+    labelOldPassword: '当前密码',
+    labelNewPassword: '新密码',
+    labelConfirmPassword: '确认新密码',
+    btnChangePassword: '修改密码',
+    cardAddAdmin: '➕ 添加管理员',
+    labelUsername: '用户名',
+    labelPassword: '密码',
+    labelConfirmPwd: '确认密码',
+    btnAddAdmin: '添加管理员',
+    cardAdminList: '👥 管理员列表',
+  },
+  en: {
+    // Login
+    loginTitle: 'Admin Panel',
+    loginLabelUser: 'Username',
+    loginLabelPass: 'Password',
+    btnLogin: 'Sign In',
+    // Nav
+    adminBadge: 'Admin Panel',
+    logout: 'Sign Out',
+    langBtn: '中文',
+    // Tabs
+    tabStats: 'Overview',
+    tabGenerate: 'Generate Codes',
+    tabCodes: 'Code Manager',
+    tabSettings: 'Settings',
+    // Stats
+    statUsers: 'Users',
+    statScans: 'Total Scans',
+    statActiveCodes: 'Active Codes',
+    statActiveCodesHint: 'Still redeemable',
+    statTotalUses: 'Total Redemptions',
+    statTotalCodes: 'Total Codes',
+    statRevoked: 'Revoked',
+    btnRefresh: 'Refresh',
+    // Generate
+    cardGenerate: 'Generate Codes',
+    labelCredits: 'Credits Amount',
+    hintCredits: 'Scans granted per code',
+    labelCount: 'Quantity',
+    hintCount: 'Max 500 per batch',
+    labelMaxUses: 'Uses per Code',
+    hintMaxUses: '1 = one-time; > 1 = shared promo',
+    labelExpires: 'Valid Days',
+    hintExpires: '0 = never expires',
+    labelNote: 'Note',
+    btnGenerate: 'Generate Codes',
+    cardResult: 'Result',
+    resultEmpty: 'Generated codes will appear here',
+    btnCopyAll: 'Copy All',
+    btnExportTxt: 'Export TXT',
+    // Codes table
+    btnRefreshShort: 'Refresh',
+    thCode: 'Code',
+    thCredits: 'Credits',
+    thUsage: 'Usage',
+    thStatus: 'Status',
+    thExpiry: 'Expiry',
+    thNote: 'Note',
+    thCreated: 'Created',
+    thActions: 'Actions',
+    btnPrev: 'Prev',
+    btnNext: 'Next',
+    // Settings
+    cardChangePassword: 'Change Password',
+    labelOldPassword: 'Current Password',
+    labelNewPassword: 'New Password',
+    labelConfirmPassword: 'Confirm New Password',
+    btnChangePassword: 'Change Password',
+    cardAddAdmin: '➕ Add Admin',
+    labelUsername: 'Username',
+    labelPassword: 'Password',
+    labelConfirmPwd: 'Confirm Password',
+    btnAddAdmin: 'Add Admin',
+    cardAdminList: '👥 Admin List',
+  },
+};
+let _langAdmin = localStorage.getItem('lang') || 'zh';
+function LA() { return LANG_ADMIN[_langAdmin] || LANG_ADMIN.zh; }
+function applyI18nAdmin() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (LA()[k] !== undefined) el.textContent = LA()[k];
+  });
+  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LA().langBtn);
+}
+function toggleLangPage() {
+  _langAdmin = _langAdmin === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', _langAdmin);
+  applyI18nAdmin();
+}
+applyI18nAdmin();
 const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
 const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 function _toggleTheme() {

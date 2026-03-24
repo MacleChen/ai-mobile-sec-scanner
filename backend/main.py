@@ -2559,7 +2559,7 @@ def _dist_preview_html(r: dict) -> str:
   async function loadMoreReviews(){{
     try{{
       const btn=document.getElementById('load-more-reviews');
-      if(btn){{btn.disabled=true;btn.textContent='加载中…';}}
+      if(btn){{btn.disabled=true;btn.textContent='…';}}
       const resp = await fetch(`/dist/{slug}/reviews?page=${{_reviewPage+1}}`, {{headers: _authHdr()}});
       if(!resp.ok) return;
       const d = await resp.json();
@@ -2568,12 +2568,12 @@ def _dist_preview_html(r: dict) -> str:
       appendReviews(d.reviews);
       const btn2=document.getElementById('load-more-reviews');
       if(btn2){{
-        if(_reviewHasMore){{btn2.disabled=false;btn2.textContent='加载更多评价';}}
+        if(_reviewHasMore){{btn2.disabled=false;btn2.textContent=LD().loadMoreReviews;}}
         else{{btn2.remove();}}
       }}
     }}catch(e){{
       const btn=document.getElementById('load-more-reviews');
-      if(btn){{btn.disabled=false;btn.textContent='加载更多评价';}}
+      if(btn){{btn.disabled=false;btn.textContent=LD().loadMoreReviews;}}
     }}
   }}
 
@@ -2634,23 +2634,23 @@ def _dist_preview_html(r: dict) -> str:
       if(mr) _myRating=mr.rating;
       fa.innerHTML=`
         <div class="review-form-wrap">
-          <div class="review-form-title">${{mr?'修改你的评价':'写评价'}}</div>
+          <div class="review-form-title" data-i18n="writeReview">${{mr?'修改你的评价':LD().writeReview}}</div>
           <div class="star-row" id="star-row">
             ${{[1,2,3,4,5].map(i=>`<span class="star-pick${{i<=_myRating?' on':''}}" onclick="setRating(${{i}})" onmouseover="hoverRating(${{i}})" onmouseout="resetRating()">★</span>`).join('')}}
           </div>
-          <textarea class="review-textarea" id="review-text" placeholder="分享你对这个应用的看法（选填）..." maxlength="500">${{mr?mr.comment:''}}</textarea>
-          <button class="review-submit" onclick="submitReview()">${{mr?'更新评价':'发布评价'}}</button>
+          <textarea class="review-textarea" id="review-text" data-i18n-ph="reviewPh" placeholder="${{LD().reviewPh}}" maxlength="500">${{mr?mr.comment:''}}</textarea>
+          <button class="review-submit" onclick="submitReview()" data-i18n="submitReview">${{mr?'更新评价':LD().submitReview}}</button>
           ${{mr?`<button class="review-act-btn" onclick="deleteReview()" style="margin-top:8px;display:block;font-size:.78em;color:#475569">删除我的评价</button>`:''}}
         </div>`;
     }}else{{
-      fa.innerHTML=`<div class="review-login-prompt">
+      fa.innerHTML=`<div class="review-login-prompt" data-i18n="reviewLoginPrompt">
         <a href="{site}/app?action=login&return={page_url_enc}">登录</a> 后发表评价
       </div>`;
     }}
     // Reviews list
     const rl=document.getElementById('reviews-list');
     if(!d.reviews.length && !d.has_more){{
-      rl.innerHTML='<div class="empty-reviews">暂无评价，成为第一个评价者 ✨</div>';
+      rl.innerHTML=`<div class="empty-reviews">${{LD().noReviews}}</div>`;
       return;
     }}
     rl.innerHTML='';
@@ -2665,7 +2665,7 @@ def _dist_preview_html(r: dict) -> str:
       btn.id='load-more-reviews';
       btn.className='review-submit';
       btn.style.cssText='background:rgba(255,255,255,.06);margin-top:12px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,.1)';
-      btn.textContent='加载更多评价';
+      btn.textContent=LD().loadMoreReviews;
       btn.onclick=loadMoreReviews;
       rl.appendChild(btn);
     }}
@@ -2783,6 +2783,87 @@ def _dist_preview_html(r: dict) -> str:
       document.getElementById('news-sec').style.display='block';
     }}catch(e){{}}
   }}
+  // ── i18n ────────────────────────────────────────
+  const LANG_DIST = {{
+    zh: {{
+      platformSub: '安全应用分发平台',
+      appInfo: '应用信息',
+      dlInfo: '下载信息',
+      version: '版本',
+      size: '大小',
+      downloads: '下载',
+      expiry: '有效期',
+      uploaded: '上传时间',
+      platform: '平台',
+      qrTitle: '扫码下载',
+      copyHint: '复制链接',
+      copied: '已复制！',
+      newsTitle: '科技资讯',
+      viewAll: '查看全部 →',
+      reviewsTitle: '用户评价',
+      writeReview: '写评价',
+      reviewPh: '分享你的使用感受…',
+      submitReview: '提交评价',
+      reviewLoginPrompt: '登录后即可发表评价',
+      likeBtn: '❤ 喜欢',
+      likedBtn: '❤ 已喜欢',
+      loadMoreReviews: '加载更多评价',
+      noReviews: '暂无评价',
+      copyLink: '复制链接',
+      copyLinkOk: '链接已复制',
+      downloadOk: '开始下载',
+      langBtn: 'EN',
+    }},
+    en: {{
+      platformSub: 'Secure App Distribution',
+      appInfo: 'App Info',
+      dlInfo: 'Download Info',
+      version: 'Version',
+      size: 'Size',
+      downloads: 'Downloads',
+      expiry: 'Expires',
+      uploaded: 'Uploaded',
+      platform: 'Platform',
+      qrTitle: 'Scan to Download',
+      copyHint: 'Copy Link',
+      copied: 'Copied!',
+      newsTitle: 'Tech News',
+      viewAll: 'View All →',
+      reviewsTitle: 'User Reviews',
+      writeReview: 'Write a Review',
+      reviewPh: 'Share your experience…',
+      submitReview: 'Submit Review',
+      reviewLoginPrompt: 'Sign in to write a review',
+      likeBtn: '❤ Like',
+      likedBtn: '❤ Liked',
+      loadMoreReviews: 'Load More Reviews',
+      noReviews: 'No reviews yet',
+      copyLink: 'Copy Link',
+      copyLinkOk: 'Link Copied',
+      downloadOk: 'Starting Download',
+      langBtn: '中文',
+    }},
+  }};
+  let _langDist = localStorage.getItem('lang') || 'zh';
+  function LD() {{ return LANG_DIST[_langDist] || LANG_DIST.zh; }}
+  function applyI18nDist() {{
+    document.querySelectorAll('[data-i18n]').forEach(el => {{
+      const k = el.getAttribute('data-i18n');
+      if (LD()[k] !== undefined) el.textContent = LD()[k];
+    }});
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {{
+      const k = el.getAttribute('data-i18n-ph');
+      if (LD()[k] !== undefined) el.placeholder = LD()[k];
+    }});
+    document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LD().langBtn);
+  }}
+  function toggleLangPage() {{
+    _langDist = _langDist === 'zh' ? 'en' : 'zh';
+    localStorage.setItem('lang', _langDist);
+    applyI18nDist();
+  }}
+  applyI18nDist();
+
   loadNews();
   const _sunSvgD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
   const _moonSvgD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
