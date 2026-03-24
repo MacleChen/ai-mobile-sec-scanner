@@ -2007,23 +2007,23 @@ def _dist_preview_html(r: dict) -> str:
         try:
             exp = datetime.fromisoformat(expires_at)
             remaining = (exp - datetime.now()).days
-            if remaining < 0:   exp_html = '<span style="color:#f87171">已过期</span>'
-            elif remaining == 0: exp_html = '<span style="color:#fbbf24">今天过期</span>'
-            else:                exp_html = f'<span style="color:#34d399">{remaining} 天后过期</span>'
+            _exp_days = remaining   # pass to JS
         except Exception:
-            exp_html = html_lib.escape(expires_at[:10])
+            _exp_days = None
     else:
-        exp_html = '<span style="color:#34d399">永不过期</span>'
-    dl_html      = f'{dl_count} / {max_dl} 次' if max_dl > 0 else f'{dl_count} 次'
+        _exp_days = None   # never expires
+    _exp_days_js = 'null' if _exp_days is None else str(_exp_days)
+    exp_html = f'<span id="exp-val"></span>'
+    dl_html  = f'<span id="dl-val"></span>'
     created_at   = r.get('created_at') or ''
     upload_html  = html_lib.escape(created_at[:16].replace('T', ' ')) if created_at else '—'
     expired    = _dist_expired(r)
     exhausted  = _dist_exhausted(r)
     unavail    = expired or exhausted or not r.get('is_active', 1)
     btn_html   = (
-        '<div class="dl-btn disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> 链接已失效</div>'
+        '<div class="dl-btn disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <span data-i18n="linkUnavailable">链接已失效</span></div>'
         if unavail else
-        f'<button class="dl-btn" id="dl-btn" onclick="handleDownload()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 下载 {file_type}</button>'
+        f'<button class="dl-btn" id="dl-btn" onclick="handleDownload()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span id="dl-btn-label">下载 {file_type}</span></button>'
     )
     # page_url_enc for use inside JS (no f-string conflict)
     page_url_enc = urllib.parse.quote(page_url, safe='')
@@ -2313,20 +2313,20 @@ def _dist_preview_html(r: dict) -> str:
   <div class="overlay" id="ov-login">
     <div class="ov-card">
       <div class="ov-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-      <div class="ov-title">登录后即可下载</div>
-      <div class="ov-body">请先登录或注册账号，下载无需消耗次数（仅非上传者需要 1 Credit）</div>
-      <a class="ov-btn ov-btn-primary" href="{site}/app?action=login&return={page_url_enc}">登录账号</a>
-      <a class="ov-btn ov-btn-secondary" href="{site}/app?action=register&return={page_url_enc}">注册账号</a>
+      <div class="ov-title" data-i18n="ovLoginTitle">登录后即可下载</div>
+      <div class="ov-body" data-i18n="ovLoginBody">请先登录或注册账号，下载无需消耗次数（仅非上传者需要 1 Credit）</div>
+      <a class="ov-btn ov-btn-primary" href="{site}/app?action=login&return={page_url_enc}" data-i18n="ovLoginBtn">登录账号</a>
+      <a class="ov-btn ov-btn-secondary" href="{site}/app?action=register&return={page_url_enc}" data-i18n="ovRegBtn">注册账号</a>
     </div>
   </div>
   <!-- Credits overlay -->
   <div class="overlay" id="ov-credits">
     <div class="ov-card">
       <div class="ov-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-      <div class="ov-title">Credits 不足</div>
-      <div class="ov-body">每次下载消耗 1 Credit，购买套餐即可获得 Credits，上传者下载免费</div>
-      <a class="ov-btn ov-btn-primary" href="{site}/app?action=buy&return={page_url_enc}">立即购买 Credits</a>
-      <button class="ov-btn ov-btn-secondary" onclick="document.getElementById('ov-credits').classList.remove('show')">取消</button>
+      <div class="ov-title" data-i18n="ovCreditsTitle">Credits 不足</div>
+      <div class="ov-body" data-i18n="ovCreditsBody">每次下载消耗 1 Credit，购买套餐即可获得 Credits，上传者下载免费</div>
+      <a class="ov-btn ov-btn-primary" href="{site}/app?action=buy&return={page_url_enc}" data-i18n="ovCreditsBtn">立即购买 Credits</a>
+      <button class="ov-btn ov-btn-secondary" onclick="document.getElementById('ov-credits').classList.remove('show')" data-i18n="ovCreditsCancel">取消</button>
     </div>
   </div>
 
@@ -2356,14 +2356,14 @@ def _dist_preview_html(r: dict) -> str:
             <span class="badge">{file_type}</span>
           </div>
           <div class="hero-name">{app_name}</div>
-          {f'<div class="hero-version">版本 {html_lib.escape(version)}</div>' if version else ''}
+          {f'<div class="hero-version"><span data-i18n="versionPrefix">版本</span> {html_lib.escape(version)}</div>' if version else ''}
           {f'<div class="hero-pkg">{pkg_name}</div>' if pkg_name else ''}
           <div class="social-stats">
-            <div class="sstat"><svg viewBox="0 0 24 24" fill="#f87171" stroke="none" width="13" height="13" style="margin-right:3px;vertical-align:-2px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="sstat-val" id="ss-likes">…</span> 喜欢</div>
+            <div class="sstat"><svg viewBox="0 0 24 24" fill="#f87171" stroke="none" width="13" height="13" style="margin-right:3px;vertical-align:-2px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="sstat-val" id="ss-likes">…</span> <span data-i18n="likesLabel">喜欢</span></div>
             <div class="sstat-sep"></div>
             <div class="sstat" id="ss-avg-wrap">★ <span class="sstat-val" id="ss-avg">…</span></div>
             <div class="sstat-sep"></div>
-            <div class="sstat"><span class="sstat-val" id="ss-cnt">…</span> 条评价</div>
+            <div class="sstat"><span class="sstat-val" id="ss-cnt">…</span> <span data-i18n="reviewsLabel">条评价</span></div>
           </div>
         </div>
       </div>
@@ -2372,8 +2372,7 @@ def _dist_preview_html(r: dict) -> str:
       <div class="body">
         <!-- Left: content -->
         <div class="content">
-          {f'''<div class="section-label">应用介绍</div>
-          <div class="desc-box">{description}</div>''' if description else ''}
+          {f'<div class="section-label" data-i18n="appDesc">应用介绍</div>\n          <div class="desc-box">{description}</div>' if description else ''}
 
           <div class="meta-grid" style="{'margin-top:0' if not description else ''}">
             {f'<div class="meta-item"><div class="meta-item-label" data-i18n="version">版本</div><div class="meta-item-val">v{html_lib.escape(version)}</div></div>' if version else ''}
@@ -2384,14 +2383,14 @@ def _dist_preview_html(r: dict) -> str:
           </div>
 
           <div class="ai-promo">
-            <div class="ai-promo-hd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>AppSec AI 安全扫描</div>
-            <div class="ai-promo-copy">使用 AI 深度检测此应用的安全风险，保护你的用户</div>
+            <div class="ai-promo-hd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span data-i18n="aiPromoTitle">AppSec AI 安全扫描</span></div>
+            <div class="ai-promo-copy" data-i18n="aiPromoCopy">使用 AI 深度检测此应用的安全风险，保护你的用户</div>
             <ul class="ai-feats">
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>深度漏洞扫描 &amp; CVE 检测</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>隐私数据追踪 &amp; 合规分析</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>恶意行为 &amp; 后门识别</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="aiFeat1">深度漏洞扫描 &amp; CVE 检测</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="aiFeat2">隐私数据追踪 &amp; 合规分析</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="aiFeat3">恶意行为 &amp; 后门识别</span></li>
             </ul>
-            <a class="ai-cta" href="{site}" target="_blank" rel="noopener">免费扫描此应用 →</a>
+            <a class="ai-cta" href="{site}" target="_blank" rel="noopener" data-i18n="aiCta">免费扫描此应用 →</a>
           </div>
 
           <!-- Reviews section -->
@@ -2418,7 +2417,7 @@ def _dist_preview_html(r: dict) -> str:
             <span id="like-btn-text">喜欢</span>
             <span id="like-btn-count"></span>
           </button>
-          <div class="copy-wrap" onclick="copyLink()" title="复制链接">
+          <div class="copy-wrap" onclick="copyLink()" id="copy-wrap-el" title="复制链接">
             <span class="copy-url" id="lnk">{page_url}</span>
             <span class="copy-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
           </div>
@@ -2428,7 +2427,7 @@ def _dist_preview_html(r: dict) -> str:
               <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
               <div class="qr-logo">{f'<img src="data:image/png;base64,{icon_b64}" alt="logo" style="border-radius:18%">' if icon_b64 else f'<img src="{site}/favicon.svg" alt="logo">'}</div>
             </div>
-            <div class="qr-hint">手机扫码直接访问</div>
+            <div class="qr-hint" data-i18n="qrHint">手机扫码直接访问</div>
           </div>
         </div>
       </div>
@@ -2458,6 +2457,10 @@ def _dist_preview_html(r: dict) -> str:
   </div>
 
   <script>
+  // ── Page data ───────────────────────────────────────────────
+  const _EXP_DAYS = {_exp_days_js};   // null = never expires; <0 = expired; 0 = today; >0 = days left
+  const _DL_COUNT = {dl_count};
+  const _MAX_DL   = {max_dl};
   // ── Utilities ───────────────────────────────────────────────
   const _jwt = () => localStorage.getItem('jwt') || '';
   const _authHdr = () => _jwt() ? {{'Authorization':'Bearer '+_jwt()}} : {{}};
@@ -2475,19 +2478,23 @@ def _dist_preview_html(r: dict) -> str:
   const _IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const _USE_OTA = _IS_IPA && _IS_IOS;
 
+  const _FILE_TYPE = '{file_type.upper()}';
+  const _dlSvgConst = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  const _iosSvgConst = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z"/><path d="M12 14v-4"/><path d="M10 12h4"/></svg>';
+
   // Update button label for iOS
   (function(){{
     const btn = document.getElementById('dl-btn');
-    if (_USE_OTA && btn) btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z"/><path d="M12 14v-4"/><path d="M10 12h4"/></svg> 安装到 iPhone / iPad';
+    if (_USE_OTA && btn) btn.innerHTML = _iosSvgConst + ' ' + LD().iosInstallBtn;
   }})();
 
   async function handleDownload(){{
     const btn = document.getElementById('dl-btn');
-    const _dlSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-    const _iosSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z"/><path d="M12 14v-4"/><path d="M10 12h4"/></svg>';
-    const defaultLabel = _USE_OTA ? _iosSvg + ' 安装到 iPhone / iPad' : _dlSvg + ' 下载 {file_type}';
+    const defaultLabel = _USE_OTA
+      ? _iosSvgConst + ' ' + LD().iosInstallBtn
+      : _dlSvgConst + ' ' + LD().downloadPfx + ' ' + _FILE_TYPE;
     btn.disabled = true;
-    btn.innerHTML = _USE_OTA ? _iosSvg + ' 准备安装…' : _dlSvg + ' 准备中…';
+    btn.innerHTML = _USE_OTA ? _iosSvgConst + ' ' + LD().preparingIos : _dlSvgConst + ' ' + LD().preparing;
     try {{
       const resp = await fetch('/dist/{slug}/request-download', {{
         method: 'POST', headers: _authHdr()
@@ -2501,26 +2508,26 @@ def _dist_preview_html(r: dict) -> str:
         btn.disabled=false; btn.innerHTML=defaultLabel; return;
       }}
       if (!resp.ok) {{
-        const err = await resp.json().catch(()=>({{detail:'下载失败，请稍后重试'}}));
-        alert(err.detail||'下载失败，请稍后重试');
+        const err = await resp.json().catch(()=>({{detail:LD().dlErrRetry}}));
+        alert(err.detail||LD().dlErrRetry);
         btn.disabled=false; btn.innerHTML=defaultLabel; return;
       }}
       const data = await resp.json();
       if (_USE_OTA) {{
         // iOS OTA install via itms-services://
-        btn.innerHTML = _iosSvg + ' 正在启动安装…';
+        btn.innerHTML = _iosSvgConst + ' ' + LD().iosStartInstall;
         const manifestUrl = encodeURIComponent(
           window.location.origin + '/dist/{slug}/manifest.plist?token=' + data.token
         );
         window.location.href = 'itms-services://?action=download-manifest&url=' + manifestUrl;
         setTimeout(()=>{{btn.disabled=false; btn.innerHTML=defaultLabel;}}, 5000);
       }} else {{
-        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg> 开始下载…';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg> ' + LD().dlStarting;
         window.location.href = '/dist/{slug}/download?token=' + data.token;
         setTimeout(()=>{{btn.disabled=false; btn.innerHTML=defaultLabel;}}, 3000);
       }}
     }} catch(e){{
-      alert('网络错误，请稍后重试');
+      alert(LD().netError);
       btn.disabled=false; btn.innerHTML=defaultLabel;
     }}
   }}
@@ -2582,7 +2589,7 @@ def _dist_preview_html(r: dict) -> str:
       <div class="review-top">
         <div class="av-circle">${{avatarHtml(r.nickname,r.avatar_b64)}}</div>
         <div class="review-meta">
-          <div class="review-nick">${{r.nickname}}${{r.is_mine?' <span style="font-size:.7em;color:#6366f1;font-weight:700">（我）</span>':''}}</div>
+          <div class="review-nick">${{r.nickname}}${{r.is_mine?` <span style="font-size:.7em;color:#6366f1;font-weight:700">${{LD().mineLabel}}</span>`:''}}</div>
           <div class="review-stars">${{starsHtml(r.rating)}}</div>
           <div class="review-date">${{r.created_at}}</div>
         </div>
@@ -2634,17 +2641,17 @@ def _dist_preview_html(r: dict) -> str:
       if(mr) _myRating=mr.rating;
       fa.innerHTML=`
         <div class="review-form-wrap">
-          <div class="review-form-title" data-i18n="writeReview">${{mr?'修改你的评价':LD().writeReview}}</div>
+          <div class="review-form-title">${{mr?LD().editReview:LD().writeReview}}</div>
           <div class="star-row" id="star-row">
             ${{[1,2,3,4,5].map(i=>`<span class="star-pick${{i<=_myRating?' on':''}}" onclick="setRating(${{i}})" onmouseover="hoverRating(${{i}})" onmouseout="resetRating()">★</span>`).join('')}}
           </div>
           <textarea class="review-textarea" id="review-text" data-i18n-ph="reviewPh" placeholder="${{LD().reviewPh}}" maxlength="500">${{mr?mr.comment:''}}</textarea>
-          <button class="review-submit" onclick="submitReview()" data-i18n="submitReview">${{mr?'更新评价':LD().submitReview}}</button>
-          ${{mr?`<button class="review-act-btn" onclick="deleteReview()" style="margin-top:8px;display:block;font-size:.78em;color:#475569">删除我的评价</button>`:''}}
+          <button class="review-submit" onclick="submitReview()">${{mr?LD().updateReview:LD().submitReview}}</button>
+          ${{mr?`<button class="review-act-btn" onclick="deleteReview()" style="margin-top:8px;display:block;font-size:.78em;color:#475569">${{LD().deleteReviewBtn}}</button>`:''}}
         </div>`;
     }}else{{
-      fa.innerHTML=`<div class="review-login-prompt" data-i18n="reviewLoginPrompt">
-        <a href="{site}/app?action=login&return={page_url_enc}">登录</a> 后发表评价
+      fa.innerHTML=`<div class="review-login-prompt">
+        <a href="{site}/app?action=login&return={page_url_enc}">${{LD().loginLink}}</a> ${{LD().loginToReview}}
       </div>`;
     }}
     // Reviews list
@@ -2720,11 +2727,11 @@ def _dist_preview_html(r: dict) -> str:
         body:JSON.stringify({{rating:_myRating,comment}})
       }});
       if(r.ok) loadSocial();
-    }}catch(e){{alert('提交失败，请重试');}}
+    }}catch(e){{alert(LD().submitFail);}}
   }}
 
   async function deleteReview(){{
-    if(!confirm('确定删除你的评价？')) return;
+    if(!confirm(LD().confirmDelete)) return;
     try{{
       const r=await fetch('/dist/{slug}/review',{{method:'DELETE',headers:_authHdr()}});
       if(r.ok) loadSocial();
@@ -2813,6 +2820,50 @@ def _dist_preview_html(r: dict) -> str:
       copyLinkOk: '链接已复制',
       downloadOk: '开始下载',
       langBtn: 'EN',
+      // Extra
+      qrHint: '手机扫码直接访问',
+      copyLinkTitle: '复制链接',
+      likesLabel: '喜欢',
+      reviewsLabel: '条评价',
+      appDesc: '应用介绍',
+      versionPrefix: '版本',
+      mineLabel: '（我）',
+      editReview: '修改你的评价',
+      updateReview: '更新评价',
+      deleteReviewBtn: '删除我的评价',
+      submitFail: '提交失败，请重试',
+      confirmDelete: '确定删除你的评价？',
+      loginLink: '登录',
+      loginToReview: '后发表评价',
+      iosInstallBtn: '安装到 iPhone / iPad',
+      preparing: '准备中…',
+      preparingIos: '准备安装…',
+      dlErrRetry: '下载失败，请稍后重试',
+      iosStartInstall: '正在启动安装…',
+      dlStarting: '开始下载…',
+      netError: '网络错误，请稍后重试',
+      downloadPfx: '下载',
+      ovLoginTitle: '登录后即可下载',
+      ovLoginBody: '请先登录或注册账号，下载无需消耗次数（仅非上传者需要 1 Credit）',
+      ovLoginBtn: '登录账号',
+      ovRegBtn: '注册账号',
+      ovCreditsTitle: 'Credits 不足',
+      ovCreditsBody: '每次下载消耗 1 Credit，购买套餐即可获得 Credits，上传者下载免费',
+      ovCreditsBtn: '立即购买 Credits',
+      ovCreditsCancel: '取消',
+      linkUnavailable: '链接已失效',
+      aiPromoTitle: 'AppSec AI 安全扫描',
+      aiPromoCopy: '使用 AI 深度检测此应用的安全风险，保护你的用户',
+      aiFeat1: '深度漏洞扫描 & CVE 检测',
+      aiFeat2: '隐私数据追踪 & 合规分析',
+      aiFeat3: '恶意行为 & 后门识别',
+      aiCta: '免费扫描此应用 →',
+      neverExpires: '永不过期',
+      expired: '已过期',
+      expiresToday: '今天过期',
+      expiresInDays: n => `${{n}} 天后过期`,
+      dlTimes: n => `${{n}} 次`,
+      dlTimesOf: (n, max) => `${{n}} / ${{max}} 次`,
     }},
     en: {{
       platformSub: 'Secure App Distribution',
@@ -2842,6 +2893,50 @@ def _dist_preview_html(r: dict) -> str:
       copyLinkOk: 'Link Copied',
       downloadOk: 'Starting Download',
       langBtn: '中文',
+      // Extra
+      qrHint: 'Scan with your phone',
+      copyLinkTitle: 'Copy Link',
+      likesLabel: 'Likes',
+      reviewsLabel: 'Reviews',
+      appDesc: 'Description',
+      versionPrefix: 'Version',
+      mineLabel: ' (Me)',
+      editReview: 'Edit Your Review',
+      updateReview: 'Update Review',
+      deleteReviewBtn: 'Delete My Review',
+      submitFail: 'Submission failed, please retry',
+      confirmDelete: 'Delete your review?',
+      loginLink: 'Sign in',
+      loginToReview: 'to write a review',
+      iosInstallBtn: 'Install on iPhone / iPad',
+      preparing: 'Preparing…',
+      preparingIos: 'Preparing Install…',
+      dlErrRetry: 'Download failed, please try again',
+      iosStartInstall: 'Starting Install…',
+      dlStarting: 'Starting Download…',
+      netError: 'Network error, please try again',
+      downloadPfx: 'Download',
+      ovLoginTitle: 'Sign in to Download',
+      ovLoginBody: 'Sign in or register to download — no credits needed (only 1 Credit for non-uploaders)',
+      ovLoginBtn: 'Sign In',
+      ovRegBtn: 'Create Account',
+      ovCreditsTitle: 'Insufficient Credits',
+      ovCreditsBody: 'Each download costs 1 Credit. Purchase a package to get credits — uploaders download free',
+      ovCreditsBtn: 'Buy Credits',
+      ovCreditsCancel: 'Cancel',
+      linkUnavailable: 'Link Unavailable',
+      aiPromoTitle: 'AppSec AI Security Scan',
+      aiPromoCopy: 'Use AI to detect security risks in this app and protect your users',
+      aiFeat1: 'Deep vulnerability scan & CVE detection',
+      aiFeat2: 'Privacy tracking & compliance analysis',
+      aiFeat3: 'Malicious behavior & backdoor detection',
+      aiCta: 'Scan this app for free →',
+      neverExpires: 'Never expires',
+      expired: 'Expired',
+      expiresToday: 'Expires today',
+      expiresInDays: n => `Expires in ${{n}} day${{n===1?'':'s'}}`,
+      dlTimes: n => `${{n}} download${{n===1?'':'s'}}`,
+      dlTimesOf: (n, max) => `${{n}} / ${{max}}`,
     }},
   }};
   let _langDist = localStorage.getItem('lang') || 'zh';
@@ -2856,6 +2951,34 @@ def _dist_preview_html(r: dict) -> str:
       if (LD()[k] !== undefined) el.placeholder = LD()[k];
     }});
     document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LD().langBtn);
+    // Download button label
+    const dlLbl = document.getElementById('dl-btn-label');
+    if (dlLbl) dlLbl.textContent = LD().downloadPfx + ' ' + _FILE_TYPE;
+    const dlBtn = document.getElementById('dl-btn');
+    if (_USE_OTA && dlBtn && !dlBtn.disabled) dlBtn.innerHTML = _iosSvgConst + ' ' + LD().iosInstallBtn;
+    // Copy-wrap tooltip
+    const cw = document.getElementById('copy-wrap-el');
+    if (cw) cw.title = LD().copyLinkTitle;
+    // Expiry value
+    const expEl = document.getElementById('exp-val');
+    if (expEl) {{
+      if (_EXP_DAYS === null) {{
+        expEl.innerHTML = `<span style="color:#34d399">${{LD().neverExpires}}</span>`;
+      }} else if (_EXP_DAYS < 0) {{
+        expEl.innerHTML = `<span style="color:#f87171">${{LD().expired}}</span>`;
+      }} else if (_EXP_DAYS === 0) {{
+        expEl.innerHTML = `<span style="color:#fbbf24">${{LD().expiresToday}}</span>`;
+      }} else {{
+        expEl.innerHTML = `<span style="color:#34d399">${{LD().expiresInDays(_EXP_DAYS)}}</span>`;
+      }}
+    }}
+    // Download count value
+    const dlEl = document.getElementById('dl-val');
+    if (dlEl) {{
+      dlEl.textContent = _MAX_DL > 0
+        ? LD().dlTimesOf(_DL_COUNT, _MAX_DL)
+        : LD().dlTimes(_DL_COUNT);
+    }}
   }}
   function toggleLangPage() {{
     _langDist = _langDist === 'zh' ? 'en' : 'zh';
