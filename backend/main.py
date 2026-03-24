@@ -1627,6 +1627,23 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                 if app_name and not info.get("display_name"):
                     info["display_name"] = re.sub(r'\.app$', '', app_name, flags=re.I)
 
+                # ── Step 0b: extract version from Info.plist ──────────────
+                if app_name and not info.get("version"):
+                    subprocess.run(
+                        ["7z", "e", str(path), f"-o{tmp}", "Info.plist", "-r", "-y"],
+                        capture_output=True, timeout=30,
+                    )
+                    plist_path = tmp_path / "Info.plist"
+                    if plist_path.exists():
+                        try:
+                            pl = plistlib.load(plist_path.open("rb"))
+                            info["version"] = (
+                                pl.get("CFBundleShortVersionString") or
+                                pl.get("CFBundleVersion") or ""
+                            ).strip()
+                        except Exception:
+                            pass
+
                 # ── Step 1: extract .icns files ───────────────────────────
                 subprocess.run(
                     ["7z", "e", str(path), f"-o{tmp}", "*.icns", "-r", "-y"],
@@ -1689,10 +1706,26 @@ def _extract_app_info(path: Path, ext: str) -> dict:
                             import io as _io3
                             with _PILImage3.open(_io3.BytesIO(raw)) as _chk:
                                 w, h = _chk.size
-                            if w >= 32:  # skip tiny icons
-                                info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
-                                icon_set = True
-                                break
+                                if w < 32:
+                                    continue
+                                # Crop to visible (non-transparent) bounding box
+                                _img = _chk.convert("RGBA")
+                                _bbox = _img.split()[3].getbbox()
+                                if _bbox:
+                                    _img = _img.crop(_bbox)
+                                _buf = _io3.BytesIO()
+                                _img.save(_buf, format="PNG")
+                                raw = _buf.getvalue()
+                            # Skip if still mostly transparent after crop
+                            from PIL import Image as _PILImage4
+                            with _PILImage4.open(_io3.BytesIO(raw)) as _chk2:
+                                _data = list(_chk2.convert("RGBA").getdata())
+                                _vis = sum(1 for px in _data if px[3] >= 10)
+                                if _vis / len(_data) < 0.05:
+                                    continue
+                            info["icon_b64"] = base64.b64encode(_resize_icon(raw, 128)).decode()
+                            icon_set = True
+                            break
                         except Exception:
                             continue
         except Exception:
