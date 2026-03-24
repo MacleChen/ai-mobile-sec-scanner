@@ -114,6 +114,12 @@ def _fetch(feed: dict) -> list[dict]:
         enc = item.find("enclosure")
         if not img and enc is not None and "image" in (enc.get("type") or ""):
             img = enc.get("url", "")
+        # first <img> tag inside description HTML
+        if not img:
+            raw_desc = item.findtext("description", "")
+            m2 = re.search(r'<img[^>]+src=["\']([^"\']{10,})["\']', raw_desc or "")
+            if m2:
+                img = m2.group(1)
         if title and link:
             items.append({"title": title, "url": link,
                           "summary": desc[:500], "published_at": pub, "image_url": img})

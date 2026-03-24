@@ -3251,19 +3251,22 @@ footer a{color:#3b82f6}
 /* card */
 .ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit;overflow:hidden;position:relative}
 .ncard:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.55)}
-.ncard-accent{height:3px;width:100%;flex-shrink:0}
-.ncard-body{padding:14px 16px 14px;display:flex;flex-direction:column;gap:7px;flex:1}
+.ncard-media{width:100%;aspect-ratio:16/9;overflow:hidden;flex-shrink:0;background:#0d1426}
+.ncard-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
+.ncard:hover .ncard-media img{transform:scale(1.05)}
+.ncard-media-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.ncard-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
 .ncard-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .ncard-src{font-size:.65em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:5px}
 .ncard-src-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 .ncard-time{font-size:.62em;color:var(--muted);flex-shrink:0}
 .ncard-cat{display:inline-flex;align-items:center;padding:1px 7px;border-radius:6px;font-size:.6em;font-weight:700;letter-spacing:.03em;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted)}
-.ncard-title{font-size:.88em;font-weight:700;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
-.ncard-summary{font-size:.73em;color:var(--muted2);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
-.ncard-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:auto}
+.ncard-title{font-size:.86em;font-weight:700;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
+.ncard-summary{font-size:.72em;color:var(--muted2);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:auto}
 .ncard-read{font-size:.7em;font-weight:700;display:inline-flex;align-items:center;gap:3px;transition:gap .15s}
 .ncard:hover .ncard-read{gap:6px}
-.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:160px;animation:pulse 1.6s ease-in-out infinite}
+.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:240px;animation:pulse 1.6s ease-in-out infinite}
 /* news empty */
 .news-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.83em}
 .news-more-link{font-size:.76em;color:var(--muted);font-weight:600;transition:color .15s;white-space:nowrap;display:flex;align-items:center;gap:4px}
@@ -3388,45 +3391,41 @@ function filterNews(cat,el){
 }
 function renderNews(articles){
   const rail=document.getElementById('news-rail');
-  if(!articles||!articles.length){
-    rail.innerHTML='<div class="news-empty">暂无资讯，稍后再来</div>';
-    return;
-  }
+  if(!articles||!articles.length){rail.innerHTML='<div class="news-empty">暂无资讯，稍后再来</div>';return;}
   const _dlSvgN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
+  const _ph='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
   rail.innerHTML='';
   articles.forEach(a=>{
     const nc=_ncOf(a.category);
-    const catStyle=`background:${nc.grad}`;
-    const srcStyle=`color:${nc.color}`;
-    const dotStyle=`background:${nc.dot}`;
-    const title=esc(a.title||'');
-    const summary=esc(a.summary||'');
-    const time=relTime(a.created_at);
     const card=document.createElement('a');
-    card.className='ncard';
-    card.href=a.url||'#';
-    card.target='_blank';
-    card.rel='noopener noreferrer';
+    card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
+    const media=a.image_url
+      ?`<div class="ncard-media"><img src="${esc(a.image_url)}" alt="" loading="lazy"></div>`
+      :`<div class="ncard-media" style="background:${nc.grad}"><div class="ncard-media-ph">${_ph}</div></div>`;
     card.innerHTML=`
-      <div class="ncard-accent" style="${catStyle}"></div>
+      ${media}
       <div class="ncard-body">
         <div class="ncard-top">
-          <div class="ncard-src" style="${srcStyle}">
-            <div class="ncard-src-dot" style="${dotStyle}"></div>
+          <div class="ncard-src" style="color:${nc.color}">
+            <div class="ncard-src-dot" style="background:${nc.dot}"></div>
             ${esc(a.source||'资讯')}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <span class="ncard-cat">${esc(a.category||'')}</span>
-            <span class="ncard-time">${time}</span>
+            <span class="ncard-time">${relTime(a.created_at)}</span>
           </div>
         </div>
-        <div class="ncard-title">${title}</div>
-        ${summary?`<div class="ncard-summary">${summary}</div>`:''}
+        <div class="ncard-title">${esc(a.title||'')}</div>
+        ${a.summary?`<div class="ncard-summary">${esc(a.summary)}</div>`:''}
         <div class="ncard-footer">
-          <div></div>
-          <div class="ncard-read" style="${srcStyle}">阅读原文 ${_dlSvgN}</div>
+          <div class="ncard-read" style="color:${nc.color}">阅读原文 ${_dlSvgN}</div>
         </div>
       </div>`;
+    const img=card.querySelector('img');
+    if(img) img.addEventListener('error',()=>{
+      const m=img.parentNode;m.style.background=nc.grad;
+      m.innerHTML=`<div class="ncard-media-ph">${_ph}</div>`;
+    });
     rail.appendChild(card);
   });
 }
@@ -3738,24 +3737,26 @@ header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-f
 .tab-count.on{background:rgba(6,182,212,.2);color:#22d3ee}
 .toolbar{max-width:1200px;margin:0 auto;padding:12px 20px 2px;display:flex;align-items:center;gap:8px}
 #results-info{font-size:.75em;color:var(--muted)}
-.grid{max-width:1200px;margin:0 auto;padding:14px 20px 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);gap:13px}}
+.grid{max-width:1200px;margin:0 auto;padding:14px 20px 32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;align-items:start}
 @media(max-width:540px){.grid{grid-template-columns:1fr;gap:11px;padding:12px 14px 28px}}
 .ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit}
 .ncard:hover{transform:translateY(-4px);box-shadow:0 18px 52px rgba(0,0,0,.65);border-color:rgba(255,255,255,.15)}
-.ncard-accent{height:3px;flex-shrink:0}
-.ncard-body{padding:15px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ncard-media{width:100%;aspect-ratio:16/9;overflow:hidden;flex-shrink:0;position:relative;background:#0d1426}
+.ncard-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
+.ncard:hover .ncard-media img{transform:scale(1.05)}
+.ncard-media-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.ncard-body{padding:14px 15px;display:flex;flex-direction:column;gap:7px;flex:1}
 .ncard-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .ncard-src{font-size:.64em;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 .ncard-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);flex-shrink:0}
 .ncard-cat{display:inline-flex;padding:1px 7px;border-radius:7px;font-size:.6em;font-weight:700;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--muted2)}
 .ncard-time{font-size:.62em;color:var(--muted);margin-left:auto;flex-shrink:0}
-.ncard-title{font-size:.9em;font-weight:700;line-height:1.48;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);flex:1}
-.ncard-summary{font-size:.73em;color:var(--muted2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--border);margin-top:auto}
+.ncard-title{font-size:.88em;font-weight:700;line-height:1.48;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
+.ncard-summary{font-size:.72em;color:var(--muted2);line-height:1.58;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:9px;border-top:1px solid var(--border);margin-top:auto}
 .ncard-read{font-size:.71em;font-weight:700;display:inline-flex;align-items:center;gap:3px;transition:gap .15s}
 .ncard:hover .ncard-read{gap:6px}
-.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:200px;animation:pulse 1.6s ease-in-out infinite}
+.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:280px;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
 .load-wrap{display:flex;justify-content:center;padding:8px 20px 60px}
 .load-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 36px;border-radius:28px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);color:#22d3ee;font-size:.84em;font-weight:700;cursor:pointer;transition:all .2s}
@@ -3818,12 +3819,16 @@ function clearSearch(){
 }
 function renderCards(articles){
   const g=document.getElementById('grid');
+  const _ph='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="44" height="44"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
   articles.forEach(a=>{
     const nc=_nc(a.category);
     const card=document.createElement('a');
     card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
+    const media=a.image_url
+      ?`<div class="ncard-media"><img src="${esc(a.image_url)}" alt="" loading="lazy"></div>`
+      :`<div class="ncard-media" style="background:${nc.grad}"><div class="ncard-media-ph">${_ph}</div></div>`;
     card.innerHTML=`
-      <div class="ncard-accent" style="background:${nc.grad}"></div>
+      ${media}
       <div class="ncard-body">
         <div class="ncard-top">
           <span class="ncard-src" style="color:${nc.color}">${esc(a.source||'资讯')}</span>
@@ -3837,6 +3842,11 @@ function renderCards(articles){
           <div class="ncard-read" style="color:${nc.color}">阅读原文 ${_arrowSvg}</div>
         </div>
       </div>`;
+    const img=card.querySelector('img');
+    if(img) img.addEventListener('error',()=>{
+      const m=img.parentNode;m.style.background=nc.grad;
+      m.innerHTML=`<div class="ncard-media-ph">${_ph}</div>`;
+    });
     g.appendChild(card);
   });
 }
