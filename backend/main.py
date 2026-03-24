@@ -2527,20 +2527,24 @@ def _dist_preview_html(r: dict) -> str:
       if(!d.news||!d.news.length) return;
       const g=document.getElementById('news-grid');
       g.innerHTML='';
-      d.news.forEach(a=>{{
+      d.news.forEach((a,idx)=>{{
         const nc=_nc(a.category);
+        // Use article image, or fall back to a deterministic picsum photo based on article id
+        const seed=a.id||idx;
+        const fallbackImg=`https://picsum.photos/seed/${{seed}}/400/225`;
+        const imgUrl=a.image_url||fallbackImg;
         const card=document.createElement('a');
         card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
-        const media=a.image_url
-          ?`<div class="ncard-media"><img src="${{esc(a.image_url)}}" alt="" loading="lazy"></div>`
-          :`<div class="ncard-media" style="background:linear-gradient(${{nc.grad}})"><div class="ncard-media-ph">${{_newsph}}</div></div>`;
-        card.innerHTML=media+`<div class="ncard-body">
+        card.innerHTML=`<div class="ncard-media"><img src="${{esc(imgUrl)}}" alt="" loading="lazy"></div>`
+          +`<div class="ncard-body">
           <span class="ncard-cat" style="color:${{nc.col}};background:${{nc.bg}};border-color:${{nc.brd}}">${{esc(a.category||'资讯')}}</span>
           <div class="ncard-title">${{esc(a.title)}}</div>
           <div class="ncard-src">${{esc(a.source||'')}}</div>
         </div>`;
         const img=card.querySelector('img');
         if(img) img.addEventListener('error',()=>{{
+          // If even picsum fails, fall back to gradient
+          if(img.src!==fallbackImg){{ img.src=fallbackImg; return; }}
           const m=img.parentNode;m.style.background=`linear-gradient(${{nc.grad}})`;
           m.innerHTML=`<div class="ncard-media-ph">${{_newsph}}</div>`;
         }});
@@ -3313,48 +3317,7 @@ footer a{color:#3b82f6}
 /* Skeleton spot */
 .feat-card-sk{flex-shrink:0;width:280px;height:148px;border-radius:16px;background:var(--card);border:1px solid var(--border);animation:pulse 1.6s ease-in-out infinite}
 .hot-card-sk{background:var(--card);border:1px solid var(--border);border-radius:12px;height:62px;animation:pulse 1.6s ease-in-out infinite}
-/* ── News section ──────────────────────────────────────── */
-#news-wrap{border-top:1px solid var(--border);margin-top:4px}
-.news-section{max-width:1440px;margin:0 auto;padding:22px 20px 10px}
-.news-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
-.news-hd-left{display:flex;align-items:center;gap:10px}
-.news-hd-icon{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(6,182,212,.3)}
-.news-hd-title{font-size:.97em;font-weight:800;letter-spacing:-.01em}
-.news-hd-sub{font-size:.72em;color:var(--muted);margin-left:2px}
-.news-cats{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
-.news-cats::-webkit-scrollbar{display:none}
-.news-cat-btn{padding:4px 13px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.74em;font-weight:600;transition:all .15s;white-space:nowrap}
-.news-cat-btn.on{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4);color:#22d3ee}
-.news-cat-btn:hover:not(.on){background:rgba(255,255,255,.06);color:var(--text);border-color:rgba(255,255,255,.14)}
-/* rail */
-.news-rail{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding-bottom:4px}
-@media(max-width:640px){.news-rail{grid-template-columns:1fr}}
-/* card */
-.ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit;overflow:hidden;position:relative}
-.ncard:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.55)}
-.ncard-media{width:100%;aspect-ratio:16/9;overflow:hidden;flex-shrink:0;background:#0d1426}
-.ncard-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
-.ncard:hover .ncard-media img{transform:scale(1.05)}
-.ncard-media-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.ncard-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
-.ncard-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
-.ncard-src{font-size:.65em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:5px}
-.ncard-src-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.ncard-time{font-size:.62em;color:var(--muted);flex-shrink:0}
-.ncard-cat{display:inline-flex;align-items:center;padding:1px 7px;border-radius:6px;font-size:.6em;font-weight:700;letter-spacing:.03em;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted)}
-.ncard-title{font-size:.86em;font-weight:700;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
-.ncard-summary{font-size:.72em;color:var(--muted2);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:auto}
-.ncard-read{font-size:.7em;font-weight:700;display:inline-flex;align-items:center;gap:3px;transition:gap .15s}
-.ncard:hover .ncard-read{gap:6px}
-.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:240px;animation:pulse 1.6s ease-in-out infinite}
-/* news empty */
-.news-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.83em}
-.news-more-link{font-size:.76em;color:var(--muted);font-weight:600;transition:color .15s;white-space:nowrap;display:flex;align-items:center;gap:4px}
-.news-more-link:hover{color:#22d3ee}
-.news-more-row{padding:14px 0 6px;display:flex;justify-content:center}
-.news-more-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 24px;border-radius:24px;background:rgba(6,182,212,.09);border:1px solid rgba(6,182,212,.25);color:#22d3ee;font-size:.8em;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s}
-.news-more-btn:hover{background:rgba(6,182,212,.18);box-shadow:0 4px 18px rgba(6,182,212,.15)}"""
+.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:240px;animation:pulse 1.6s ease-in-out infinite}"""
     js = """const PS=24;
 let q='',plat='',cat='',srt='newest',pg=1,total=0;
 const PL={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
@@ -3442,88 +3405,6 @@ async function load(){
 // ── Platform gradient map ─────────────────────────────────
 const _PLAT_GRAD={android:'135deg,#22c55e,#15803d',ios:'135deg,#8b5cf6,#6d28d9',windows:'135deg,#38bdf8,#0284c7',macos:'135deg,#34d399,#059669',linux:'135deg,#fb923c,#ea580c',other:'135deg,#6366f1,#4f46e5'};
 const _PLAT_NAME={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
-// ── News section ──────────────────────────────────────────
-const _NC={
-  '科技':  {grad:'linear-gradient(90deg,#06b6d4,#3b82f6)', color:'#22d3ee', dot:'#06b6d4'},
-  '软件':  {grad:'linear-gradient(90deg,#a78bfa,#7c3aed)', color:'#a78bfa', dot:'#8b5cf6'},
-  'Tech':  {grad:'linear-gradient(90deg,#60a5fa,#1d4ed8)', color:'#60a5fa', dot:'#3b82f6'},
-  'Dev':   {grad:'linear-gradient(90deg,#4ade80,#15803d)', color:'#4ade80', dot:'#22c55e'},
-  'Security':{grad:'linear-gradient(90deg,#f87171,#b91c1c)', color:'#f87171', dot:'#ef4444'},
-};
-const _DEFAULT_NC={grad:'linear-gradient(90deg,#6366f1,#8b5cf6)',color:'#a5b4fc',dot:'#6366f1'};
-let _newsAll=[], _newsCat='';
-function _ncOf(cat){return _NC[cat]||_DEFAULT_NC;}
-function relTime(dt){
-  if(!dt) return '';
-  const d=new Date(dt.replace(' ','T'));
-  if(isNaN(d)) return '';
-  const s=(Date.now()-d.getTime())/1000;
-  if(s<120) return '刚刚';
-  if(s<3600) return Math.floor(s/60)+'分钟前';
-  if(s<86400) return Math.floor(s/3600)+'小时前';
-  if(s<604800) return Math.floor(s/86400)+'天前';
-  return d.toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
-}
-function filterNews(cat,el){
-  _newsCat=cat;
-  document.querySelectorAll('.news-cat-btn').forEach(b=>b.classList.remove('on'));
-  el.classList.add('on');
-  renderNews(_newsCat?_newsAll.filter(a=>a.category===cat):_newsAll);
-}
-function renderNews(articles){
-  const rail=document.getElementById('news-rail');
-  if(!articles||!articles.length){rail.innerHTML='<div class="news-empty">暂无资讯，稍后再来</div>';return;}
-  const _dlSvgN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
-  const _ph='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
-  rail.innerHTML='';
-  articles.forEach(a=>{
-    const nc=_ncOf(a.category);
-    const card=document.createElement('a');
-    card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
-    const media=a.image_url
-      ?`<div class="ncard-media"><img src="${esc(a.image_url)}" alt="" loading="lazy"></div>`
-      :`<div class="ncard-media" style="background:${nc.grad}"><div class="ncard-media-ph">${_ph}</div></div>`;
-    card.innerHTML=`
-      ${media}
-      <div class="ncard-body">
-        <div class="ncard-top">
-          <div class="ncard-src" style="color:${nc.color}">
-            <div class="ncard-src-dot" style="background:${nc.dot}"></div>
-            ${esc(a.source||'资讯')}
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span class="ncard-cat">${esc(a.category||'')}</span>
-            <span class="ncard-time">${relTime(a.created_at)}</span>
-          </div>
-        </div>
-        <div class="ncard-title">${esc(a.title||'')}</div>
-        ${a.summary?`<div class="ncard-summary">${esc(a.summary)}</div>`:''}
-        <div class="ncard-footer">
-          <div class="ncard-read" style="color:${nc.color}">阅读原文 ${_dlSvgN}</div>
-        </div>
-      </div>`;
-    const img=card.querySelector('img');
-    if(img) img.addEventListener('error',()=>{
-      const m=img.parentNode;m.style.background=nc.grad;
-      m.innerHTML=`<div class="ncard-media-ph">${_ph}</div>`;
-    });
-    rail.appendChild(card);
-  });
-}
-async function loadNews(){
-  const wrap=document.getElementById('news-wrap');
-  const rail=document.getElementById('news-rail');
-  rail.innerHTML='';
-  for(let i=0;i<4;i++){const d=document.createElement('div');d.className='ncard-sk';rail.appendChild(d);}
-  try{
-    const r=await fetch('/market/news?limit=4',{cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    _newsAll=(d.news||[]).slice(0,4);
-    if(_newsAll.length){wrap.style.display='';renderNews(_newsAll);}
-    else{wrap.style.display='none';}
-  }catch(e){wrap.style.display='none';console.error('[news]',e);}
-}
 // ── Spotlight: Featured + Hot ─────────────────────────────
 function renderFeatured(apps){
   const rail=document.getElementById('feat-rail');
@@ -3613,7 +3494,6 @@ async function loadSpotlight(){
 const _heroEl=document.getElementById('hero-sec');
 if(_heroEl){const _obs=new IntersectionObserver(([e])=>{document.getElementById('sticky-bar').classList.toggle('show',!e.isIntersecting);},{rootMargin:'-58px 0px 0px 0px'});_obs.observe(_heroEl);}
 loadSpotlight();
-loadNews();
 load();"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -3697,35 +3577,6 @@ load();"""
   </div>
 
   <hr class="spot-divider" id="spot-divider" style="display:none">
-</div>
-
-<!-- ── News section ─────────────────────────────────────── -->
-<div id="news-wrap" style="display:none">
-  <div class="news-section">
-    <div class="news-hd">
-      <div class="news-hd-left">
-        <div class="news-hd-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
-        </div>
-        <div>
-          <div class="news-hd-title">科技资讯</div>
-          <div class="news-hd-sub">每日科技 · 软件 · 开发动态</div>
-        </div>
-      </div>
-      <a class="news-more-link" href="/news">
-        查看全部
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-    </div>
-    <div class="news-rail" id="news-rail"></div>
-    <div class="news-more-row">
-      <a class="news-more-btn" href="/news">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
-        查看全部资讯
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
-  </div>
 </div>
 
 <div class="filters">
