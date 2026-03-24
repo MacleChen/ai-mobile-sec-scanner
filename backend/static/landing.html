@@ -188,6 +188,10 @@
     .theme-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
     [data-theme=light] .theme-btn{border-color:rgba(0,0,0,.1);color:#64748b}
     [data-theme=light] .theme-btn:hover{background:rgba(0,0,0,.06);color:#0f172a}
+    .lang-toggle{background:transparent;border:1px solid var(--border);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:.78em;font-weight:700;color:var(--muted);transition:all .2s;flex-shrink:0}
+    .lang-toggle:hover{background:rgba(255,255,255,.08);color:var(--text)}
+    [data-theme=light] .lang-toggle{border-color:rgba(0,0,0,.1);color:#64748b}
+    [data-theme=light] .lang-toggle:hover{background:rgba(0,0,0,.05);color:#0f172a}
     html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
@@ -1056,19 +1060,20 @@
     AppSec AI
   </div>
   <div class="nav-links">
-    <a href="#features">功能</a>
-    <a href="#how">使用流程</a>
-    <a href="#detection">检测项目</a>
-    <a href="#dist-marketing">应用分发</a>
-    <a href="#market-section">应用市场</a>
-    <a href="#pricing">定价</a>
-    <a href="#referral">推广奖励</a>
-    <a href="#faq">FAQ</a>
+    <a href="#features" data-i18n="navFeatures">功能</a>
+    <a href="#how" data-i18n="navHow">使用流程</a>
+    <a href="#detection" data-i18n="navDetection">检测项目</a>
+    <a href="#dist-marketing" data-i18n="navDist">应用分发</a>
+    <a href="#market-section" data-i18n="navMarket">应用市场</a>
+    <a href="#pricing" data-i18n="navPricing">定价</a>
+    <a href="#referral" data-i18n="navReferral">推广奖励</a>
+    <a href="#faq" data-i18n="navFaq">FAQ</a>
   </div>
   <div class="nav-cta">
     <button class="theme-btn" id="theme-btn-landing" onclick="_toggleTheme()" title="切换主题"></button>
-    <a href="/app" class="btn-outline-sm">登录</a>
-    <a href="/app" class="btn-primary-sm">免费开始 →</a>
+    <button class="lang-toggle" id="lang-btn-landing" onclick="toggleLangPage()">EN</button>
+    <a href="/app" class="btn-outline-sm" data-i18n="navLogin">登录</a>
+    <a href="/app" class="btn-primary-sm" data-i18n="navCta">免费开始 →</a>
   </div>
   <button class="nav-hamburger" id="hamburgerBtn" aria-label="菜单">
     <svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -1079,16 +1084,16 @@
 
 <!-- ═══ MOBILE MENU ═════════════════════════════════════════ -->
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#features" onclick="closeMobileMenu()">功能</a>
-  <a href="#how" onclick="closeMobileMenu()">使用流程</a>
-  <a href="#detection" onclick="closeMobileMenu()">检测项目</a>
-  <a href="#dist-marketing" onclick="closeMobileMenu()">应用分发</a>
-  <a href="#market-section" onclick="closeMobileMenu()">应用市场</a>
-  <a href="#pricing" onclick="closeMobileMenu()">定价</a>
-  <a href="#referral" onclick="closeMobileMenu()">推广奖励</a>
-  <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
+  <a href="#features" onclick="closeMobileMenu()" data-i18n="navFeatures">功能</a>
+  <a href="#how" onclick="closeMobileMenu()" data-i18n="navHow">使用流程</a>
+  <a href="#detection" onclick="closeMobileMenu()" data-i18n="navDetection">检测项目</a>
+  <a href="#dist-marketing" onclick="closeMobileMenu()" data-i18n="navDist">应用分发</a>
+  <a href="#market-section" onclick="closeMobileMenu()" data-i18n="navMarket">应用市场</a>
+  <a href="#pricing" onclick="closeMobileMenu()" data-i18n="navPricing">定价</a>
+  <a href="#referral" onclick="closeMobileMenu()" data-i18n="navReferral">推广奖励</a>
+  <a href="#faq" onclick="closeMobileMenu()" data-i18n="navFaq">FAQ</a>
   <div class="mobile-menu-divider"></div>
-  <a href="/app" class="btn-primary-sm">免费开始，赠 1 次扫描 →</a>
+  <a href="/app" class="btn-primary-sm" data-i18n="navLogin2">登录</a>
 </div>
 
 <!-- ═══ HERO ═══════════════════════════════════════════════ -->
@@ -1103,25 +1108,25 @@
             <div class="hero-badge" style="margin-bottom:0">
               <span class="dot"></span>
               <i data-lucide="gift" style="width:13px;height:13px;flex-shrink:0"></i>
-              注册即赠 1 次免费扫描 · 无需信用卡
+              <span data-i18n="heroBadge">注册即赠 1 次免费扫描 · 无需信用卡</span>
             </div>
           </div>
           <h1>
-            移动应用安全<br>
-            <span class="gradient-text">深度检测平台</span>
+            <span data-i18n="heroTitle1">移动应用安全</span><br>
+            <span class="gradient-text" data-i18n="heroTitle2">深度检测平台</span>
           </h1>
         </div>
 
-        <p class="hero-sub">
+        <p class="hero-sub" data-i18n="heroSub">
           上传 APK / IPA，MobSF 引擎秒级深度扫描，AI 自动生成专业安全报告。
           支持全平台应用分发、专属下载页生成与公开应用市场，一个 Credit 用到底。
         </p>
 
         <div class="hero-actions">
           <a href="/app" class="btn-hero-primary">
-            <i data-lucide="rocket" style="width:16px;height:16px"></i> 立即免费体验
+            <i data-lucide="rocket" style="width:16px;height:16px"></i> <span data-i18n="heroCtaPrimary">立即免费体验</span>
           </a>
-          <a href="#how" class="btn-hero-ghost">
+          <a href="#how" class="btn-hero-ghost" data-i18n="heroCtaGhost">
             了解工作原理 ↓
           </a>
         </div>
@@ -1130,19 +1135,19 @@
         <div class="stats-strip">
           <div class="stat-item">
             <div class="stat-num">500MB</div>
-            <div class="stat-label">最大文件支持</div>
+            <div class="stat-label" data-i18n="stat1Label">最大文件支持</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">2 分钟</div>
-            <div class="stat-label">平均出报告时间</div>
+            <div class="stat-label" data-i18n="stat2Label">平均出报告时间</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">50+</div>
-            <div class="stat-label">安全检测维度</div>
+            <div class="stat-label" data-i18n="stat3Label">安全检测维度</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">99%</div>
-            <div class="stat-label">漏洞检出率</div>
+            <div class="stat-label" data-i18n="stat4Label">漏洞检出率</div>
           </div>
         </div>
       </div>
@@ -1155,7 +1160,7 @@
             <div class="preview-dot" style="background:#ff5f57"></div>
             <div class="preview-dot" style="background:#febc2e"></div>
             <div class="preview-dot" style="background:#28c840"></div>
-            <div class="preview-url"><i data-lucide="lock" style="width:12px;height:12px;display:inline-block;vertical-align:-2px;margin-right:4px"></i>appsec.ai · 扫描报告</div>
+            <div class="preview-url"><i data-lucide="lock" style="width:12px;height:12px;display:inline-block;vertical-align:-2px;margin-right:4px"></i><span data-i18n="previewUrl">appsec.ai · 扫描报告</span></div>
           </div>
           <div class="preview-body">
             <div class="score-demo">
@@ -1164,30 +1169,30 @@
               </div>
               <div class="demo-info">
                 <h4>非小号行情 · Android 3.3.2</h4>
-                <p>MobSF 综合安全评分 · 中等风险</p>
+                <p data-i18n="previewScore">MobSF 综合安全评分 · 中等风险</p>
                 <div class="demo-badges">
-                  <span class="dbadge dbadge-warn"><i data-lucide="alert-triangle" style="width:10px;height:10px;display:inline-block;vertical-align:-1px;margin-right:3px"></i>3 高危权限</span>
-                  <span class="dbadge dbadge-info">📡 2 追踪器</span>
-                  <span class="dbadge dbadge-ok">✅ 证书正常</span>
+                  <span class="dbadge dbadge-warn"><i data-lucide="alert-triangle" style="width:10px;height:10px;display:inline-block;vertical-align:-1px;margin-right:3px"></i><span data-i18n="demoHigh">3 高危权限</span></span>
+                  <span class="dbadge dbadge-info">📡 <span data-i18n="demoTracker">2 追踪器</span></span>
+                  <span class="dbadge dbadge-ok">✅ <span data-i18n="demoCert">证书正常</span></span>
                 </div>
               </div>
             </div>
             <div class="demo-grid">
               <div class="demo-cell">
                 <div class="n n-red">0</div>
-                <div class="l">严重漏洞</div>
+                <div class="l" data-i18n="demoCritical">严重漏洞</div>
               </div>
               <div class="demo-cell">
                 <div class="n n-orange">6</div>
-                <div class="l">高危问题</div>
+                <div class="l" data-i18n="demoHighVuln">高危问题</div>
               </div>
               <div class="demo-cell">
                 <div class="n n-yellow">18</div>
-                <div class="l">中危告警</div>
+                <div class="l" data-i18n="demoMedium">中危告警</div>
               </div>
               <div class="demo-cell">
                 <div class="n n-blue">3</div>
-                <div class="l">追踪器</div>
+                <div class="l" data-i18n="demoTrackers">追踪器</div>
               </div>
             </div>
           </div>
@@ -1204,31 +1209,31 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/>
     </svg>
-    全程 TLS 加密传输
+    <span data-i18n="sec1">全程 TLS 加密传输</span>
   </div>
   <div class="sec-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
     </svg>
-    扫描后立即删除文件
+    <span data-i18n="sec2">扫描后立即删除文件</span>
   </div>
   <div class="sec-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
     </svg>
-    数据不共享给第三方
+    <span data-i18n="sec3">数据不共享给第三方</span>
   </div>
   <div class="sec-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
     </svg>
-    无需安装任何工具
+    <span data-i18n="sec4">无需安装任何工具</span>
   </div>
   <div class="sec-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
     </svg>
-    Credits 永久不过期
+    <span data-i18n="sec5">Credits 永久不过期</span>
   </div>
 </div>
 
@@ -1236,8 +1241,8 @@
 <div class="trust-section">
   <div class="container">
     <div class="trust-eyebrow">POWERED BY</div>
-    <h2 class="trust-title">核心技术栈</h2>
-    <p class="trust-sub">业界顶尖开源引擎 · 企业级 AI 能力 · 持续更新的威胁情报库</p>
+    <h2 class="trust-title" data-i18n="trustTitle">核心技术栈</h2>
+    <p class="trust-sub" data-i18n="trustSub">业界顶尖开源引擎 · 企业级 AI 能力 · 持续更新的威胁情报库</p>
     <div class="tech-grid">
       <div class="tech-card">
         <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(59,130,246,.1));border:1px solid rgba(59,130,246,.3);color:#60a5fa;margin:0 auto 16px;">
@@ -1246,7 +1251,7 @@
           </svg>
         </div>
         <h4>MobSF</h4>
-        <p>移动安全框架，APK/IPA 深度静态分析引擎</p>
+        <p data-i18n="techMobSF">移动安全框架，APK/IPA 深度静态分析引擎</p>
       </div>
       <div class="tech-card">
         <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(139,92,246,.1));border:1px solid rgba(139,92,246,.3);color:#a78bfa;margin:0 auto 16px;">
@@ -1256,7 +1261,7 @@
           </svg>
         </div>
         <h4>Gemini AI</h4>
-        <p>Google 大语言模型，智能安全摘要与风险解读</p>
+        <p data-i18n="techGemini">Google 大语言模型，智能安全摘要与风险解读</p>
       </div>
       <div class="tech-card">
         <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(16,185,129,.1));border:1px solid rgba(16,185,129,.3);color:#34d399;margin:0 auto 16px;">
@@ -1265,7 +1270,7 @@
           </svg>
         </div>
         <h4>Exodus Privacy</h4>
-        <p>追踪器 SDK 情报库，精确识别隐私风险组件</p>
+        <p data-i18n="techExodus">追踪器 SDK 情报库，精确识别隐私风险组件</p>
       </div>
       <div class="tech-card">
         <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(249,115,22,.1));border:1px solid rgba(249,115,22,.3);color:#fb923c;margin:0 auto 16px;">
@@ -1274,7 +1279,7 @@
           </svg>
         </div>
         <h4>jadx</h4>
-        <p>Android 反编译工具，还原 Java/Kotlin 源码</p>
+        <p data-i18n="techJadx">Android 反编译工具，还原 Java/Kotlin 源码</p>
       </div>
       <div class="tech-card">
         <div class="tech-icon-box" style="background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(239,68,68,.1));border:1px solid rgba(239,68,68,.3);color:#f87171;margin:0 auto 16px;">
@@ -1283,7 +1288,7 @@
           </svg>
         </div>
         <h4>APKiD</h4>
-        <p>APK 指纹识别，检测加固混淆与恶意特征</p>
+        <p data-i18n="techAPKiD">APK 指纹识别，检测加固混淆与恶意特征</p>
       </div>
     </div>
   </div>
@@ -1294,49 +1299,49 @@
   <div class="container">
     <div class="scan-counter-wrap fade-in">
       <div class="scan-counter-num" id="scanCounterEl">3,218</div>
-      <div class="scan-counter-label">次安全扫描已完成 · 来自全球开发者与安全团队</div>
+      <div class="scan-counter-label" data-i18n="scanCounterLabel">次安全扫描已完成 · 来自全球开发者与安全团队</div>
     </div>
     <div class="section-title fade-in">
-      <div class="section-eyebrow">用户评价</div>
-      <h2>开发者都在说<span class="gradient-text">什么</span></h2>
+      <div class="section-eyebrow" data-i18n="testiEyebrow">用户评价</div>
+      <h2><span data-i18n="testiTitle">开发者都在说</span><span class="gradient-text" data-i18n="testiTitleGrad">什么</span></h2>
     </div>
     <div class="testi-grid">
       <div class="testi-card fade-in fade-in-d1">
         <div class="testi-stars">★★★★★</div>
-        <div class="testi-quote">
+        <div class="testi-quote" data-i18n="testi1Quote">
           扫描完才发现 app 里有一个硬编码的阿里云 AccessKey，一直没注意到。这个工具帮我在上架前把问题揪出来了，值了。
         </div>
         <div class="testi-author">
           <div class="testi-avatar" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6)">L</div>
           <div>
             <div class="testi-name">Leo Zhang</div>
-            <div class="testi-role">独立 Android 开发者 · 上海</div>
+            <div class="testi-role" data-i18n="testi1Role">独立 Android 开发者 · 上海</div>
           </div>
         </div>
       </div>
       <div class="testi-card fade-in fade-in-d2">
         <div class="testi-stars">★★★★★</div>
-        <div class="testi-quote">
+        <div class="testi-quote" data-i18n="testi2Quote">
           做渗透测试时经常需要快速了解一个 APK 的安全基线，AppSec AI 的报告结构清晰，AI 摘要省了我大量手动整理时间。
         </div>
         <div class="testi-author">
           <div class="testi-avatar" style="background:linear-gradient(135deg,#10b981,#3b82f6)">M</div>
           <div>
             <div class="testi-name">Mike W.</div>
-            <div class="testi-role">安全研究员 · 新加坡</div>
+            <div class="testi-role" data-i18n="testi2Role">安全研究员 · 新加坡</div>
           </div>
         </div>
       </div>
       <div class="testi-card fade-in fade-in-d3">
         <div class="testi-stars">★★★★★</div>
-        <div class="testi-quote">
+        <div class="testi-quote" data-i18n="testi3Quote">
           我们团队在提审 App Store 前都会跑一遍，权限审计和追踪器检测帮我们发现了接入的一个第三方 SDK 在偷偷收集 IDFA。
         </div>
         <div class="testi-author">
           <div class="testi-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">A</div>
           <div>
             <div class="testi-name">Ada Liu</div>
-            <div class="testi-role">iOS 产品经理 · 深圳</div>
+            <div class="testi-role" data-i18n="testi3Role">iOS 产品经理 · 深圳</div>
           </div>
         </div>
       </div>
@@ -1348,9 +1353,9 @@
 <section id="features">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">核心功能</div>
-      <h2>全方位安全检测，<span class="gradient-text">一次扫描搞定</span></h2>
-      <p>从代码静态分析到 AI 智能解读，覆盖移动应用安全的每一个关键维度</p>
+      <div class="section-eyebrow" data-i18n="featEyebrow">核心功能</div>
+      <h2><span data-i18n="featTitle">全方位安全检测，</span><span class="gradient-text" data-i18n="featTitleGrad">一次扫描搞定</span></h2>
+      <p data-i18n="featSub">从代码静态分析到 AI 智能解读，覆盖移动应用安全的每一个关键维度</p>
     </div>
     <div class="features-grid">
       <div class="feature-card">
@@ -1359,8 +1364,8 @@
             <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
           </svg>
         </div>
-        <h3>深度静态分析</h3>
-        <p>基于 MobSF 引擎，反编译 APK/IPA 源码，检测危险 API 调用、硬编码密钥、不安全的网络配置与 WebView 漏洞。</p>
+        <h3 data-i18n="feat1Title">深度静态分析</h3>
+        <p data-i18n="feat1Desc">基于 MobSF 引擎，反编译 APK/IPA 源码，检测危险 API 调用、硬编码密钥、不安全的网络配置与 WebView 漏洞。</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon fi-purple">
@@ -1369,8 +1374,8 @@
             <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/>
           </svg>
         </div>
-        <h3>AI 安全摘要</h3>
-        <p>Gemini AI 读取全量扫描数据，用通俗语言生成结构化安全分析报告，一键了解应用的核心风险与改进建议。</p>
+        <h3 data-i18n="feat2Title">AI 安全摘要</h3>
+        <p data-i18n="feat2Desc">Gemini AI 读取全量扫描数据，用通俗语言生成结构化安全分析报告，一键了解应用的核心风险与改进建议。</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon fi-orange">
@@ -1378,8 +1383,8 @@
             <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
           </svg>
         </div>
-        <h3>追踪器 SDK 识别</h3>
-        <p>对接 Exodus Privacy 数据库，精确识别 Facebook、Google、Firebase 等第三方追踪 SDK，量化隐私风险。</p>
+        <h3 data-i18n="feat3Title">追踪器 SDK 识别</h3>
+        <p data-i18n="feat3Desc">对接 Exodus Privacy 数据库，精确识别 Facebook、Google、Firebase 等第三方追踪 SDK，量化隐私风险。</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon fi-green">
@@ -1387,8 +1392,8 @@
             <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
           </svg>
         </div>
-        <h3>权限安全审计</h3>
-        <p>分析所有申请权限的危险等级与实际用途，识别过度授权与权限滥用，保护用户隐私不被侵害。</p>
+        <h3 data-i18n="feat4Title">权限安全审计</h3>
+        <p data-i18n="feat4Desc">分析所有申请权限的危险等级与实际用途，识别过度授权与权限滥用，保护用户隐私不被侵害。</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon fi-pink">
@@ -1396,8 +1401,8 @@
             <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
           </svg>
         </div>
-        <h3>清单文件检查</h3>
-        <p>解析 AndroidManifest.xml / Info.plist，检测 Activity 导出风险、ATS 配置缺失、证书签名版本等关键安全项。</p>
+        <h3 data-i18n="feat5Title">清单文件检查</h3>
+        <p data-i18n="feat5Desc">解析 AndroidManifest.xml / Info.plist，检测 Activity 导出风险、ATS 配置缺失、证书签名版本等关键安全项。</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon fi-yellow">
@@ -1405,8 +1410,8 @@
             <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/>
           </svg>
         </div>
-        <h3>可视化安全评分</h3>
-        <p>基于 MobSF 综合算法输出 0–100 安全评分，配合风险等级标签，直观呈现应用整体安全状况。</p>
+        <h3 data-i18n="feat6Title">可视化安全评分</h3>
+        <p data-i18n="feat6Desc">基于 MobSF 综合算法输出 0–100 安全评分，配合风险等级标签，直观呈现应用整体安全状况。</p>
       </div>
     </div>
   </div>
@@ -1416,25 +1421,25 @@
 <section id="how">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">使用流程</div>
-      <h2>三步完成<span class="gradient-text">专业安全检测</span></h2>
-      <p>无需安装任何工具，上传文件即可开始分析</p>
+      <div class="section-eyebrow" data-i18n="howEyebrow">使用流程</div>
+      <h2><span data-i18n="howTitle">三步完成</span><span class="gradient-text" data-i18n="howTitleGrad">专业安全检测</span></h2>
+      <p data-i18n="howSub">无需安装任何工具，上传文件即可开始分析</p>
     </div>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
-        <h3>上传应用文件</h3>
-        <p>支持 Android APK 和 iOS IPA，拖拽或点击上传，最大 500 MB，传输全程加密。</p>
+        <h3 data-i18n="step1Title">上传应用文件</h3>
+        <p data-i18n="step1Desc">支持 Android APK 和 iOS IPA，拖拽或点击上传，最大 500 MB，传输全程加密。</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <h3>AI 引擎自动分析</h3>
-        <p>MobSF 深度反编译分析，Gemini AI 同步生成安全摘要，过程全自动无需手动干预。</p>
+        <h3 data-i18n="step2Title">AI 引擎自动分析</h3>
+        <p data-i18n="step2Desc">MobSF 深度反编译分析，Gemini AI 同步生成安全摘要，过程全自动无需手动干预。</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <h3>获取专业安全报告</h3>
-        <p>报告包含评分、风险项、权限列表、追踪器及 AI 建议，支持下载 HTML 报告存档。</p>
+        <h3 data-i18n="step3Title">获取专业安全报告</h3>
+        <p data-i18n="step3Desc">报告包含评分、风险项、权限列表、追踪器及 AI 建议，支持下载 HTML 报告存档。</p>
       </div>
     </div>
   </div>
@@ -1444,74 +1449,74 @@
 <section id="detection">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">检测维度</div>
-      <h2>覆盖 <span class="gradient-text">50+ 安全检测项</span></h2>
-      <p>从代码到配置，从权限到网络，全面覆盖移动安全最佳实践</p>
+      <div class="section-eyebrow" data-i18n="detEyebrow">检测维度</div>
+      <h2><span data-i18n="detTitle">覆盖 </span><span class="gradient-text" data-i18n="detTitleGrad">50+ 安全检测项</span></h2>
+      <p data-i18n="detSub">从代码到配置，从权限到网络，全面覆盖移动安全最佳实践</p>
     </div>
     <div class="detection-grid">
       <div class="detect-item">
         <div class="detect-icon-box di-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg></div>
-        <span class="detect-text">硬编码 API 密钥</span>
+        <span class="detect-text" data-i18n="det1">硬编码 API 密钥</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3.284 14.253A23.876 23.876 0 013 12c0-1.605.42-3.113 1.157-4.418"/></svg></div>
-        <span class="detect-text">不安全 HTTP 通信</span>
+        <span class="detect-text" data-i18n="det2">不安全 HTTP 通信</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286zm0 13.036h.008v.008H12v-.008z"/></svg></div>
-        <span class="detect-text">危险权限申请</span>
+        <span class="detect-text" data-i18n="det3">危险权限申请</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z"/></svg></div>
-        <span class="detect-text">第三方追踪 SDK</span>
+        <span class="detect-text" data-i18n="det4">第三方追踪 SDK</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg></div>
-        <span class="detect-text">WebView 注入风险</span>
+        <span class="detect-text" data-i18n="det5">WebView 注入风险</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></div>
-        <span class="detect-text">Activity 导出风险</span>
+        <span class="detect-text" data-i18n="det6">Activity 导出风险</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg></div>
-        <span class="detect-text">弱加密算法使用</span>
+        <span class="detect-text" data-i18n="det7">弱加密算法使用</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg></div>
-        <span class="detect-text">动态代码加载</span>
+        <span class="detect-text" data-i18n="det8">动态代码加载</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg></div>
-        <span class="detect-text">敏感数据明文存储</span>
+        <span class="detect-text" data-i18n="det9">敏感数据明文存储</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg></div>
-        <span class="detect-text">证书校验绕过</span>
+        <span class="detect-text" data-i18n="det10">证书校验绕过</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.047.83-1.867 1.866-2.013A24.204 24.204 0 0112 12.75zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 01-.62 3.478l-1.318 4.589c-.333 1.162-1.4 1.943-2.608 1.943H8.339c-1.208 0-2.275-.781-2.608-1.943l-1.317-4.59a23.91 23.91 0 01-.62-3.477A23.876 23.876 0 0112 12.75zM8 7.5a4 4 0 018 0v1a13.18 13.18 0 01-.208 1.629M8 7.5V7A4 4 0 0112 3a4 4 0 014 4v.5M8 10.5h8"/></svg></div>
-        <span class="detect-text">调试模式开启</span>
+        <span class="detect-text" data-i18n="det11">调试模式开启</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/></svg></div>
-        <span class="detect-text">签名证书分析</span>
+        <span class="detect-text" data-i18n="det12">签名证书分析</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18h3"/></svg></div>
-        <span class="detect-text">ATS 配置缺失（iOS）</span>
+        <span class="detect-text" data-i18n="det13">ATS 配置缺失（iOS）</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></div>
-        <span class="detect-text">清单文件漏洞</span>
+        <span class="detect-text" data-i18n="det14">清单文件漏洞</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z"/></svg></div>
-        <span class="detect-text">Native 库安全分析</span>
+        <span class="detect-text" data-i18n="det15">Native 库安全分析</span>
       </div>
       <div class="detect-item">
         <div class="detect-icon-box di-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33"/></svg></div>
-        <span class="detect-text">APK 指纹识别</span>
+        <span class="detect-text" data-i18n="det16">APK 指纹识别</span>
       </div>
     </div>
   </div>
@@ -1521,90 +1526,90 @@
 <section id="pricing">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">灵活定价</div>
-      <h2>按需购买，<span class="gradient-text">无订阅负担</span></h2>
-      <p>1 Credit = 1次安全扫描 <strong style="color:var(--accent)">或</strong> 1次应用分发上传，按需使用，永不过期</p>
+      <div class="section-eyebrow" data-i18n="priceEyebrow">灵活定价</div>
+      <h2><span data-i18n="priceTitle">按需购买，</span><span class="gradient-text" data-i18n="priceTitleGrad">无订阅负担</span></h2>
+      <p data-i18n="priceSub">1 Credit = 1次安全扫描 <strong style="color:var(--accent)">或</strong> 1次应用分发上传，按需使用，永不过期</p>
     </div>
     <div class="pricing-grid">
 
       <div class="price-card fade-in fade-in-d1">
-        <div class="price-name">入门包</div>
+        <div class="price-name" data-i18n="price1Name">入门包</div>
         <div class="price-credits">10</div>
         <div class="price-credits-sub">Credits</div>
         <div class="price-amount">$1.5</div>
-        <div class="price-amount-sub">≈ ¥1.08 / 次 · USDT 支付</div>
+        <div class="price-amount-sub" data-i18n="price1Sub">≈ ¥1.08 / 次 · USDT 支付</div>
         <ul class="price-features">
-          <li>Android APK 安全检测</li>
-          <li>iOS IPA 安全检测</li>
-          <li>AI 安全摘要</li>
-          <li>HTML 报告下载</li>
-          <li>应用分发上传</li>
+          <li data-i18n="priceFeature1">Android APK 安全检测</li>
+          <li data-i18n="priceFeature2">iOS IPA 安全检测</li>
+          <li data-i18n="priceFeature3">AI 安全摘要</li>
+          <li data-i18n="priceFeature4">HTML 报告下载</li>
+          <li data-i18n="priceFeature5">应用分发上传</li>
         </ul>
-        <a href="/app" class="price-btn price-btn-outline">立即购买</a>
+        <a href="/app" class="price-btn price-btn-outline" data-i18n="priceBuyBtn">立即购买</a>
       </div>
 
       <div class="price-card featured fade-in fade-in-d2">
-        <div class="price-badge">最受欢迎</div>
-        <div class="price-name">专业包</div>
+        <div class="price-badge" data-i18n="priceFeaturedBadge">最受欢迎</div>
+        <div class="price-name" data-i18n="price2Name">专业包</div>
         <div class="price-credits">50</div>
         <div class="price-credits-sub">Credits</div>
         <div class="price-amount">$5.5</div>
-        <div class="price-amount-sub">≈ ¥0.79 / 次 · 节省 27%</div>
+        <div class="price-amount-sub" data-i18n="price2Sub">≈ ¥0.79 / 次 · 节省 27%</div>
         <ul class="price-features">
-          <li>Android APK 安全检测</li>
-          <li>iOS IPA 安全检测</li>
-          <li>AI 安全摘要</li>
-          <li>HTML 报告下载</li>
-          <li>应用分发上传</li>
-          <li>优先扫描队列</li>
-          <li>完整权限分析报告</li>
+          <li data-i18n="priceFeature1">Android APK 安全检测</li>
+          <li data-i18n="priceFeature2">iOS IPA 安全检测</li>
+          <li data-i18n="priceFeature3">AI 安全摘要</li>
+          <li data-i18n="priceFeature4">HTML 报告下载</li>
+          <li data-i18n="priceFeature5">应用分发上传</li>
+          <li data-i18n="priceFeature6">优先扫描队列</li>
+          <li data-i18n="priceFeature7">完整权限分析报告</li>
         </ul>
-        <a href="/app" class="price-btn price-btn-primary">立即购买</a>
+        <a href="/app" class="price-btn price-btn-primary" data-i18n="priceBuyBtn">立即购买</a>
       </div>
 
       <div class="price-card fade-in fade-in-d3">
-        <div class="price-name">团队包</div>
+        <div class="price-name" data-i18n="price3Name">团队包</div>
         <div class="price-credits">100</div>
         <div class="price-credits-sub">Credits</div>
         <div class="price-amount">$10</div>
-        <div class="price-amount-sub">≈ ¥0.72 / 次 · 节省 33%</div>
+        <div class="price-amount-sub" data-i18n="price3Sub">≈ ¥0.72 / 次 · 节省 33%</div>
         <ul class="price-features">
-          <li>Android APK 安全检测</li>
-          <li>iOS IPA 安全检测</li>
-          <li>AI 安全摘要</li>
-          <li>HTML 报告下载</li>
-          <li>应用分发上传</li>
-          <li>优先扫描队列</li>
-          <li>完整权限分析报告</li>
-          <li>追踪器 SDK 深度报告</li>
+          <li data-i18n="priceFeature1">Android APK 安全检测</li>
+          <li data-i18n="priceFeature2">iOS IPA 安全检测</li>
+          <li data-i18n="priceFeature3">AI 安全摘要</li>
+          <li data-i18n="priceFeature4">HTML 报告下载</li>
+          <li data-i18n="priceFeature5">应用分发上传</li>
+          <li data-i18n="priceFeature6">优先扫描队列</li>
+          <li data-i18n="priceFeature7">完整权限分析报告</li>
+          <li data-i18n="priceFeature8">追踪器 SDK 深度报告</li>
         </ul>
-        <a href="/app" class="price-btn price-btn-outline">立即购买</a>
+        <a href="/app" class="price-btn price-btn-outline" data-i18n="priceBuyBtn">立即购买</a>
       </div>
 
       <div class="price-card fade-in fade-in-d4">
-        <div class="price-name">企业包</div>
+        <div class="price-name" data-i18n="price4Name">企业包</div>
         <div class="price-credits">200</div>
         <div class="price-credits-sub">Credits</div>
         <div class="price-amount">$18</div>
-        <div class="price-amount-sub">≈ ¥0.65 / 次 · 节省 40%</div>
+        <div class="price-amount-sub" data-i18n="price4Sub">≈ ¥0.65 / 次 · 节省 40%</div>
         <ul class="price-features">
-          <li>Android APK 安全检测</li>
-          <li>iOS IPA 安全检测</li>
-          <li>AI 安全摘要</li>
-          <li>HTML 报告下载</li>
-          <li>应用分发上传</li>
-          <li>优先扫描队列</li>
-          <li>完整权限分析报告</li>
-          <li>追踪器 SDK 深度报告</li>
-          <li>专属 Telegram 客服</li>
-          <li>API 接入咨询</li>
+          <li data-i18n="priceFeature1">Android APK 安全检测</li>
+          <li data-i18n="priceFeature2">iOS IPA 安全检测</li>
+          <li data-i18n="priceFeature3">AI 安全摘要</li>
+          <li data-i18n="priceFeature4">HTML 报告下载</li>
+          <li data-i18n="priceFeature5">应用分发上传</li>
+          <li data-i18n="priceFeature6">优先扫描队列</li>
+          <li data-i18n="priceFeature7">完整权限分析报告</li>
+          <li data-i18n="priceFeature8">追踪器 SDK 深度报告</li>
+          <li data-i18n="priceFeature9">专属 Telegram 客服</li>
+          <li data-i18n="priceFeature10">API 接入咨询</li>
         </ul>
-        <a href="/app" class="price-btn price-btn-outline">立即购买</a>
+        <a href="/app" class="price-btn price-btn-outline" data-i18n="priceBuyBtn">立即购买</a>
       </div>
 
     </div>
 
-    <p style="text-align:center;margin-top:24px;font-size:.82em;color:var(--muted)">
+    <p style="text-align:center;margin-top:24px;font-size:.82em;color:var(--muted)" data-i18n="priceNote">
       支持 USDT (TRC20) 支付 · Credits 永不过期 · 安全扫描与应用分发共用余额 · 首次注册可使用兑换码
     </p>
   </div>
@@ -1614,11 +1619,11 @@
 <section id="dist-marketing">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">应用分发平台</div>
-      <h2>全平台分发，<span class="gradient-text">一键生成下载页</span></h2>
-      <p>无需上架应用商店，上传即获得专属下载链接与二维码，支持 Android / iOS / Windows / macOS / Linux 全平台</p>
+      <div class="section-eyebrow" data-i18n="distEyebrow">应用分发平台</div>
+      <h2><span data-i18n="distTitle">全平台分发，</span><span class="gradient-text" data-i18n="distTitleGrad">一键生成下载页</span></h2>
+      <p data-i18n="distSub">无需上架应用商店，上传即获得专属下载链接与二维码，支持 Android / iOS / Windows / macOS / Linux 全平台</p>
       <p style="margin-top:12px;font-size:.85em;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:8px 18px;display:inline-block;color:#c4b5fd">
-        <i data-lucide="lightbulb" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;color:#60a5fa"></i>每次上传消耗 1 Credit，与安全扫描共用余额，一个账号搞定全流程
+        <i data-lucide="lightbulb" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;color:#60a5fa"></i><span data-i18n="distNote">每次上传消耗 1 Credit，与安全扫描共用余额，一个账号搞定全流程</span>
       </p>
     </div>
 
@@ -1636,37 +1641,37 @@
         <div class="dist-mkt-step fade-in">
           <div class="dist-mkt-num">1</div>
           <div>
-            <h4>上传任意平台的应用文件</h4>
-            <p>支持 APK、IPA、EXE、MSI、DMG、PKG、DEB、RPM、AppImage 等格式，最大 500 MB。平台自动识别平台类型，提取应用图标与版本号。</p>
+            <h4 data-i18n="distStep1Title">上传任意平台的应用文件</h4>
+            <p data-i18n="distStep1Desc">支持 APK、IPA、EXE、MSI、DMG、PKG、DEB、RPM、AppImage 等格式，最大 500 MB。平台自动识别平台类型，提取应用图标与版本号。</p>
           </div>
         </div>
         <div class="dist-mkt-step fade-in fade-in-d1">
           <div class="dist-mkt-num">2</div>
           <div>
-            <h4>获得专属下载页 + 二维码</h4>
-            <p>自动生成精美下载页，包含应用图标、版本信息、二维码与直接下载按钮。手机扫码或分享链接，用户一键下载，无需注册。</p>
+            <h4 data-i18n="distStep2Title">获得专属下载页 + 二维码</h4>
+            <p data-i18n="distStep2Desc">自动生成精美下载页，包含应用图标、版本信息、二维码与直接下载按钮。手机扫码或分享链接，用户一键下载，无需注册。</p>
           </div>
         </div>
         <div class="dist-mkt-step fade-in fade-in-d2">
           <div class="dist-mkt-num">3</div>
           <div>
-            <h4>精细管控分发权限</h4>
-            <p>可设置有效天数（1/3/7/30/90 天或永久）和最大下载次数，到期自动失效，防止链接扩散失控，精准把握内测范围。</p>
+            <h4 data-i18n="distStep3Title">精细管控分发权限</h4>
+            <p data-i18n="distStep3Desc">可设置有效天数（1/3/7/30/90 天或永久）和最大下载次数，到期自动失效，防止链接扩散失控，精准把握内测范围。</p>
           </div>
         </div>
         <div class="dist-mkt-step fade-in fade-in-d3">
           <div class="dist-mkt-num">4</div>
           <div>
-            <h4>一键上架应用市场（可选）</h4>
-            <p>点击"上架"将应用公开到平台应用市场，让更多用户发现你的作品。随时可下架，完全掌控发布节奏。</p>
+            <h4 data-i18n="distStep4Title">一键上架应用市场（可选）</h4>
+            <p data-i18n="distStep4Desc">点击"上架"将应用公开到平台应用市场，让更多用户发现你的作品。随时可下架，完全掌控发布节奏。</p>
           </div>
         </div>
         <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap" class="fade-in fade-in-d4">
-          <a href="/app" class="btn-hero-primary" style="display:inline-flex">
+          <a href="/app" class="btn-hero-primary" style="display:inline-flex" data-i18n="distCtaPrimary">
             立即使用应用分发 →
           </a>
           <a href="/market" target="_blank" class="btn-hero-ghost" style="display:inline-flex">
-            <i data-lucide="globe" style="width:15px;height:15px"></i> 浏览应用市场
+            <i data-lucide="globe" style="width:15px;height:15px"></i> <span data-i18n="distCtaGhost">浏览应用市场</span>
           </a>
         </div>
       </div>
@@ -1685,26 +1690,26 @@
             <div style="font-size:.72em;color:#64748b;margin-bottom:10px">com.example.myapp</div>
             <span style="display:inline-block;padding:3px 14px;border-radius:20px;font-size:.7em;font-weight:800;background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.35);margin-bottom:14px">Android</span>
             <div style="background:repeating-conic-gradient(rgba(139,92,246,.3) 0% 25%,transparent 0% 50%) 0 0/8px 8px;width:80px;height:80px;border-radius:10px;margin:0 auto 10px;border:2px solid rgba(139,92,246,.3)"></div>
-            <div style="font-size:.7em;color:#475569;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:4px"><i data-lucide="scan-line" style="width:11px;height:11px"></i> 手机扫码访问</div>
-            <div style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border-radius:10px;padding:10px;font-size:.82em;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px"><i data-lucide="download" style="width:14px;height:14px"></i> 点击下载 APK</div>
+            <div style="font-size:.7em;color:#475569;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:4px"><i data-lucide="scan-line" style="width:11px;height:11px"></i> <span data-i18n="distQrScan">手机扫码访问</span></div>
+            <div style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border-radius:10px;padding:10px;font-size:.82em;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px"><i data-lucide="download" style="width:14px;height:14px"></i> <span data-i18n="distDownloadBtn">点击下载 APK</span></div>
           </div>
         </div>
         <div class="dist-mkt-badges">
           <span class="dist-mkt-badge purple">
             <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd"/></svg>
-            限制下载次数
+            <span data-i18n="distBadge1">限制下载次数</span>
           </span>
           <span class="dist-mkt-badge blue">
             <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd"/></svg>
-            设置有效期
+            <span data-i18n="distBadge2">设置有效期</span>
           </span>
           <span class="dist-mkt-badge green">
             <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41Z" clip-rule="evenodd"/></svg>
-            自动提取图标版本
+            <span data-i18n="distBadge3">自动提取图标版本</span>
           </span>
-          <span class="dist-mkt-badge purple">🌐 上架市场</span>
+          <span class="dist-mkt-badge purple" data-i18n="distBadge4">🌐 上架市场</span>
         </div>
-        <p style="text-align:center;font-size:.78em;color:var(--muted);margin-top:14px;line-height:1.6">
+        <p style="text-align:center;font-size:.78em;color:var(--muted);margin-top:14px;line-height:1.6" data-i18n="distUseCases">
           适用于：内测分发 · 灰度发布 · 企业内网 · 演示包 · 跨平台应用推广
         </p>
       </div>
@@ -1716,9 +1721,9 @@
 <section id="market-section" style="padding:88px 5%;background:linear-gradient(180deg,transparent,rgba(16,185,129,.03),transparent)">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">应用市场</div>
-      <h2>公开发布，<span class="gradient-text">触达更多用户</span></h2>
-      <p>上架到 AppSec AI 应用市场，让全球用户发现并下载你的作品——免费、无限制</p>
+      <div class="section-eyebrow" data-i18n="mktEyebrow">应用市场</div>
+      <h2><span data-i18n="mktTitle">公开发布，</span><span class="gradient-text" data-i18n="mktTitleGrad">触达更多用户</span></h2>
+      <p data-i18n="mktSub">上架到 AppSec AI 应用市场，让全球用户发现并下载你的作品——免费、无限制</p>
     </div>
 
     <!-- 三大模块连接流程 -->
@@ -1727,24 +1732,24 @@
         <div class="mkt-flow-icon" style="background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(59,130,246,.1));border:1px solid rgba(59,130,246,.3);color:#60a5fa">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
         </div>
-        <div class="mkt-flow-label">① 安全扫描</div>
-        <div class="mkt-flow-desc">MobSF + Gemini AI<br>生成专业安全报告</div>
+        <div class="mkt-flow-label" data-i18n="mktFlow1Label">① 安全扫描</div>
+        <div class="mkt-flow-desc" data-i18n="mktFlow1Desc">MobSF + Gemini AI<br>生成专业安全报告</div>
       </div>
       <div class="mkt-flow-arrow">→</div>
       <div class="mkt-flow-item">
         <div class="mkt-flow-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(139,92,246,.1));border:1px solid rgba(139,92,246,.3);color:#a78bfa">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
         </div>
-        <div class="mkt-flow-label">② 应用分发</div>
-        <div class="mkt-flow-desc">生成专属链接 + 二维码<br>精准管控下载权限</div>
+        <div class="mkt-flow-label" data-i18n="mktFlow2Label">② 应用分发</div>
+        <div class="mkt-flow-desc" data-i18n="mktFlow2Desc">生成专属链接 + 二维码<br>精准管控下载权限</div>
       </div>
       <div class="mkt-flow-arrow">→</div>
       <div class="mkt-flow-item">
         <div class="mkt-flow-icon" style="background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(16,185,129,.1));border:1px solid rgba(16,185,129,.3);color:#34d399">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"/></svg>
         </div>
-        <div class="mkt-flow-label">③ 应用市场</div>
-        <div class="mkt-flow-desc">公开上架，全球可见<br>1 Credit 即可发现更多</div>
+        <div class="mkt-flow-label" data-i18n="mktFlow3Label">③ 应用市场</div>
+        <div class="mkt-flow-desc" data-i18n="mktFlow3Desc">公开上架，全球可见<br>1 Credit 即可发现更多</div>
       </div>
     </div>
 
@@ -1752,33 +1757,33 @@
     <div class="mkt-feat-grid fade-in">
       <div class="mkt-feat-card">
         <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.08));border:1px solid rgba(59,130,246,.28);color:#60a5fa"><i data-lucide="globe" style="width:22px;height:22px"></i></div>
-        <h4>全平台统一展示</h4>
-        <p>Android、iOS、Windows、macOS、Linux 应用统一收录，按平台筛选，一站发现各类工具与独立应用。</p>
+        <h4 data-i18n="mktFeat1Title">全平台统一展示</h4>
+        <p data-i18n="mktFeat1Desc">Android、iOS、Windows、macOS、Linux 应用统一收录，按平台筛选，一站发现各类工具与独立应用。</p>
       </div>
       <div class="mkt-feat-card">
         <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(16,185,129,.08));border:1px solid rgba(16,185,129,.28);color:#34d399"><i data-lucide="shield-check" style="width:22px;height:22px"></i></div>
-        <h4>开发者完全掌控</h4>
-        <p>随时上架/下架，更新版本后重新上传自动覆盖，分发链接不变。可设置有效期与下载次数限制，精准管理每一次分发。</p>
+        <h4 data-i18n="mktFeat2Title">开发者完全掌控</h4>
+        <p data-i18n="mktFeat2Desc">随时上架/下架，更新版本后重新上传自动覆盖，分发链接不变。可设置有效期与下载次数限制，精准管理每一次分发。</p>
       </div>
       <div class="mkt-feat-card">
         <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(139,92,246,.08));border:1px solid rgba(139,92,246,.28);color:#a78bfa"><i data-lucide="download" style="width:22px;height:22px"></i></div>
-        <h4>用户免费下载</h4>
-        <p>访客无需注册即可浏览市场和下载应用，开发者上传消耗 1 Credit，下载端完全免费，降低用户获取门槛。</p>
+        <h4 data-i18n="mktFeat3Title">用户免费下载</h4>
+        <p data-i18n="mktFeat3Desc">访客无需注册即可浏览市场和下载应用，开发者上传消耗 1 Credit，下载端完全免费，降低用户获取门槛。</p>
       </div>
       <div class="mkt-feat-card">
         <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(251,146,60,.2),rgba(251,146,60,.08));border:1px solid rgba(251,146,60,.28);color:#fb923c"><i data-lucide="bar-chart-2" style="width:22px;height:22px"></i></div>
-        <h4>下载数据统计</h4>
-        <p>实时查看每个发布版本的下载次数，直观了解应用受欢迎程度，帮助开发者做出更好的发布决策。</p>
+        <h4 data-i18n="mktFeat4Title">下载数据统计</h4>
+        <p data-i18n="mktFeat4Desc">实时查看每个发布版本的下载次数，直观了解应用受欢迎程度，帮助开发者做出更好的发布决策。</p>
       </div>
       <div class="mkt-feat-card">
         <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(234,179,8,.2),rgba(234,179,8,.08));border:1px solid rgba(234,179,8,.28);color:#fbbf24"><i data-lucide="scan" style="width:22px;height:22px"></i></div>
-        <h4>自动提取应用信息</h4>
-        <p>上传 APK/IPA 后自动解析应用图标、包名、版本号，无需手动填写，市场卡片展示效果专业美观。</p>
+        <h4 data-i18n="mktFeat5Title">自动提取应用信息</h4>
+        <p data-i18n="mktFeat5Desc">上传 APK/IPA 后自动解析应用图标、包名、版本号，无需手动填写，市场卡片展示效果专业美观。</p>
       </div>
       <div class="mkt-feat-card">
         <div class="mkt-feat-icon" style="background:linear-gradient(135deg,rgba(236,72,153,.2),rgba(236,72,153,.08));border:1px solid rgba(236,72,153,.28);color:#f472b6"><i data-lucide="trending-up" style="width:22px;height:22px"></i></div>
-        <h4>快速建立品牌形象</h4>
-        <p>在市场中展示你的应用作品集，与全球独立开发者社区互动，无需独立官网也能建立专业的应用发布渠道。</p>
+        <h4 data-i18n="mktFeat6Title">快速建立品牌形象</h4>
+        <p data-i18n="mktFeat6Desc">在市场中展示你的应用作品集，与全球独立开发者社区互动，无需独立官网也能建立专业的应用发布渠道。</p>
       </div>
     </div>
 
@@ -1794,7 +1799,7 @@
         <div></div>
       </div>
       <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:8px;flex-wrap:wrap">
-        <span class="mkt-filter-btn active">全部</span>
+      <span class="mkt-filter-btn active" data-i18n="mktFilterAll">全部</span>
         <span class="mkt-filter-btn">Android</span>
         <span class="mkt-filter-btn">iOS</span>
         <span class="mkt-filter-btn">Windows</span>
@@ -1835,10 +1840,10 @@
 
     <div style="text-align:center;margin-top:36px" class="fade-in">
       <a href="/market" target="_blank" class="btn-hero-primary" style="display:inline-flex;margin-right:12px;gap:7px">
-        <i data-lucide="globe" style="width:16px;height:16px"></i> 立即浏览应用市场 →
+        <i data-lucide="globe" style="width:16px;height:16px"></i> <span data-i18n="mktCtaPrimary">立即浏览应用市场 →</span>
       </a>
       <a href="/app" class="btn-hero-ghost" style="display:inline-flex;gap:7px">
-        <i data-lucide="upload" style="width:16px;height:16px"></i> 上传我的应用
+        <i data-lucide="upload" style="width:16px;height:16px"></i> <span data-i18n="mktCtaGhost">上传我的应用</span>
       </a>
     </div>
   </div>
@@ -1848,106 +1853,106 @@
 <section id="faq">
   <div class="container">
     <div class="section-title fade-in">
-      <div class="section-eyebrow">常见问题</div>
-      <h2>你可能想知道的<span class="gradient-text">一切</span></h2>
+      <div class="section-eyebrow" data-i18n="faqEyebrow">常见问题</div>
+      <h2><span data-i18n="faqTitle">你可能想知道的</span><span class="gradient-text" data-i18n="faqTitleGrad">一切</span></h2>
     </div>
     <div class="faq-list">
       <div class="faq-item open">
         <div class="faq-q" onclick="toggleFaq(this)">
-          上传的 APK / IPA 文件安全吗？会被存储吗？
+          <span data-i18n="faqQ1">上传的 APK / IPA 文件安全吗？会被存储吗？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA1">
           上传的文件仅用于本次安全分析，分析完成后临时文件立即删除，不会长期保存您的应用文件。扫描报告仅存储在服务器内存中，随服务重启清除。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          支持哪些文件格式？文件大小限制是多少？
+          <span data-i18n="faqQ2">支持哪些文件格式？文件大小限制是多少？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA2">
           安全扫描支持 Android APK 和 iOS IPA；应用分发额外支持 EXE、MSI（Windows）、DMG、PKG（macOS）、DEB、RPM、AppImage（Linux）。所有格式最大 500 MB。扫描时间 2–20 分钟不等。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          Credits 会过期吗？
+          <span data-i18n="faqQ3">Credits 会过期吗？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA3">
           不会。购买的 Credits 永久有效，不设任何过期时间，按实际使用量扣减，不使用不收费。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          分析报告包含哪些内容？
+          <span data-i18n="faqQ4">分析报告包含哪些内容？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA4">
           报告包含：安全评分、危险权限列表、第三方追踪器、代码安全问题（Critical/High/Warning 分级）、清单文件漏洞、AI 生成的专业安全摘要与改进建议。支持下载 HTML 格式报告。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          如何使用兑换码？
+          <span data-i18n="faqQ5">如何使用兑换码？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA5">
           注册账号后，在控制台点击「兑换码」按钮，输入格式为 XXXX-XXXX-XXXX 的兑换码即可兑换对应 Credits。兑换码由平台管理员发放，可关注官方渠道获取优惠。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          检测结果的准确率如何？与人工审查相比如何？
+          <span data-i18n="faqQ6">检测结果的准确率如何？与人工审查相比如何？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA6">
           AppSec AI 基于 MobSF 业界成熟引擎进行静态分析，对已知漏洞模式（硬编码密钥、不安全 API 调用、明文通信等）的检出率高于 95%。AI 摘要层由 Gemini 模型提供解读，适合快速评估风险优先级。建议将报告作为安全审计的起点，核心功能模块仍建议结合人工渗透测试。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          支持国内应用（微信小程序、鸿蒙）吗？
+          <span data-i18n="faqQ7">支持国内应用（微信小程序、鸿蒙）吗？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA7">
           目前专注于标准 Android APK 和 iOS IPA 格式，不直接支持微信小程序包（.wxapkg）或鸿蒙 HAP。但国内各应用市场发布的标准 Android/iOS 应用均完整支持，包括经过加固处理的 APK（会标注加固工具类型）。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          扫描报告可以发给客户或甲方吗？
+          <span data-i18n="faqQ8">扫描报告可以发给客户或甲方吗？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA8">
           可以。报告支持下载为 HTML 文件，格式专业清晰，可直接交付给客户。HTML 报告包含安全评分、风险分级、详细检测项与 AI 建议，适合作为正式安全审计交付物的附件或参考材料。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          应用市场是什么？上架需要付费吗？
+          <span data-i18n="faqQ9">应用市场是什么？上架需要付费吗？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA9">
           应用市场是平台提供的公开应用展示页（/market），开发者可将自己上传的应用公开上架，让全球用户发现和下载。上架只需在分发管理列表点击"上架"按钮（消耗应用分发时的 1 Credit，无需额外付费）。用户浏览和下载市场应用完全免费，无需注册。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          应用分发和直接发邮件/网盘分享有什么区别？
+          <span data-i18n="faqQ10">应用分发和直接发邮件/网盘分享有什么区别？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA10">
           主要差异在于：① 专业展示 — 自动生成含图标、版本、QR 码的专属下载页；② 权限管控 — 可设下载次数上限和有效期，防止链接外泄扩散；③ 数据统计 — 实时查看下载次数；④ 可上架市场 — 一键公开到平台市场触达更多用户；⑤ 分发链接永久不变 — 更新版本后链接保持不变，用户无需更新书签。
         </div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          和市面上其他安全检测平台相比有什么优势？
+          <span data-i18n="faqQ11">和市面上其他安全检测平台相比有什么优势？</span>
           <span class="faq-arrow">▾</span>
         </div>
-        <div class="faq-a">
+        <div class="faq-a" data-i18n="faqA11">
           主要差异在于：① AI 自动解读 — Gemini 将技术扫描结果翻译为可读的风险说明与修复建议，无需安全背景也能理解；② 按次付费 — 无需订阅，Credits 永久有效，适合低频使用场景；③ 隐私优先 — 扫描后立即删除文件，不构建用户应用数据库；④ 全球可访问 — USDT 支付，无需国内银行卡。
         </div>
       </div>
@@ -1961,31 +1966,31 @@
     <div class="ref-inner">
       <!-- Left: description -->
       <div class="fade-in">
-        <div class="section-eyebrow" style="color:#f59e0b">推广奖励计划</div>
-        <h2 style="margin-bottom:12px">邀请好友，<span style="background:linear-gradient(135deg,#f59e0b,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent">双向获益</span></h2>
-        <p style="color:var(--muted);font-size:.95em;line-height:1.7;margin-bottom:0">
+        <div class="section-eyebrow" style="color:#f59e0b" data-i18n="refEyebrow">推广奖励计划</div>
+        <h2 style="margin-bottom:12px"><span data-i18n="refTitle">邀请好友，</span><span style="background:linear-gradient(135deg,#f59e0b,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent" data-i18n="refTitleGrad">双向获益</span></h2>
+        <p style="color:var(--muted);font-size:.95em;line-height:1.7;margin-bottom:0" data-i18n="refDesc">
           将您的专属链接分享给开发者朋友，每当他们完成注册验证，您立即到账 <strong style="color:#f59e0b">5 Credits</strong>，邀请越多奖励越多，无上限。
         </p>
         <div class="ref-steps">
           <div class="ref-step">
             <div class="ref-step-num">1</div>
             <div class="ref-step-text">
-              <strong>复制专属推广链接</strong>
-              <span>登录后在个人资料页一键获取您的专属链接</span>
+              <strong data-i18n="refStep1Title">复制专属推广链接</strong>
+              <span data-i18n="refStep1Desc">登录后在个人资料页一键获取您的专属链接</span>
             </div>
           </div>
           <div class="ref-step">
             <div class="ref-step-num">2</div>
             <div class="ref-step-text">
-              <strong>分享给开发者朋友</strong>
-              <span>微信群、技术社区、朋友圈，任何渠道均可</span>
+              <strong data-i18n="refStep2Title">分享给开发者朋友</strong>
+              <span data-i18n="refStep2Desc">微信群、技术社区、朋友圈，任何渠道均可</span>
             </div>
           </div>
           <div class="ref-step">
             <div class="ref-step-num">3</div>
             <div class="ref-step-text">
-              <strong>好友注册即时到账</strong>
-              <span>好友通过链接注册并验证邮箱后，5 Credits 立即到您账户</span>
+              <strong data-i18n="refStep3Title">好友注册即时到账</strong>
+              <span data-i18n="refStep3Desc">好友通过链接注册并验证邮箱后，5 Credits 立即到您账户</span>
             </div>
           </div>
         </div>
@@ -1994,44 +1999,44 @@
       <div class="ref-card fade-in fade-in-d1">
         <!-- Logged-in state -->
         <div id="landing-ref-logged-in" style="display:none">
-          <div class="ref-card-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="gift" style="width:18px;height:18px;color:#f59e0b"></i> 我的推广链接</div>
-          <div class="ref-card-sub">分享以下链接，好友注册后您自动获得 5 Credits 奖励</div>
+          <div class="ref-card-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="gift" style="width:18px;height:18px;color:#f59e0b"></i> <span data-i18n="refCardTitle">我的推广链接</span></div>
+          <div class="ref-card-sub" data-i18n="refCardSub">分享以下链接，好友注册后您自动获得 5 Credits 奖励</div>
           <div class="ref-stats">
             <div class="ref-stat">
               <div class="ref-stat-num" id="landing-ref-count">—</div>
-              <div class="ref-stat-label">已邀请用户</div>
+              <div class="ref-stat-label" data-i18n="refStatLabel1">已邀请用户</div>
             </div>
             <div class="ref-stat">
               <div class="ref-stat-num" id="landing-ref-credits">—</div>
-              <div class="ref-stat-label">已获奖励</div>
+              <div class="ref-stat-label" data-i18n="refStatLabel2">已获奖励</div>
             </div>
           </div>
           <div class="ref-link-row">
             <input id="landing-ref-link" class="ref-link-input" readonly onclick="this.select()" placeholder="加载中...">
-            <button class="ref-copy-btn" onclick="copyLandingRefLink()">复制链接</button>
+            <button class="ref-copy-btn" onclick="copyLandingRefLink()" data-i18n="refCopyBtn">复制链接</button>
           </div>
           <div id="landing-ref-copy-msg" style="font-size:.75em;color:#10b981;min-height:18px;margin-top:6px"></div>
         </div>
         <!-- Logged-out state -->
         <div id="landing-ref-logged-out">
-          <div class="ref-card-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="rocket" style="width:18px;height:18px;color:#f59e0b"></i> 立即参与推广计划</div>
-          <div class="ref-card-sub">注册账号后获取您的专属推广链接，开始邀请好友，无限制获取 Credits 奖励。</div>
+          <div class="ref-card-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="rocket" style="width:18px;height:18px;color:#f59e0b"></i> <span data-i18n="refLoggedOutTitle">立即参与推广计划</span></div>
+          <div class="ref-card-sub" data-i18n="refLoggedOutSub">注册账号后获取您的专属推广链接，开始邀请好友，无限制获取 Credits 奖励。</div>
           <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);border-radius:12px;padding:16px;margin-bottom:24px">
             <div style="font-size:.82em;color:var(--muted);line-height:1.7">
               <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)">
-                <span>每次成功邀请奖励</span><strong style="color:#f59e0b">+5 Credits</strong>
+                <span data-i18n="refTableRow1">每次成功邀请奖励</span><strong style="color:#f59e0b">+5 Credits</strong>
               </div>
               <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)">
-                <span>邀请人数上限</span><strong style="color:#10b981">无限制</strong>
+                <span data-i18n="refTableRow2">邀请人数上限</span><strong style="color:#10b981" data-i18n="refTableRow2Val">无限制</strong>
               </div>
               <div style="display:flex;justify-content:space-between;padding:4px 0">
-                <span>Credits 有效期</span><strong style="color:#60a5fa">永不过期</strong>
+                <span data-i18n="refTableRow3">Credits 有效期</span><strong style="color:#60a5fa" data-i18n="refTableRow3Val">永不过期</strong>
               </div>
             </div>
           </div>
           <div class="ref-login-cta">
-            <a href="/app?action=register" class="ref-cta-primary" style="gap:8px"><i data-lucide="gift" style="width:16px;height:16px"></i> 注册账号，获取推广链接</a>
-            <a href="/app" class="ref-cta-ghost">已有账号？直接登录 →</a>
+            <a href="/app?action=register" class="ref-cta-primary" style="gap:8px"><i data-lucide="gift" style="width:16px;height:16px"></i> <span data-i18n="refRegisterBtn">注册账号，获取推广链接</span></a>
+            <a href="/app" class="ref-cta-ghost" data-i18n="refLoginLink">已有账号？直接登录 →</a>
           </div>
         </div>
       </div>
@@ -2043,15 +2048,15 @@
 <section id="cta">
   <div class="container">
     <div class="cta-inner">
-      <h2>安全扫描 · 应用分发 · 应用市场<br><span class="gradient-text">一个平台，全搞定</span></h2>
-      <p>注册即赠 1 次免费体验，从上传到分发到上架，全流程一个账号掌控</p>
+      <h2><span data-i18n="ctaTitle">安全扫描 · 应用分发 · 应用市场</span><br><span class="gradient-text" data-i18n="ctaTitleGrad">一个平台，全搞定</span></h2>
+      <p data-i18n="ctaSub">注册即赠 1 次免费体验，从上传到分发到上架，全流程一个账号掌控</p>
       <div class="cta-actions">
-        <a href="/app" class="btn-hero-primary" style="display:inline-flex;gap:8px"><i data-lucide="rocket" style="width:16px;height:16px"></i> 免费注册，立即体验</a>
-        <a href="/market" target="_blank" class="btn-hero-ghost" style="display:inline-flex;gap:8px"><i data-lucide="globe" style="width:16px;height:16px"></i> 浏览应用市场</a>
+        <a href="/app" class="btn-hero-primary" style="display:inline-flex;gap:8px"><i data-lucide="rocket" style="width:16px;height:16px"></i> <span data-i18n="ctaBtnPrimary">免费注册，立即体验</span></a>
+        <a href="/market" target="_blank" class="btn-hero-ghost" style="display:inline-flex;gap:8px"><i data-lucide="globe" style="width:16px;height:16px"></i> <span data-i18n="ctaBtnGhost">浏览应用市场</span></a>
       </div>
       <p style="margin-top:28px;font-size:.82em;color:var(--muted);position:relative;">
-        需要批量检测或 CI/CD 集成？
-        <a href="https://t.me/ChenSirLite" target="_blank" style="color:var(--blue-l);text-decoration:none;font-weight:600;">联系我们了解企业方案 →</a>
+        <span data-i18n="ctaEnterprise">需要批量检测或 CI/CD 集成？</span>
+        <a href="https://t.me/ChenSirLite" target="_blank" style="color:var(--blue-l);text-decoration:none;font-weight:600;" data-i18n="ctaEnterpriseLink">联系我们了解企业方案 →</a>
       </p>
     </div>
   </div>
@@ -2064,41 +2069,41 @@
       <div class="footer-brand">
         <span style="-webkit-text-fill-color:initial;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> AppSec AI
       </div>
-      <p>AI 驱动的移动应用安全检测平台，帮助开发者和安全团队在上线前发现隐患，守护用户隐私与数据安全。</p>
+      <p data-i18n="footerBrandDesc">AI 驱动的移动应用安全检测平台，帮助开发者和安全团队在上线前发现隐患，守护用户隐私与数据安全。</p>
       <a href="https://t.me/ChenSirLite" target="_blank" class="footer-contact">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-        @ChenSirLite · Telegram 客服
+        <span data-i18n="footerContact">@ChenSirLite · Telegram 客服</span>
       </a>
     </div>
     <div class="footer-col">
-      <h5>产品</h5>
-      <a href="#features">核心功能</a>
-      <a href="#detection">检测项目</a>
-      <a href="#how">使用流程</a>
-      <a href="#dist-marketing">应用分发</a>
-      <a href="/market" target="_blank">应用市场</a>
-      <a href="#pricing">定价方案</a>
+      <h5 data-i18n="footerCol1Title">产品</h5>
+      <a href="#features" data-i18n="footerCol1Link1">核心功能</a>
+      <a href="#detection" data-i18n="footerCol1Link2">检测项目</a>
+      <a href="#how" data-i18n="footerCol1Link3">使用流程</a>
+      <a href="#dist-marketing" data-i18n="footerCol1Link4">应用分发</a>
+      <a href="/market" target="_blank" data-i18n="footerCol1Link5">应用市场</a>
+      <a href="#pricing" data-i18n="footerCol1Link6">定价方案</a>
     </div>
     <div class="footer-col">
-      <h5>资源</h5>
-      <a href="#faq">常见问题</a>
-      <a href="#testimonials">用户评价</a>
-      <a href="/app">控制台</a>
-      <a href="https://t.me/ChenSirLite" target="_blank">联系我们</a>
+      <h5 data-i18n="footerCol2Title">资源</h5>
+      <a href="#faq" data-i18n="footerCol2Link1">常见问题</a>
+      <a href="#testimonials" data-i18n="footerCol2Link2">用户评价</a>
+      <a href="/app" data-i18n="footerCol2Link3">控制台</a>
+      <a href="https://t.me/ChenSirLite" target="_blank" data-i18n="footerCol2Link4">联系我们</a>
     </div>
     <div class="footer-col">
-      <h5>支持</h5>
-      <a href="https://t.me/ChenSirLite" target="_blank">企业合作</a>
-      <a href="https://t.me/ChenSirLite" target="_blank">API 接入</a>
-      <a href="#faq">使用帮助</a>
+      <h5 data-i18n="footerCol3Title">支持</h5>
+      <a href="https://t.me/ChenSirLite" target="_blank" data-i18n="footerCol3Link1">企业合作</a>
+      <a href="https://t.me/ChenSirLite" target="_blank" data-i18n="footerCol3Link2">API 接入</a>
+      <a href="#faq" data-i18n="footerCol3Link3">使用帮助</a>
     </div>
   </div>
   <div class="footer-bottom">
-    <div class="footer-copy">© 2026 AppSec AI · APK安全检测 · IPA安全检测 · 移动应用安全检测平台 · 应用分发 · 应用市场</div>
+    <div class="footer-copy" data-i18n="footerCopy">© 2026 AppSec AI · APK安全检测 · IPA安全检测 · 移动应用安全检测平台 · 应用分发 · 应用市场</div>
     <div class="footer-legal">
-      <a href="#">隐私政策</a>
-      <a href="#">服务条款</a>
-      <a href="https://t.me/ChenSirLite" target="_blank">联系我们</a>
+      <a href="#" data-i18n="footerPrivacy">隐私政策</a>
+      <a href="#" data-i18n="footerTerms">服务条款</a>
+      <a href="https://t.me/ChenSirLite" target="_blank" data-i18n="footerContactLink">联系我们</a>
     </div>
   </div>
 </footer>
@@ -2248,6 +2253,334 @@ function copyLandingRefLink() {
     setTimeout(() => { msg.textContent = ''; }, 2500);
   }
 }
+// ── i18n ─────────────────────────────────────────
+const LANG_LANDING = {
+  zh: {
+    // Nav
+    navFeatures: '功能', navHow: '使用流程', navDetection: '检测项目',
+    navDist: '应用分发', navMarket: '应用市场', navPricing: '定价',
+    navReferral: '推广奖励', navFaq: 'FAQ', navLogin: '登录',
+    navLogin2: '登录', navCta: '免费开始 →',
+    langBtn: 'EN',
+    // Hero
+    heroBadge: '注册即赠 1 次免费扫描 · 无需信用卡',
+    heroTitle1: '移动应用安全', heroTitle2: '深度检测平台',
+    heroSub: '上传 APK / IPA，MobSF 引擎秒级深度扫描，AI 自动生成专业安全报告。支持全平台应用分发、专属下载页生成与公开应用市场，一个 Credit 用到底。',
+    heroCtaPrimary: '立即免费体验', heroCtaGhost: '了解工作原理 ↓',
+    stat1Label: '最大文件支持', stat2Label: '平均出报告时间',
+    stat3Label: '安全检测维度', stat4Label: '漏洞检出率',
+    // Preview mockup
+    previewUrl: 'appsec.ai · 扫描报告',
+    previewScore: 'MobSF 综合安全评分 · 中等风险',
+    demoHigh: '3 高危权限', demoTracker: '2 追踪器', demoCert: '证书正常',
+    demoCritical: '严重漏洞', demoHighVuln: '高危问题', demoMedium: '中危告警', demoTrackers: '追踪器',
+    // Security strip
+    sec1: '全程 TLS 加密传输', sec2: '扫描后立即删除文件',
+    sec3: '数据不共享给第三方', sec4: '无需安装任何工具', sec5: 'Credits 永久不过期',
+    // Tech stack
+    trustTitle: '核心技术栈', trustSub: '业界顶尖开源引擎 · 企业级 AI 能力 · 持续更新的威胁情报库',
+    techMobSF: '移动安全框架，APK/IPA 深度静态分析引擎',
+    techGemini: 'Google 大语言模型，智能安全摘要与风险解读',
+    techExodus: '追踪器 SDK 情报库，精确识别隐私风险组件',
+    techJadx: 'Android 反编译工具，还原 Java/Kotlin 源码',
+    techAPKiD: 'APK 指纹识别，检测加固混淆与恶意特征',
+    // Testimonials
+    scanCounterLabel: '次安全扫描已完成 · 来自全球开发者与安全团队',
+    testiEyebrow: '用户评价', testiTitle: '开发者都在说', testiTitleGrad: '什么',
+    testi1Quote: '扫描完才发现 app 里有一个硬编码的阿里云 AccessKey，一直没注意到。这个工具帮我在上架前把问题揪出来了，值了。',
+    testi1Role: '独立 Android 开发者 · 上海',
+    testi2Quote: '做渗透测试时经常需要快速了解一个 APK 的安全基线，AppSec AI 的报告结构清晰，AI 摘要省了我大量手动整理时间。',
+    testi2Role: '安全研究员 · 新加坡',
+    testi3Quote: '我们团队在提审 App Store 前都会跑一遍，权限审计和追踪器检测帮我们发现了接入的一个第三方 SDK 在偷偷收集 IDFA。',
+    testi3Role: 'iOS 产品经理 · 深圳',
+    // Features
+    featEyebrow: '核心功能', featTitle: '全方位安全检测，', featTitleGrad: '一次扫描搞定',
+    featSub: '从代码静态分析到 AI 智能解读，覆盖移动应用安全的每一个关键维度',
+    feat1Title: '深度静态分析', feat1Desc: '基于 MobSF 引擎，反编译 APK/IPA 源码，检测危险 API 调用、硬编码密钥、不安全的网络配置与 WebView 漏洞。',
+    feat2Title: 'AI 安全摘要', feat2Desc: 'Gemini AI 读取全量扫描数据，用通俗语言生成结构化安全分析报告，一键了解应用的核心风险与改进建议。',
+    feat3Title: '追踪器 SDK 识别', feat3Desc: '对接 Exodus Privacy 数据库，精确识别 Facebook、Google、Firebase 等第三方追踪 SDK，量化隐私风险。',
+    feat4Title: '权限安全审计', feat4Desc: '分析所有申请权限的危险等级与实际用途，识别过度授权与权限滥用，保护用户隐私不被侵害。',
+    feat5Title: '清单文件检查', feat5Desc: '解析 AndroidManifest.xml / Info.plist，检测 Activity 导出风险、ATS 配置缺失、证书签名版本等关键安全项。',
+    feat6Title: '可视化安全评分', feat6Desc: '基于 MobSF 综合算法输出 0–100 安全评分，配合风险等级标签，直观呈现应用整体安全状况。',
+    // How it works
+    howEyebrow: '使用流程', howTitle: '三步完成', howTitleGrad: '专业安全检测',
+    howSub: '无需安装任何工具，上传文件即可开始分析',
+    step1Title: '上传应用文件', step1Desc: '支持 Android APK 和 iOS IPA，拖拽或点击上传，最大 500 MB，传输全程加密。',
+    step2Title: 'AI 引擎自动分析', step2Desc: 'MobSF 深度反编译分析，Gemini AI 同步生成安全摘要，过程全自动无需手动干预。',
+    step3Title: '获取专业安全报告', step3Desc: '报告包含评分、风险项、权限列表、追踪器及 AI 建议，支持下载 HTML 报告存档。',
+    // Detection
+    detEyebrow: '检测维度', detTitle: '覆盖 ', detTitleGrad: '50+ 安全检测项',
+    detSub: '从代码到配置，从权限到网络，全面覆盖移动安全最佳实践',
+    det1: '硬编码 API 密钥', det2: '不安全 HTTP 通信', det3: '危险权限申请',
+    det4: '第三方追踪 SDK', det5: 'WebView 注入风险', det6: 'Activity 导出风险',
+    det7: '弱加密算法使用', det8: '动态代码加载', det9: '敏感数据明文存储',
+    det10: '证书校验绕过', det11: '调试模式开启', det12: '签名证书分析',
+    det13: 'ATS 配置缺失（iOS）', det14: '清单文件漏洞', det15: 'Native 库安全分析',
+    det16: 'APK 指纹识别',
+    // Pricing
+    priceEyebrow: '灵活定价', priceTitle: '按需购买，', priceTitleGrad: '无订阅负担',
+    priceSub: '1 Credit = 1次安全扫描 或 1次应用分发上传，按需使用，永不过期',
+    price1Name: '入门包', price1Sub: '≈ ¥1.08 / 次 · USDT 支付',
+    price2Name: '专业包', price2Sub: '≈ ¥0.79 / 次 · 节省 27%',
+    price3Name: '团队包', price3Sub: '≈ ¥0.72 / 次 · 节省 33%',
+    price4Name: '企业包', price4Sub: '≈ ¥0.65 / 次 · 节省 40%',
+    priceFeaturedBadge: '最受欢迎', priceBuyBtn: '立即购买',
+    priceFeature1: 'Android APK 安全检测', priceFeature2: 'iOS IPA 安全检测',
+    priceFeature3: 'AI 安全摘要', priceFeature4: 'HTML 报告下载',
+    priceFeature5: '应用分发上传', priceFeature6: '优先扫描队列',
+    priceFeature7: '完整权限分析报告', priceFeature8: '追踪器 SDK 深度报告',
+    priceFeature9: '专属 Telegram 客服', priceFeature10: 'API 接入咨询',
+    priceNote: '支持 USDT (TRC20) 支付 · Credits 永不过期 · 安全扫描与应用分发共用余额 · 首次注册可使用兑换码',
+    // Distribution
+    distEyebrow: '应用分发平台', distTitle: '全平台分发，', distTitleGrad: '一键生成下载页',
+    distSub: '无需上架应用商店，上传即获得专属下载链接与二维码，支持 Android / iOS / Windows / macOS / Linux 全平台',
+    distNote: '每次上传消耗 1 Credit，与安全扫描共用余额，一个账号搞定全流程',
+    distStep1Title: '上传任意平台的应用文件', distStep1Desc: '支持 APK、IPA、EXE、MSI、DMG、PKG、DEB、RPM、AppImage 等格式，最大 500 MB。平台自动识别平台类型，提取应用图标与版本号。',
+    distStep2Title: '获得专属下载页 + 二维码', distStep2Desc: '自动生成精美下载页，包含应用图标、版本信息、二维码与直接下载按钮。手机扫码或分享链接，用户一键下载，无需注册。',
+    distStep3Title: '精细管控分发权限', distStep3Desc: '可设置有效天数（1/3/7/30/90 天或永久）和最大下载次数，到期自动失效，防止链接扩散失控，精准把握内测范围。',
+    distStep4Title: '一键上架应用市场（可选）', distStep4Desc: '点击"上架"将应用公开到平台应用市场，让更多用户发现你的作品。随时可下架，完全掌控发布节奏。',
+    distCtaPrimary: '立即使用应用分发 →', distCtaGhost: '浏览应用市场',
+    distQrScan: '手机扫码访问', distDownloadBtn: '点击下载 APK',
+    distBadge1: '限制下载次数', distBadge2: '设置有效期',
+    distBadge3: '自动提取图标版本', distBadge4: '🌐 上架市场',
+    distUseCases: '适用于：内测分发 · 灰度发布 · 企业内网 · 演示包 · 跨平台应用推广',
+    // Market
+    mktEyebrow: '应用市场', mktTitle: '公开发布，', mktTitleGrad: '触达更多用户',
+    mktSub: '上架到 AppSec AI 应用市场，让全球用户发现并下载你的作品——免费、无限制',
+    mktFlow1Label: '① 安全扫描', mktFlow1Desc: 'MobSF + Gemini AI\n生成专业安全报告',
+    mktFlow2Label: '② 应用分发', mktFlow2Desc: '生成专属链接 + 二维码\n精准管控下载权限',
+    mktFlow3Label: '③ 应用市场', mktFlow3Desc: '公开上架，全球可见\n1 Credit 即可发现更多',
+    mktFeat1Title: '全平台统一展示', mktFeat1Desc: 'Android、iOS、Windows、macOS、Linux 应用统一收录，按平台筛选，一站发现各类工具与独立应用。',
+    mktFeat2Title: '开发者完全掌控', mktFeat2Desc: '随时上架/下架，更新版本后重新上传自动覆盖，分发链接不变。可设置有效期与下载次数限制，精准管理每一次分发。',
+    mktFeat3Title: '用户免费下载', mktFeat3Desc: '访客无需注册即可浏览市场和下载应用，开发者上传消耗 1 Credit，下载端完全免费，降低用户获取门槛。',
+    mktFeat4Title: '下载数据统计', mktFeat4Desc: '实时查看每个发布版本的下载次数，直观了解应用受欢迎程度，帮助开发者做出更好的发布决策。',
+    mktFeat5Title: '自动提取应用信息', mktFeat5Desc: '上传 APK/IPA 后自动解析应用图标、包名、版本号，无需手动填写，市场卡片展示效果专业美观。',
+    mktFeat6Title: '快速建立品牌形象', mktFeat6Desc: '在市场中展示你的应用作品集，与全球独立开发者社区互动，无需独立官网也能建立专业的应用发布渠道。',
+    mktFilterAll: '全部', mktCtaPrimary: '立即浏览应用市场 →', mktCtaGhost: '上传我的应用',
+    // FAQ
+    faqEyebrow: '常见问题', faqTitle: '你可能想知道的', faqTitleGrad: '一切',
+    faqQ1: '上传的 APK / IPA 文件安全吗？会被存储吗？',
+    faqA1: '上传的文件仅用于本次安全分析，分析完成后临时文件立即删除，不会长期保存您的应用文件。扫描报告仅存储在服务器内存中，随服务重启清除。',
+    faqQ2: '支持哪些文件格式？文件大小限制是多少？',
+    faqA2: '安全扫描支持 Android APK 和 iOS IPA；应用分发额外支持 EXE、MSI（Windows）、DMG、PKG（macOS）、DEB、RPM、AppImage（Linux）。所有格式最大 500 MB。扫描时间 2–20 分钟不等。',
+    faqQ3: 'Credits 会过期吗？',
+    faqA3: '不会。购买的 Credits 永久有效，不设任何过期时间，按实际使用量扣减，不使用不收费。',
+    faqQ4: '分析报告包含哪些内容？',
+    faqA4: '报告包含：安全评分、危险权限列表、第三方追踪器、代码安全问题（Critical/High/Warning 分级）、清单文件漏洞、AI 生成的专业安全摘要与改进建议。支持下载 HTML 格式报告。',
+    faqQ5: '如何使用兑换码？',
+    faqA5: '注册账号后，在控制台点击「兑换码」按钮，输入格式为 XXXX-XXXX-XXXX 的兑换码即可兑换对应 Credits。兑换码由平台管理员发放，可关注官方渠道获取优惠。',
+    faqQ6: '检测结果的准确率如何？与人工审查相比如何？',
+    faqA6: 'AppSec AI 基于 MobSF 业界成熟引擎进行静态分析，对已知漏洞模式（硬编码密钥、不安全 API 调用、明文通信等）的检出率高于 95%。AI 摘要层由 Gemini 模型提供解读，适合快速评估风险优先级。建议将报告作为安全审计的起点，核心功能模块仍建议结合人工渗透测试。',
+    faqQ7: '支持国内应用（微信小程序、鸿蒙）吗？',
+    faqA7: '目前专注于标准 Android APK 和 iOS IPA 格式，不直接支持微信小程序包（.wxapkg）或鸿蒙 HAP。但国内各应用市场发布的标准 Android/iOS 应用均完整支持，包括经过加固处理的 APK（会标注加固工具类型）。',
+    faqQ8: '扫描报告可以发给客户或甲方吗？',
+    faqA8: '可以。报告支持下载为 HTML 文件，格式专业清晰，可直接交付给客户。HTML 报告包含安全评分、风险分级、详细检测项与 AI 建议，适合作为正式安全审计交付物的附件或参考材料。',
+    faqQ9: '应用市场是什么？上架需要付费吗？',
+    faqA9: '应用市场是平台提供的公开应用展示页（/market），开发者可将自己上传的应用公开上架，让全球用户发现和下载。上架只需在分发管理列表点击"上架"按钮（消耗应用分发时的 1 Credit，无需额外付费）。用户浏览和下载市场应用完全免费，无需注册。',
+    faqQ10: '应用分发和直接发邮件/网盘分享有什么区别？',
+    faqA10: '主要差异在于：① 专业展示 — 自动生成含图标、版本、QR 码的专属下载页；② 权限管控 — 可设下载次数上限和有效期，防止链接外泄扩散；③ 数据统计 — 实时查看下载次数；④ 可上架市场 — 一键公开到平台市场触达更多用户；⑤ 分发链接永久不变 — 更新版本后链接保持不变，用户无需更新书签。',
+    faqQ11: '和市面上其他安全检测平台相比有什么优势？',
+    faqA11: '主要差异在于：① AI 自动解读 — Gemini 将技术扫描结果翻译为可读的风险说明与修复建议，无需安全背景也能理解；② 按次付费 — 无需订阅，Credits 永久有效，适合低频使用场景；③ 隐私优先 — 扫描后立即删除文件，不构建用户应用数据库；④ 全球可访问 — USDT 支付，无需国内银行卡。',
+    // Referral
+    refEyebrow: '推广奖励计划', refTitle: '邀请好友，', refTitleGrad: '双向获益',
+    refDesc: '将您的专属链接分享给开发者朋友，每当他们完成注册验证，您立即到账 5 Credits，邀请越多奖励越多，无上限。',
+    refStep1Title: '复制专属推广链接', refStep1Desc: '登录后在个人资料页一键获取您的专属链接',
+    refStep2Title: '分享给开发者朋友', refStep2Desc: '微信群、技术社区、朋友圈，任何渠道均可',
+    refStep3Title: '好友注册即时到账', refStep3Desc: '好友通过链接注册并验证邮箱后，5 Credits 立即到您账户',
+    refCardTitle: '我的推广链接', refCardSub: '分享以下链接，好友注册后您自动获得 5 Credits 奖励',
+    refStatLabel1: '已邀请用户', refStatLabel2: '已获奖励',
+    refCopyBtn: '复制链接',
+    refLoggedOutTitle: '立即参与推广计划', refLoggedOutSub: '注册账号后获取您的专属推广链接，开始邀请好友，无限制获取 Credits 奖励。',
+    refTableRow1: '每次成功邀请奖励', refTableRow2: '邀请人数上限', refTableRow2Val: '无限制',
+    refTableRow3: 'Credits 有效期', refTableRow3Val: '永不过期',
+    refRegisterBtn: '注册账号，获取推广链接', refLoginLink: '已有账号？直接登录 →',
+    // CTA
+    ctaTitle: '安全扫描 · 应用分发 · 应用市场', ctaTitleGrad: '一个平台，全搞定',
+    ctaSub: '注册即赠 1 次免费体验，从上传到分发到上架，全流程一个账号掌控',
+    ctaBtnPrimary: '免费注册，立即体验', ctaBtnGhost: '浏览应用市场',
+    ctaEnterprise: '需要批量检测或 CI/CD 集成？', ctaEnterpriseLink: '联系我们了解企业方案 →',
+    // Footer
+    footerBrandDesc: 'AI 驱动的移动应用安全检测平台，帮助开发者和安全团队在上线前发现隐患，守护用户隐私与数据安全。',
+    footerContact: '@ChenSirLite · Telegram 客服',
+    footerCol1Title: '产品', footerCol1Link1: '核心功能', footerCol1Link2: '检测项目',
+    footerCol1Link3: '使用流程', footerCol1Link4: '应用分发', footerCol1Link5: '应用市场', footerCol1Link6: '定价方案',
+    footerCol2Title: '资源', footerCol2Link1: '常见问题', footerCol2Link2: '用户评价',
+    footerCol2Link3: '控制台', footerCol2Link4: '联系我们',
+    footerCol3Title: '支持', footerCol3Link1: '企业合作', footerCol3Link2: 'API 接入', footerCol3Link3: '使用帮助',
+    footerCopy: '© 2026 AppSec AI · APK安全检测 · IPA安全检测 · 移动应用安全检测平台 · 应用分发 · 应用市场',
+    footerPrivacy: '隐私政策', footerTerms: '服务条款', footerContactLink: '联系我们',
+  },
+  en: {
+    // Nav
+    navFeatures: 'Features', navHow: 'How It Works', navDetection: 'Detection',
+    navDist: 'Distribution', navMarket: 'App Market', navPricing: 'Pricing',
+    navReferral: 'Referral', navFaq: 'FAQ', navLogin: 'Login',
+    navLogin2: 'Login', navCta: 'Get Started Free →',
+    langBtn: '中文',
+    // Hero
+    heroBadge: 'Free scan on signup · No credit card needed',
+    heroTitle1: 'Mobile App Security', heroTitle2: 'Deep Scan Platform',
+    heroSub: 'Upload APK / IPA, MobSF engine scans instantly, AI auto-generates professional security reports. Supports cross-platform app distribution, custom download pages and public app market — one Credit covers it all.',
+    heroCtaPrimary: 'Try It Free Now', heroCtaGhost: 'Learn How It Works ↓',
+    stat1Label: 'Max File Size', stat2Label: 'Avg Report Time',
+    stat3Label: 'Security Checks', stat4Label: 'Detection Rate',
+    // Preview mockup
+    previewUrl: 'appsec.ai · Scan Report',
+    previewScore: 'MobSF Security Score · Medium Risk',
+    demoHigh: '3 High-Risk Perms', demoTracker: '2 Trackers', demoCert: 'Cert OK',
+    demoCritical: 'Critical', demoHighVuln: 'High Risk', demoMedium: 'Medium', demoTrackers: 'Trackers',
+    // Security strip
+    sec1: 'Full TLS Encrypted Transfer', sec2: 'Files deleted after scan',
+    sec3: 'Data never shared with 3rd parties', sec4: 'No tools to install', sec5: 'Credits never expire',
+    // Tech stack
+    trustTitle: 'Core Technology Stack', trustSub: 'Industry-leading open-source engines · Enterprise AI capabilities · Continuously updated threat intelligence',
+    techMobSF: 'Mobile Security Framework — deep static analysis engine for APK/IPA',
+    techGemini: 'Google LLM — intelligent security summaries and risk interpretation',
+    techExodus: 'Tracker SDK intelligence database — precise privacy risk identification',
+    techJadx: 'Android decompiler — restores Java/Kotlin source code',
+    techAPKiD: 'APK fingerprinting — detects obfuscation, packing and malicious signatures',
+    // Testimonials
+    scanCounterLabel: 'security scans completed · from developers & security teams worldwide',
+    testiEyebrow: 'User Reviews', testiTitle: 'What Developers', testiTitleGrad: 'Are Saying',
+    testi1Quote: "Scanned the app and found a hardcoded Alibaba Cloud AccessKey I'd missed. This tool caught the issue before launch — totally worth it.",
+    testi1Role: 'Indie Android Developer · Shanghai',
+    testi2Quote: "During pentests I often need a quick APK security baseline. AppSec AI's reports are well-structured and the AI summary saves me a ton of manual work.",
+    testi2Role: 'Security Researcher · Singapore',
+    testi3Quote: "We run every iOS app through it before App Store review. The permission audit and tracker detection found a 3rd-party SDK secretly collecting IDFA.",
+    testi3Role: 'iOS Product Manager · Shenzhen',
+    // Features
+    featEyebrow: 'Core Features', featTitle: 'Comprehensive Security,', featTitleGrad: 'One Scan Does It All',
+    featSub: 'From static code analysis to AI interpretation — covering every critical dimension of mobile app security',
+    feat1Title: 'Deep Static Analysis', feat1Desc: 'Powered by MobSF — decompiles APK/IPA source, detects dangerous API calls, hardcoded secrets, insecure network configs and WebView vulnerabilities.',
+    feat2Title: 'AI Security Summary', feat2Desc: 'Gemini AI reads the full scan data and generates a structured security report in plain language — understand core risks and remediation with one click.',
+    feat3Title: 'Tracker SDK Detection', feat3Desc: 'Integrated with Exodus Privacy database — precisely identifies Facebook, Google, Firebase and other 3rd-party tracker SDKs to quantify privacy risk.',
+    feat4Title: 'Permission Audit', feat4Desc: 'Analyzes the risk level and actual purpose of every requested permission, identifies over-authorization and permission abuse to protect user privacy.',
+    feat5Title: 'Manifest Inspection', feat5Desc: 'Parses AndroidManifest.xml / Info.plist — detects exported Activity risks, missing ATS configs, certificate signing version and other key security items.',
+    feat6Title: 'Visual Security Score', feat6Desc: 'MobSF algorithm outputs a 0–100 security score with risk-level labels, giving an instant visual overview of overall app security posture.',
+    // How it works
+    howEyebrow: 'How It Works', howTitle: '3 Steps to', howTitleGrad: 'Professional Security Report',
+    howSub: 'No tools to install — just upload your file and analysis begins',
+    step1Title: 'Upload Your App', step1Desc: 'Supports Android APK and iOS IPA. Drag-and-drop or click to upload, up to 500 MB, fully encrypted in transit.',
+    step2Title: 'AI Engine Analyzes', step2Desc: 'MobSF deep decompilation, Gemini AI simultaneously generates security summary — fully automated, no manual intervention.',
+    step3Title: 'Get Professional Report', step3Desc: 'Report includes score, risk items, permission list, trackers and AI recommendations. Download as HTML for archiving.',
+    // Detection
+    detEyebrow: 'Detection Scope', detTitle: 'Covering ', detTitleGrad: '50+ Security Checks',
+    detSub: 'From code to config, from permissions to network — comprehensive mobile security best practices',
+    det1: 'Hardcoded API Keys', det2: 'Insecure HTTP Traffic', det3: 'Dangerous Permissions',
+    det4: '3rd-Party Tracker SDKs', det5: 'WebView Injection Risk', det6: 'Exported Activity Risk',
+    det7: 'Weak Encryption Usage', det8: 'Dynamic Code Loading', det9: 'Plaintext Sensitive Data',
+    det10: 'Certificate Validation Bypass', det11: 'Debug Mode Enabled', det12: 'Signing Certificate Analysis',
+    det13: 'Missing ATS Config (iOS)', det14: 'Manifest Vulnerabilities', det15: 'Native Library Analysis',
+    det16: 'APK Fingerprinting',
+    // Pricing
+    priceEyebrow: 'Flexible Pricing', priceTitle: 'Pay As You Go,', priceTitleGrad: 'No Subscription',
+    priceSub: '1 Credit = 1 security scan OR 1 app upload — use as needed, never expires',
+    price1Name: 'Starter', price1Sub: '≈ $0.15 / scan · USDT payment',
+    price2Name: 'Pro', price2Sub: '≈ $0.11 / scan · Save 27%',
+    price3Name: 'Team', price3Sub: '≈ $0.10 / scan · Save 33%',
+    price4Name: 'Enterprise', price4Sub: '≈ $0.09 / scan · Save 40%',
+    priceFeaturedBadge: 'Most Popular', priceBuyBtn: 'Buy Now',
+    priceFeature1: 'Android APK Security Scan', priceFeature2: 'iOS IPA Security Scan',
+    priceFeature3: 'AI Security Summary', priceFeature4: 'HTML Report Download',
+    priceFeature5: 'App Distribution Upload', priceFeature6: 'Priority Scan Queue',
+    priceFeature7: 'Full Permission Analysis', priceFeature8: 'Tracker SDK Deep Report',
+    priceFeature9: 'Dedicated Telegram Support', priceFeature10: 'API Integration Consulting',
+    priceNote: 'USDT (TRC20) payment · Credits never expire · Shared balance for scanning & distribution · Redeem codes available',
+    // Distribution
+    distEyebrow: 'App Distribution', distTitle: 'Cross-Platform Distribution,', distTitleGrad: 'Instant Download Page',
+    distSub: 'No app store needed — get a dedicated download link and QR code instantly. Supports Android / iOS / Windows / macOS / Linux',
+    distNote: 'Each upload costs 1 Credit, shared with security scan balance — one account for everything',
+    distStep1Title: 'Upload Any Platform App', distStep1Desc: 'Supports APK, IPA, EXE, MSI, DMG, PKG, DEB, RPM, AppImage and more. Up to 500 MB. Platform auto-detects type, extracts icon and version.',
+    distStep2Title: 'Get Download Page + QR Code', distStep2Desc: 'Auto-generates a beautiful download page with app icon, version info, QR code and direct download button. Scan or share — users download in one tap, no registration.',
+    distStep3Title: 'Control Distribution Access', distStep3Desc: 'Set expiry days (1/3/7/30/90 days or permanent) and max download count. Auto-expires to prevent link sprawl — precise beta control.',
+    distStep4Title: 'Publish to App Market (Optional)', distStep4Desc: 'Click "Publish" to make your app publicly visible in the platform market. Unpublish anytime — you stay in full control.',
+    distCtaPrimary: 'Start Distributing Now →', distCtaGhost: 'Browse App Market',
+    distQrScan: 'Scan QR to access', distDownloadBtn: 'Download APK',
+    distBadge1: 'Limit Downloads', distBadge2: 'Set Expiry',
+    distBadge3: 'Auto-extract Icon & Version', distBadge4: '🌐 Publish to Market',
+    distUseCases: 'Use cases: Beta testing · Staged rollout · Enterprise intranet · Demo builds · Cross-platform promotion',
+    // Market
+    mktEyebrow: 'App Market', mktTitle: 'Publish Publicly,', mktTitleGrad: 'Reach More Users',
+    mktSub: 'List your app on the AppSec AI market so users worldwide can discover and download your work — free, unlimited',
+    mktFlow1Label: '① Security Scan', mktFlow1Desc: 'MobSF + Gemini AI\nGenerate security report',
+    mktFlow2Label: '② App Distribution', mktFlow2Desc: 'Custom link + QR code\nControl download access',
+    mktFlow3Label: '③ App Market', mktFlow3Desc: 'Public listing, global reach\n1 Credit to discover more',
+    mktFeat1Title: 'All Platforms in One Place', mktFeat1Desc: 'Android, iOS, Windows, macOS and Linux apps all in one directory. Filter by platform — discover tools and indie apps in one stop.',
+    mktFeat2Title: 'Full Developer Control', mktFeat2Desc: 'Publish/unpublish anytime. Re-upload updates to auto-overwrite, links stay the same. Set expiry and download limits for precise distribution management.',
+    mktFeat3Title: 'Free for Users', mktFeat3Desc: 'Visitors can browse and download without registering. Developers pay 1 Credit per upload; downloads are completely free — low barrier for user acquisition.',
+    mktFeat4Title: 'Download Analytics', mktFeat4Desc: 'View real-time download counts for each release. Understand app popularity to make better publishing decisions.',
+    mktFeat5Title: 'Auto-extract App Info', mktFeat5Desc: 'APK/IPA uploads automatically parse app icon, package name and version — no manual entry required. Market cards look professional.',
+    mktFeat6Title: 'Build Your Brand Fast', mktFeat6Desc: 'Showcase your app portfolio in the market, connect with the global indie dev community — build a professional release channel without your own website.',
+    mktFilterAll: 'All', mktCtaPrimary: 'Browse App Market →', mktCtaGhost: 'Upload My App',
+    // FAQ
+    faqEyebrow: 'FAQ', faqTitle: 'Everything You Want', faqTitleGrad: 'to Know',
+    faqQ1: 'Is uploading APK / IPA files safe? Will they be stored?',
+    faqA1: 'Uploaded files are used solely for this security analysis. Temporary files are deleted immediately after analysis — your app files are never stored long-term. Scan reports are only held in server memory and cleared on service restart.',
+    faqQ2: 'What file formats are supported? What is the size limit?',
+    faqA2: 'Security scanning supports Android APK and iOS IPA. App distribution additionally supports EXE, MSI (Windows), DMG, PKG (macOS), DEB, RPM, AppImage (Linux). All formats up to 500 MB. Scan time: 2–20 minutes.',
+    faqQ3: 'Do Credits expire?',
+    faqA3: "No. Purchased Credits are valid forever with no expiry. You're only charged when you use them — no charge for unused credits.",
+    faqQ4: 'What does the analysis report contain?',
+    faqA4: 'The report includes: security score, dangerous permissions list, 3rd-party trackers, code security issues (Critical/High/Warning severity), manifest vulnerabilities, and an AI-generated professional security summary with remediation advice. Downloadable as HTML.',
+    faqQ5: 'How do I use a redemption code?',
+    faqA5: 'After registering, click the "Redeem Code" button in the console and enter your code in XXXX-XXXX-XXXX format. Codes are issued by platform admins — follow official channels for promotions.',
+    faqQ6: 'How accurate are the detection results? How does it compare to manual review?',
+    faqA6: 'AppSec AI uses the industry-proven MobSF engine for static analysis, with >95% detection rate for known vulnerability patterns (hardcoded secrets, insecure API calls, plaintext traffic, etc.). The AI summary layer is powered by Gemini for quick risk prioritization. Use reports as a starting point for security audits; manual penetration testing is still recommended for critical modules.',
+    faqQ7: 'Do you support Chinese-specific apps (WeChat Mini Programs, HarmonyOS)?',
+    faqA7: 'Currently focused on standard Android APK and iOS IPA formats. WeChat Mini Program packages (.wxapkg) and HarmonyOS HAP are not directly supported. However, all standard Android/iOS apps from Chinese app stores are fully supported, including packed/obfuscated APKs (packer type is noted in the report).',
+    faqQ8: 'Can I share scan reports with clients?',
+    faqA8: 'Yes. Reports can be downloaded as HTML files with a professional, clear format suitable for direct client delivery. The HTML report contains security score, risk classification, detailed findings and AI recommendations — ideal as a supplementary attachment for formal security audit deliverables.',
+    faqQ9: 'What is the App Market? Is listing free?',
+    faqA9: 'The App Market is a public app showcase page (/market) where developers can publicly list their uploaded apps for global users to discover and download. Listing just requires clicking "Publish" in the distribution management panel (uses the 1 Credit from the upload — no extra charge). Browsing and downloading from the market is completely free, no registration needed.',
+    faqQ10: 'How is app distribution different from sharing via email or cloud storage?',
+    faqA10: 'Key differences: ① Professional presentation — auto-generated download page with icon, version, and QR code; ② Access control — set download count limits and expiry to prevent link leakage; ③ Analytics — real-time download counts; ④ Market listing — one click to go public; ⑤ Permanent link — update versions without changing the link, users never need to update bookmarks.',
+    faqQ11: 'What advantages does it have over other security scanning platforms?',
+    faqA11: 'Key differences: ① AI interpretation — Gemini translates technical findings into readable risk explanations and fix suggestions, no security background needed; ② Pay-per-use — no subscription, Credits never expire, great for infrequent use; ③ Privacy-first — files deleted immediately after scan, no user app database built; ④ Globally accessible — USDT payment, no local bank card required.',
+    // Referral
+    refEyebrow: 'Referral Program', refTitle: 'Invite Friends,', refTitleGrad: 'Both Win',
+    refDesc: 'Share your unique link with developer friends. Every time they verify their registration, you instantly receive 5 Credits. No cap on how many you can invite.',
+    refStep1Title: 'Copy Your Referral Link', refStep1Desc: 'Log in and grab your unique link from the profile page with one click',
+    refStep2Title: 'Share With Developer Friends', refStep2Desc: 'Share via WeChat groups, dev communities, social media — any channel works',
+    refStep3Title: 'Credits Land Instantly', refStep3Desc: "When your friend registers and verifies their email via your link, 5 Credits hit your account immediately",
+    refCardTitle: 'My Referral Link', refCardSub: 'Share the link below — your friend registers and you auto-receive 5 Credits',
+    refStatLabel1: 'Users Referred', refStatLabel2: 'Credits Earned',
+    refCopyBtn: 'Copy Link',
+    refLoggedOutTitle: 'Join the Referral Program', refLoggedOutSub: 'Register to get your unique referral link, start inviting friends, and earn unlimited Credits.',
+    refTableRow1: 'Reward per successful referral', refTableRow2: 'Referral cap', refTableRow2Val: 'Unlimited',
+    refTableRow3: 'Credits validity', refTableRow3Val: 'Never expires',
+    refRegisterBtn: 'Register & Get Referral Link', refLoginLink: 'Already have an account? Login →',
+    // CTA
+    ctaTitle: 'Security Scan · App Distribution · App Market', ctaTitleGrad: 'One Platform, All Covered',
+    ctaSub: 'Free scan on signup — from upload to distribution to listing, one account runs the full workflow',
+    ctaBtnPrimary: 'Register Free, Start Now', ctaBtnGhost: 'Browse App Market',
+    ctaEnterprise: 'Need batch scanning or CI/CD integration?', ctaEnterpriseLink: 'Contact us for enterprise plans →',
+    // Footer
+    footerBrandDesc: 'AI-powered mobile app security platform helping developers and security teams find vulnerabilities before launch — protecting user privacy and data.',
+    footerContact: '@ChenSirLite · Telegram Support',
+    footerCol1Title: 'Product', footerCol1Link1: 'Features', footerCol1Link2: 'Detection',
+    footerCol1Link3: 'How It Works', footerCol1Link4: 'Distribution', footerCol1Link5: 'App Market', footerCol1Link6: 'Pricing',
+    footerCol2Title: 'Resources', footerCol2Link1: 'FAQ', footerCol2Link2: 'Reviews',
+    footerCol2Link3: 'Dashboard', footerCol2Link4: 'Contact Us',
+    footerCol3Title: 'Support', footerCol3Link1: 'Enterprise', footerCol3Link2: 'API Access', footerCol3Link3: 'Help',
+    footerCopy: '© 2026 AppSec AI · APK Security Scan · IPA Security Scan · Mobile App Security Platform · App Distribution · App Market',
+    footerPrivacy: 'Privacy Policy', footerTerms: 'Terms of Service', footerContactLink: 'Contact Us',
+  },
+};
+let _langLanding = localStorage.getItem('lang') || 'zh';
+function LL() { return LANG_LANDING[_langLanding] || LANG_LANDING.zh; }
+function applyI18nLanding() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (LL()[k] !== undefined) el.textContent = LL()[k];
+  });
+  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LL().langBtn);
+}
+function toggleLangPage() {
+  _langLanding = _langLanding === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', _langLanding);
+  applyI18nLanding();
+}
+applyI18nLanding();
 // ── Initialize Lucide icons ──────────────────────────────────
 if (window.lucide) lucide.createIcons();
 const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
