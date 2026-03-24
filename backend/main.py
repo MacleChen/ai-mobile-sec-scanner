@@ -2055,6 +2055,28 @@ def _dist_preview_html(r: dict) -> str:
              display:flex;align-items:center;gap:6px;justify-content:center}}
     .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
     .footer img{{width:16px;height:16px;opacity:.6}}
+    /* ── News section ── */
+    .news-sec{{margin-top:32px}}
+    .news-sec-hd{{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}}
+    .news-sec-title{{display:flex;align-items:center;gap:8px;font-size:.95em;font-weight:800;color:#cbd5e1;letter-spacing:.03em}}
+    .news-sec-title svg{{color:#6366f1}}
+    .news-more-a{{font-size:.78em;color:#6366f1;text-decoration:none;font-weight:700;padding:4px 12px;border:1px solid rgba(99,102,241,.3);border-radius:20px;transition:background .2s}}
+    .news-more-a:hover{{background:rgba(99,102,241,.12)}}
+    .news-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;align-items:start}}
+    @media(max-width:560px){{.news-grid{{grid-template-columns:1fr 1fr;gap:10px}}}}
+    @media(max-width:360px){{.news-grid{{grid-template-columns:1fr}}}}
+    .ncard{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit;overflow:hidden}}
+    .ncard:hover{{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.55);border-color:rgba(255,255,255,.15)}}
+    .ncard-media{{width:100%;aspect-ratio:16/9;overflow:hidden;flex-shrink:0;background:#0d1426}}
+    .ncard-media img{{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}}
+    .ncard:hover .ncard-media img{{transform:scale(1.05)}}
+    .ncard-media-ph{{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.25)}}
+    .ncard-body{{padding:12px 14px 14px;flex:1;display:flex;flex-direction:column;gap:6px}}
+    .ncard-cat{{display:inline-block;font-size:.65em;font-weight:700;letter-spacing:.07em;padding:2px 8px;border-radius:10px;border:1px solid;text-transform:uppercase}}
+    .ncard-title{{font-size:.82em;font-weight:700;color:#e2e8f0;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
+    .ncard-src{{font-size:.7em;color:#475569;margin-top:auto}}
+    .ncard-sk{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;height:220px;animation:pulse 1.6s ease-in-out infinite}}
+    @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.5}}}}
     /* ── Social stats bar ── */
     .social-stats{{display:flex;align-items:center;gap:18px;margin-top:14px;flex-wrap:wrap}}
     .sstat{{display:flex;align-items:center;gap:5px;font-size:.82em;
@@ -2243,6 +2265,21 @@ def _dist_preview_html(r: dict) -> str:
       <a href="{site}" target="_blank" rel="noopener">
         <img src="{site}/favicon.svg" alt="logo"> AppSec AI
       </a>
+    </div>
+
+    <!-- News section -->
+    <div class="news-sec" id="news-sec" style="display:none">
+      <div class="news-sec-hd">
+        <div class="news-sec-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/></svg>
+          科技资讯
+        </div>
+        <a class="news-more-a" href="/news" target="_blank" rel="noopener">查看全部 →</a>
+      </div>
+      <div class="news-grid" id="news-grid">
+        <div class="ncard-sk"></div><div class="ncard-sk"></div>
+        <div class="ncard-sk"></div><div class="ncard-sk"></div>
+      </div>
     </div>
   </div>
 
@@ -2469,6 +2506,50 @@ def _dist_preview_html(r: dict) -> str:
     el.addEventListener('click',e=>{{if(e.target===el)el.classList.remove('show');}});
   }});
   loadSocial();
+
+  // ── News section ─────────────────────────────────────────────
+  const _NC={{
+    '软件':{{col:'#a78bfa',bg:'rgba(167,139,250,.12)',brd:'rgba(167,139,250,.3)',grad:'135deg,#7c3aed,#4c1d95'}},
+    '科技':{{col:'#38bdf8',bg:'rgba(56,189,248,.12)',brd:'rgba(56,189,248,.3)',grad:'135deg,#0ea5e9,#0369a1'}},
+    'Dev': {{col:'#34d399',bg:'rgba(52,211,153,.12)',brd:'rgba(52,211,153,.3)',grad:'135deg,#10b981,#065f46'}},
+    'Tech':{{col:'#60a5fa',bg:'rgba(96,165,250,.12)',brd:'rgba(96,165,250,.3)',grad:'135deg,#3b82f6,#1d4ed8'}},
+    'Security':{{col:'#f87171',bg:'rgba(248,113,113,.12)',brd:'rgba(248,113,113,.3)',grad:'135deg,#ef4444,#991b1b'}},
+  }};
+  function _nc(cat){{return _NC[cat]||{{col:'#94a3b8',bg:'rgba(148,163,184,.1)',brd:'rgba(148,163,184,.25)',grad:'135deg,#475569,#1e293b'}};}}
+  const _newsph='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/></svg>';
+  function esc(s){{const d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
+
+  async function loadNews(){{
+    try{{
+      const r=await fetch('/market/news?limit=4');
+      if(!r.ok) return;
+      const d=await r.json();
+      if(!d.news||!d.news.length) return;
+      const g=document.getElementById('news-grid');
+      g.innerHTML='';
+      d.news.forEach(a=>{{
+        const nc=_nc(a.category);
+        const card=document.createElement('a');
+        card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
+        const media=a.image_url
+          ?`<div class="ncard-media"><img src="${{esc(a.image_url)}}" alt="" loading="lazy"></div>`
+          :`<div class="ncard-media" style="background:linear-gradient(${{nc.grad}})"><div class="ncard-media-ph">${{_newsph}}</div></div>`;
+        card.innerHTML=media+`<div class="ncard-body">
+          <span class="ncard-cat" style="color:${{nc.col}};background:${{nc.bg}};border-color:${{nc.brd}}">${{esc(a.category||'资讯')}}</span>
+          <div class="ncard-title">${{esc(a.title)}}</div>
+          <div class="ncard-src">${{esc(a.source||'')}}</div>
+        </div>`;
+        const img=card.querySelector('img');
+        if(img) img.addEventListener('error',()=>{{
+          const m=img.parentNode;m.style.background=`linear-gradient(${{nc.grad}})`;
+          m.innerHTML=`<div class="ncard-media-ph">${{_newsph}}</div>`;
+        }});
+        g.appendChild(card);
+      }});
+      document.getElementById('news-sec').style.display='block';
+    }}catch(e){{}}
+  }}
+  loadNews();
   </script>
 </body>
 </html>"""
