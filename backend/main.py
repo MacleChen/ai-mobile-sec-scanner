@@ -60,6 +60,7 @@ async def startup_event():
     asyncio.create_task(_baidu_push())
     # Run metadata backfill in background so startup isn't blocked
     asyncio.get_event_loop().run_in_executor(None, _backfill_metadata)
+    asyncio.get_event_loop().run_in_executor(None, _backfill_virtual_counts)
 
 _tasks: dict = {}
 _dl_tokens: dict = {}   # one-time download tokens: hex -> {slug, expires_at}
@@ -264,6 +265,9 @@ def _migrate_db():
         # news_articles columns (for existing DBs that pre-date the CREATE TABLE IF NOT EXISTS)
         "ALTER TABLE news_articles ADD COLUMN image_url    TEXT DEFAULT ''",
         "ALTER TABLE news_articles ADD COLUMN is_active    INTEGER DEFAULT 1",
+        # virtual engagement counts
+        "ALTER TABLE app_releases ADD COLUMN virtual_reviews_count INTEGER DEFAULT 0",
+        "ALTER TABLE app_releases ADD COLUMN virtual_likes_count   INTEGER DEFAULT 0",
     ]
     with _db() as c:
         for sql in migrations:
@@ -294,6 +298,103 @@ def _migrate_db():
 
 _init_db()
 _migrate_db()
+
+# ── Virtual engagement (fake reviews/likes for target account) ─
+_VIRT_TARGET_EMAIL = "851327579@qq.com"
+
+_VIRT_NAMES = [
+    "陈小明","李华","王雷","张伟","刘洋","赵磊","孙浩","周鑫","吴强","郑文",
+    "小白兔123","技术控","码农一枚","Apple用户","安卓爱好者","digital_nomad",
+    "软件测评师","极客小哥","开发老鸟","测试工程师","用户体验官","App猎人",
+    "夜猫子程序员","产品经理小李","设计师阿强","运营专员","全栈工程师",
+    "iPhone用户","Mac用户","林小燕","黄浩然","方圆圆","余欣欣","何志远",
+    "码字人生","数字游民","极简主义者","效率至上","工具控","tech_lover",
+    "app_fan","mobile_geek","software_fan","dev_life","极客小哥哥",
+    "王小明","陈浩","刘晓燕","张婷婷","李明明","周杰","赵小雨","孙晓红",
+    "深夜码农","产品汪","测试喵","运维老王","架构师","前端er","后端大佬",
+    "用户6688","用户7799","用户8811","用户9922","用户1023","用户3344",
+]
+_VIRT_COMMENTS = [
+    "非常好用，强烈推荐！","功能齐全，操作简单，五星好评！",
+    "用了很久了，一直很稳定，没有什么问题","界面设计很漂亮，使用体验很好",
+    "下载速度很快，安装也方便","比同类软件好用很多，会继续使用",
+    "开发者很用心，更新也及时","功能很强大，满足了我的所有需求",
+    "稳定可靠，用了好几个月没出过问题","简洁易用，新手也能快速上手",
+    "很好用，推荐给朋友们了","性能不错，运行很流畅",
+    "细节做得很好，使用体验极佳","这款应用解决了我的大问题，太实用了",
+    "比预期的好很多，给满分！","已经用了半年多，体验一直很好",
+    "功能完善，没有广告，很良心","界面清爽，功能实用，值得下载",
+    "更新很频繁，问题修复很快","好用！已经推荐给同事了",
+    "作者很厉害，软件质量很高","用起来很顺手，以后会一直用",
+    "功能比我想象中的多，惊喜！","安全可靠，数据有保障",
+    "无bug运行，非常满意","配置简单，功能强大，赞！",
+    "UI设计得很好看，操作也很直观","改变了我的工作方式，感谢开发者",
+    "效率提升了很多，非常满意","比同类产品强太多了，不用犹豫直接下载",
+    "真心好用，周围朋友都在用","完全免费还这么好用，良心软件",
+    "比我之前用的那款强多了","这个版本更新很大，体验提升明显",
+    "装机必备，已经用了两年了","团队在用，稳定性很好",
+    "支持国产优秀软件！","功能强大又轻量，不占内存",
+    "","","","",  # some reviews without comments (natural mix)
+]
+_VIRT_RATING_POOL = [5,5,5,5,5,5,4,4,4,5,4,5,5,4,3,5,5,4,5,5]  # ~60% 5-star
+
+def _seeded_rand(seed_str: str, idx: int):
+    """Return a seeded Random instance for reproducible virtual data."""
+    import random as _rand_mod
+    r = _rand_mod.Random(hash(seed_str + str(idx)))
+    return r
+
+def _gen_virtual_reviews(slug: str, total: int, start: int, end: int) -> list:
+    """Generate deterministic virtual reviews for positions [start, end)."""
+    import random as _rand_mod
+    from datetime import datetime, timedelta
+    results = []
+    base_date = datetime(2024, 1, 1)
+    for i in range(start, min(end, total)):
+        r = _rand_mod.Random(hash(slug + "rev" + str(i)))
+        name = r.choice(_VIRT_NAMES)
+        rating = r.choice(_VIRT_RATING_POOL)
+        comment = r.choice(_VIRT_COMMENTS)
+        days_ago = r.randint(0, 400)
+        date_str = (base_date + timedelta(days=r.randint(0, 730))).strftime("%Y-%m-%d")
+        results.append({
+            "id": -(i + 1),  # negative id = virtual
+            "rating": rating,
+            "comment": comment,
+            "created_at": date_str,
+            "nickname": name,
+            "avatar_b64": "",
+            "is_mine": False,
+        })
+    return results
+
+def _set_virtual_counts(slug: str) -> None:
+    """Set random virtual review/like counts for a release (only if not already set)."""
+    import random as _rand_mod
+    r = _rand_mod.Random(hash(slug + "virt"))
+    vr = r.randint(10_000, 1_000_000)
+    vl = r.randint(1_000, 100_000)
+    with _db() as c:
+        c.execute(
+            "UPDATE app_releases SET virtual_reviews_count=?, virtual_likes_count=?"
+            " WHERE slug=? AND virtual_reviews_count=0",
+            (vr, vl, slug),
+        )
+
+def _backfill_virtual_counts() -> None:
+    """Set virtual counts for all existing apps from the target email."""
+    with _db() as c:
+        target = c.execute(
+            "SELECT id FROM users_v2 WHERE email=?", (_VIRT_TARGET_EMAIL,)
+        ).fetchone()
+        if not target:
+            return
+        slugs = c.execute(
+            "SELECT slug FROM app_releases WHERE user_id=? AND virtual_reviews_count=0",
+            (target["id"],)
+        ).fetchall()
+    for row in slugs:
+        _set_virtual_counts(row["slug"])
 
 
 # ── Redemption code helpers ──────────────────────────────────
@@ -2401,17 +2502,69 @@ def _dist_preview_html(r: dict) -> str:
   // ── Social data ──────────────────────────────────────────────
   let _myRating = 5;
   let _liked = false;
+  let _reviewPage = 0;
+  let _reviewHasMore = false;
 
   async function loadSocial(){{
     try{{
-      const resp = await fetch('/dist/{slug}/reviews', {{headers: _authHdr()}});
+      const resp = await fetch('/dist/{slug}/reviews?page=0', {{headers: _authHdr()}});
       if(!resp.ok) return;
       const d = await resp.json();
-      renderSocial(d);
+      _reviewPage = 0;
+      _reviewHasMore = d.has_more;
+      renderSocial(d, true);
     }}catch(e){{}}
   }}
 
-  function renderSocial(d){{
+  async function loadMoreReviews(){{
+    try{{
+      const btn=document.getElementById('load-more-reviews');
+      if(btn){{btn.disabled=true;btn.textContent='加载中…';}}
+      const resp = await fetch(`/dist/{slug}/reviews?page=${{_reviewPage+1}}`, {{headers: _authHdr()}});
+      if(!resp.ok) return;
+      const d = await resp.json();
+      _reviewPage++;
+      _reviewHasMore = d.has_more;
+      appendReviews(d.reviews);
+      const btn2=document.getElementById('load-more-reviews');
+      if(btn2){{
+        if(_reviewHasMore){{btn2.disabled=false;btn2.textContent='加载更多评价';}}
+        else{{btn2.remove();}}
+      }}
+    }}catch(e){{
+      const btn=document.getElementById('load-more-reviews');
+      if(btn){{btn.disabled=false;btn.textContent='加载更多评价';}}
+    }}
+  }}
+
+  function _reviewCardHtml(r){{
+    return `<div class="review-card${{r.is_mine?' mine':''}}" data-rid="${{r.id}}">
+      <div class="review-top">
+        <div class="av-circle">${{avatarHtml(r.nickname,r.avatar_b64)}}</div>
+        <div class="review-meta">
+          <div class="review-nick">${{r.nickname}}${{r.is_mine?' <span style="font-size:.7em;color:#6366f1;font-weight:700">（我）</span>':''}}</div>
+          <div class="review-stars">${{starsHtml(r.rating)}}</div>
+          <div class="review-date">${{r.created_at}}</div>
+        </div>
+      </div>
+      ${{r.comment?`<div class="review-comment">${{r.comment}}</div>`:''}}
+    </div>`;
+  }}
+
+  function appendReviews(reviews){{
+    const rl=document.getElementById('reviews-list');
+    const btn=document.getElementById('load-more-reviews');
+    const frag=document.createDocumentFragment();
+    reviews.forEach(r=>{{
+      const div=document.createElement('div');
+      div.innerHTML=_reviewCardHtml(r);
+      frag.appendChild(div.firstElementChild);
+    }});
+    if(btn) rl.insertBefore(frag, btn);
+    else rl.appendChild(frag);
+  }}
+
+  function renderSocial(d, reset=false){{
     // Stats bar
     document.getElementById('ss-likes').textContent = d.likes;
     document.getElementById('ss-cnt').textContent = d.count;
@@ -2456,22 +2609,26 @@ def _dist_preview_html(r: dict) -> str:
     }}
     // Reviews list
     const rl=document.getElementById('reviews-list');
-    if(!d.reviews.length){{
+    if(!d.reviews.length && !d.has_more){{
       rl.innerHTML='<div class="empty-reviews">暂无评价，成为第一个评价者 ✨</div>';
       return;
     }}
-    rl.innerHTML=d.reviews.map(r=>`
-      <div class="review-card${{r.is_mine?' mine':''}}">
-        <div class="review-top">
-          <div class="av-circle">${{avatarHtml(r.nickname,r.avatar_b64)}}</div>
-          <div class="review-meta">
-            <div class="review-nick">${{r.nickname}}${{r.is_mine?' <span style="font-size:.7em;color:#6366f1;font-weight:700">（我）</span>':''}}</div>
-            <div class="review-stars">${{starsHtml(r.rating)}}</div>
-            <div class="review-date">${{r.created_at}}</div>
-          </div>
-        </div>
-        ${{r.comment?`<div class="review-comment">${{r.comment}}</div>`:''}}
-      </div>`).join('');
+    rl.innerHTML='';
+    d.reviews.forEach(r=>{{
+      const div=document.createElement('div');
+      div.innerHTML=_reviewCardHtml(r);
+      rl.appendChild(div.firstElementChild);
+    }});
+    // Load more button
+    if(d.has_more){{
+      const btn=document.createElement('button');
+      btn.id='load-more-reviews';
+      btn.className='review-submit';
+      btn.style.cssText='background:rgba(255,255,255,.06);margin-top:12px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,.1)';
+      btn.textContent='加载更多评价';
+      btn.onclick=loadMoreReviews;
+      rl.appendChild(btn);
+    }}
   }}
 
   // ── Like toggle ───────────────────────────────────────────────
@@ -2681,7 +2838,9 @@ async def dist_toggle_like(slug: str, user: dict = Depends(_current_user)):
             c.execute("INSERT INTO app_likes(slug, user_id) VALUES(?,?)", (slug, user["id"]))
             liked = True
         count = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
-    return {"liked": liked, "count": count}
+        vl = c.execute("SELECT virtual_likes_count FROM app_releases WHERE slug=?", (slug,)).fetchone()
+        virtual_likes = vl["virtual_likes_count"] if vl else 0
+    return {"liked": liked, "count": count + virtual_likes}
 
 # ── App Reviews ──────────────────────────────────────────────
 
@@ -2692,7 +2851,8 @@ def _review_display_name(nickname: str, email: str) -> str:
     return local[:2] + "***" if len(local) > 2 else local or "用户"
 
 @app.get("/dist/{slug}/reviews")
-async def dist_get_reviews(slug: str, request: Request):
+async def dist_get_reviews(slug: str, request: Request, page: int = 0):
+    PER_PAGE = 20
     # Optional auth
     user = None
     auth = request.headers.get("Authorization", "")
@@ -2715,7 +2875,13 @@ async def dist_get_reviews(slug: str, request: Request):
             WHERE r.slug=?
             ORDER BY r.created_at DESC
         """, (slug,)).fetchall()
-        likes = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
+        real_likes = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
+        rel = c.execute(
+            "SELECT virtual_reviews_count, virtual_likes_count FROM app_releases WHERE slug=?",
+            (slug,)
+        ).fetchone()
+        virtual_reviews_total = rel["virtual_reviews_count"] if rel else 0
+        virtual_likes = rel["virtual_likes_count"] if rel else 0
         my_review = None
         liked = False
         if user:
@@ -2725,7 +2891,8 @@ async def dist_get_reviews(slug: str, request: Request):
                 my_review = dict(mr)
             liked = bool(c.execute("SELECT 1 FROM app_likes WHERE slug=? AND user_id=?",
                                    (slug, user["id"])).fetchone())
-    reviews = [
+
+    real_reviews = [
         {
             "id": r["id"],
             "rating": r["rating"],
@@ -2737,15 +2904,42 @@ async def dist_get_reviews(slug: str, request: Request):
         }
         for r in rows
     ]
-    ratings = [r["rating"] for r in reviews] if reviews else []
-    avg = round(sum(ratings) / len(ratings), 1) if ratings else None
+    total_real = len(real_reviews)
+    total_count = total_real + virtual_reviews_total
+    total_likes = real_likes + virtual_likes
+
+    # Paginate: real reviews first, then virtual
+    start = page * PER_PAGE
+    end = start + PER_PAGE
+    page_reviews = []
+    if start < total_real:
+        page_reviews = real_reviews[start:end]
+    virt_start = max(0, start - total_real)
+    virt_end = max(0, end - total_real)
+    if virt_end > virt_start and virtual_reviews_total > 0:
+        page_reviews += _gen_virtual_reviews(slug, virtual_reviews_total, virt_start, virt_end)
+
+    # Avg rating: weight real reviews heavily, virtual ~4.4
+    real_ratings = [r["rating"] for r in real_reviews]
+    if real_ratings:
+        real_avg = sum(real_ratings) / len(real_ratings)
+        virt_weight = min(virtual_reviews_total, 500)
+        combined_avg = round((real_avg * len(real_ratings) + 4.4 * virt_weight) /
+                              (len(real_ratings) + virt_weight), 1)
+    elif virtual_reviews_total > 0:
+        combined_avg = 4.4
+    else:
+        combined_avg = None
+
     return {
-        "reviews": reviews,
-        "likes": likes,
+        "reviews": page_reviews,
+        "likes": total_likes,
         "liked": liked,
         "my_review": my_review,
-        "avg": avg,
-        "count": len(reviews),
+        "avg": combined_avg,
+        "count": total_count,
+        "has_more": end < total_count,
+        "page": page,
     }
 
 @app.post("/dist/{slug}/review")
@@ -2877,6 +3071,9 @@ async def dist_upload(
         credits_left = _row["credits"] if _row else 0
 
     site = os.getenv("SITE_URL", "https://maclechen.top")
+    # Auto-set virtual engagement for target account
+    if user.get("email") == _VIRT_TARGET_EMAIL:
+        _set_virtual_counts(slug)
     return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}",
             "updated": is_update, "credits_left": credits_left}
 
