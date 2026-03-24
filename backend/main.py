@@ -2302,6 +2302,10 @@ def _dist_preview_html(r: dict) -> str:
     [data-theme=light] .footer{{color:#94a3b8}}
     [data-theme=light] .theme-btn{{border-color:rgba(0,0,0,.12);color:#64748b}}
     [data-theme=light] .theme-btn:hover{{background:rgba(0,0,0,.05);color:#1e293b}}
+    .lang-toggle{{background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:.78em;font-weight:700;color:#94a3b8;transition:all .2s;flex-shrink:0}}
+    .lang-toggle:hover{{background:rgba(255,255,255,.08);color:#e2e8f0}}
+    [data-theme=light] .lang-toggle{{border-color:rgba(0,0,0,.1);color:#64748b}}
+    [data-theme=light] .lang-toggle:hover{{background:rgba(0,0,0,.05);color:#0f172a}}
   </style>
 </head>
 <body>
@@ -2333,8 +2337,9 @@ def _dist_preview_html(r: dict) -> str:
         <img src="{site}/favicon.svg" alt="logo"> AppSec AI
       </a>
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:.75em;color:#64748b">安全应用分发平台</span>
+        <span style="font-size:.75em;color:#64748b" data-i18n="platformSub">安全应用分发平台</span>
         <button class="theme-btn" id="theme-btn-dist" onclick="_toggleTheme()" title="切换主题"></button>
+        <button class="lang-toggle" id="lang-btn-dist" onclick="toggleLangPage()">EN</button>
       </div>
     </div>
 
@@ -2371,11 +2376,11 @@ def _dist_preview_html(r: dict) -> str:
           <div class="desc-box">{description}</div>''' if description else ''}
 
           <div class="meta-grid" style="{'margin-top:0' if not description else ''}">
-            {f'<div class="meta-item"><div class="meta-item-label">版本</div><div class="meta-item-val">v{html_lib.escape(version)}</div></div>' if version else ''}
-            <div class="meta-item"><div class="meta-item-label">文件大小</div><div class="meta-item-val">{size_str}</div></div>
-            <div class="meta-item"><div class="meta-item-label">下载次数</div><div class="meta-item-val">{dl_html}</div></div>
-            <div class="meta-item"><div class="meta-item-label">上传时间</div><div class="meta-item-val">{upload_html}</div></div>
-            <div class="meta-item"><div class="meta-item-label">有效期</div><div class="meta-item-val">{exp_html}</div></div>
+            {f'<div class="meta-item"><div class="meta-item-label" data-i18n="version">版本</div><div class="meta-item-val">v{html_lib.escape(version)}</div></div>' if version else ''}
+            <div class="meta-item"><div class="meta-item-label" data-i18n="size">文件大小</div><div class="meta-item-val">{size_str}</div></div>
+            <div class="meta-item"><div class="meta-item-label" data-i18n="downloads">下载次数</div><div class="meta-item-val">{dl_html}</div></div>
+            <div class="meta-item"><div class="meta-item-label" data-i18n="uploaded">上传时间</div><div class="meta-item-val">{upload_html}</div></div>
+            <div class="meta-item"><div class="meta-item-label" data-i18n="expiry">有效期</div><div class="meta-item-val">{exp_html}</div></div>
           </div>
 
           <div class="ai-promo">
@@ -2392,7 +2397,7 @@ def _dist_preview_html(r: dict) -> str:
           <!-- Reviews section -->
           <div class="reviews-section">
             <div class="reviews-hd">
-              <div class="reviews-title">用户评价</div>
+              <div class="reviews-title" data-i18n="reviewsTitle">用户评价</div>
               <div class="avg-stars" id="avg-stars-display" style="display:none">
                 <span id="avg-stars-text"></span>
               </div>
@@ -2418,7 +2423,7 @@ def _dist_preview_html(r: dict) -> str:
             <span class="copy-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
           </div>
           <div class="qr-box">
-            <div class="qr-box-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>扫码访问</div>
+            <div class="qr-box-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg><span data-i18n="qrTitle">扫码访问</span></div>
             <div class="qr-container">
               <img class="qr-img" src="{qr_url}" alt="扫码下载" loading="lazy">
               <div class="qr-logo">{f'<img src="data:image/png;base64,{icon_b64}" alt="logo" style="border-radius:18%">' if icon_b64 else f'<img src="{site}/favicon.svg" alt="logo">'}</div>
@@ -2441,9 +2446,9 @@ def _dist_preview_html(r: dict) -> str:
       <div class="news-sec-hd">
         <div class="news-sec-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/></svg>
-          科技资讯
+          <span data-i18n="newsTitle">科技资讯</span>
         </div>
-        <a class="news-more-a" href="/news" target="_blank" rel="noopener">查看全部 →</a>
+        <a class="news-more-a" href="/news" target="_blank" rel="noopener" data-i18n="viewAll">查看全部 →</a>
       </div>
       <div class="news-grid" id="news-grid">
         <div class="ncard-sk"></div><div class="ncard-sk"></div>
@@ -2460,7 +2465,7 @@ def _dist_preview_html(r: dict) -> str:
   function copyLink(){{
     navigator.clipboard.writeText('{page_url}').then(()=>{{
       const el=document.getElementById('lnk');
-      el.textContent='链接已复制';
+      el.textContent=LD().copyLinkOk;
       setTimeout(()=>el.textContent='{page_url}',2000);
     }});
   }}
@@ -2672,7 +2677,7 @@ def _dist_preview_html(r: dict) -> str:
     const txt=document.getElementById('like-btn-text');
     const cnt=document.getElementById('like-btn-count');
     btn.classList.toggle('liked', liked);
-    txt.textContent=liked?'已喜欢':'喜欢';
+    txt.textContent=liked?LD().likedBtn:LD().likeBtn;
     cnt.textContent=count>0?`(${{count}})`:''
   }}
 
@@ -3461,6 +3466,10 @@ def _market_html() -> str:  # noqa: PLR0915
 [data-theme=light] .theme-btn:hover{background:rgba(0,0,0,.05)!important}
 .theme-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
 .theme-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.lang-toggle{background:transparent;border:1px solid var(--border);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:.78em;font-weight:700;color:var(--muted);transition:all .2s;flex-shrink:0}
+.lang-toggle:hover{background:rgba(255,255,255,.06);color:var(--text)}
+[data-theme=light] .lang-toggle{border-color:rgba(0,0,0,.1);color:#64748b}
+[data-theme=light] .lang-toggle:hover{background:rgba(0,0,0,.05);color:#0f172a}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a{text-decoration:none;color:inherit}
 #prog{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--pr),var(--pr2),#06b6d4);transform:scaleX(0);transform-origin:left;transition:transform .35s;z-index:9999}
@@ -3640,12 +3649,12 @@ function renderCards(apps){
     const p=app.platform||'other';
     const c=app.category||'';
     const icon=app.icon_b64?`<img class="ac-icon" src="data:image/png;base64,${app.icon_b64}" alt="${name}" loading="lazy">`:`<div class="ac-icon-ph"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(148,163,184,.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>`;
-    const catBadge=c&&CL[c]?`<span class="badge b-cat">${CI[c]||''} ${CL[c]}</span>`:'';
+    const catBadge=c&&CL[c]?`<span class="badge b-cat">${CI[c]||''} ${LM()[`cat_${c}`]||CL[c]}</span>`:'';
     const platBadge=`<span class="badge b-${p}">${PL[p]||p}</span>`;
     const desc=app.description?`<div class="ac-desc">${esc(app.description)}</div>`:'';
     const a=document.createElement('a');
     a.className='acard';a.href='/dist/'+app.slug;a.target='_blank';a.rel='noopener';
-    a.innerHTML=`${icon}<div class="ac-name">${name}</div>${ver}<div class="ac-badges">${catBadge}${platBadge}</div>${desc}<div class="ac-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10" style="vertical-align:-1px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${app.download_count||0} 次下载</div><div class="ac-btn">查看详情 →</div>`;
+    a.innerHTML=`${icon}<div class="ac-name">${name}</div>${ver}<div class="ac-badges">${catBadge}${platBadge}</div>${desc}<div class="ac-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10" style="vertical-align:-1px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${app.download_count||0} ${LM().downloads}</div><div class="ac-btn">${LM().dlBtn} →</div>`;
     g.appendChild(a);
   });
 }
@@ -3790,7 +3799,113 @@ load();
 const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
 const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvg:_sunSvg);}}
-(()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvg:_sunSvg);}})();"""
+(()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvg:_sunSvg);}})();
+// ── i18n ────────────────────────────────────────
+const LANG_MKT = {{
+  zh: {{
+    title: '应用市场',
+    heroSub: '发现、下载经 AppSec AI 安全验证的多平台应用',
+    searchPh: '搜索应用名称、包名、分类…',
+    search: '搜索',
+    allPlatforms: '全部平台',
+    featured: '官方推荐',
+    hotWeek: '本周热门',
+    viewAll: '查看全部 →',
+    catLabel: '分类',
+    catAll: '全部',
+    cat_tools: '工具',
+    cat_social: '社交',
+    cat_games: '游戏',
+    cat_finance: '金融',
+    cat_entertainment: '娱乐',
+    cat_education: '教育',
+    cat_productivity: '效率',
+    cat_health: '健康',
+    cat_other: '其他',
+    platLabel: '平台',
+    sortLabel: '排序',
+    sortNewest: '最新上传',
+    sortDl: '下载最多',
+    sortName: '应用名称',
+    uploadApp: '上传应用',
+    loadMore: '加载更多',
+    loading: '加载中…',
+    noApps: '暂无应用',
+    noAppsSearch: '没有找到匹配的应用',
+    downloads: '次下载',
+    dlBtn: '查看详情',
+    langBtn: 'EN',
+    footerText: '© 2026 maclechen.top',
+    tag1: 'AI 安全检测',
+    tag2: '多平台支持',
+    tag3: '极速分发',
+    tag4: '隐私安全',
+  }},
+  en: {{
+    title: 'App Market',
+    heroSub: 'Discover and download AI security-verified apps for all platforms',
+    searchPh: 'Search by name, package or category…',
+    search: 'Search',
+    allPlatforms: 'All Platforms',
+    featured: 'Featured',
+    hotWeek: 'Hot This Week',
+    viewAll: 'View All →',
+    catLabel: 'Category',
+    catAll: 'All',
+    cat_tools: 'Tools',
+    cat_social: 'Social',
+    cat_games: 'Games',
+    cat_finance: 'Finance',
+    cat_entertainment: 'Entertainment',
+    cat_education: 'Education',
+    cat_productivity: 'Productivity',
+    cat_health: 'Health',
+    cat_other: 'Other',
+    platLabel: 'Platform',
+    sortLabel: 'Sort',
+    sortNewest: 'Latest',
+    sortDl: 'Most Downloaded',
+    sortName: 'Name',
+    uploadApp: 'Upload App',
+    loadMore: 'Load More',
+    loading: 'Loading…',
+    noApps: 'No apps yet',
+    noAppsSearch: 'No apps found',
+    downloads: 'downloads',
+    dlBtn: 'View Details',
+    langBtn: '中文',
+    footerText: '© 2026 maclechen.top',
+    tag1: 'AI Security Scan',
+    tag2: 'Multi-Platform',
+    tag3: 'Fast Delivery',
+    tag4: 'Privacy Safe',
+  }},
+}};
+let _langMkt = localStorage.getItem('lang') || 'zh';
+function LM() {{ return LANG_MKT[_langMkt] || LANG_MKT.zh; }}
+function applyI18nMkt() {{
+  document.querySelectorAll('[data-i18n]').forEach(el => {{
+    const k = el.getAttribute('data-i18n');
+    if (LM()[k] !== undefined) el.textContent = LM()[k];
+  }});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {{
+    const k = el.getAttribute('data-i18n-ph');
+    if (LM()[k] !== undefined) el.placeholder = LM()[k];
+  }});
+  const ss = document.getElementById('sort-sel');
+  if (ss && ss.options.length >= 2) {{
+    ss.options[0].text = LM().sortNewest;
+    ss.options[1].text = LM().sortDl;
+  }}
+  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LM().langBtn);
+}}
+function toggleLangPage() {{
+  _langMkt = _langMkt === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', _langMkt);
+  applyI18nMkt();
+  load();
+}}
+applyI18nMkt();"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -3808,29 +3923,30 @@ function _toggleTheme(){{const c=document.documentElement.getAttribute('data-the
   <a class="logo" href="{site}">
     <img src="/favicon.svg" alt="logo">
     <div class="logo-sep"></div>
-    <span class="logo-sub">应用市场</span>
+    <span class="logo-sub" data-i18n="title">应用市场</span>
   </a>
   <div style="flex:1"></div>
   <button class="theme-btn" id="theme-btn-mkt" onclick="_toggleTheme()" title="切换主题"></button>
-  <a class="h-cta" href="{site}/app" style="margin-left:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传应用</a>
+  <button class="lang-toggle" id="lang-btn-mkt" onclick="toggleLangPage()">EN</button>
+  <a class="h-cta" href="{site}/app" style="margin-left:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span data-i18n="uploadApp">上传应用</span></a>
 </header>
 <div id="sticky-bar">
   <div class="sb-wrap">
-    <input id="si2" class="sb-input" type="search" placeholder="搜索应用名称、包名…" onkeydown="if(event.key==='Enter')doSearch2()">
+    <input id="si2" class="sb-input" type="search" placeholder="搜索应用名称、包名…" data-i18n-ph="searchPh" onkeydown="if(event.key==='Enter')doSearch2()">
     <button class="sb-btn" onclick="doSearch2()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
   </div>
 </div>
 <section class="hero" id="hero-sec">
   <img src="/favicon.svg" alt="AppSec AI" class="hero-logo">
-  <h1 class="hero-title">应用市场</h1>
-  <p class="hero-sub">发现、下载经 AppSec AI 安全验证的多平台应用</p>
+  <h1 class="hero-title" data-i18n="title">应用市场</h1>
+  <p class="hero-sub" data-i18n="heroSub">发现、下载经 AppSec AI 安全验证的多平台应用</p>
   <div class="hero-search-wrap">
     <div class="hero-si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-    <input id="si" class="hero-input" type="search" placeholder="搜索应用名称、包名、分类…" onkeydown="if(event.key==='Enter')doSearch()">
-    <button class="hero-sbtn" onclick="doSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 搜索</button>
+    <input id="si" class="hero-input" type="search" placeholder="搜索应用名称、包名、分类…" data-i18n-ph="searchPh" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="hero-sbtn" onclick="doSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> <span data-i18n="search">搜索</span></button>
   </div>
   <div class="hero-plat-chips" id="hpc">
-    <button class="hero-plat-chip on" data-p="" onclick="setHPlat('',this)">全部平台</button>
+    <button class="hero-plat-chip on" data-p="" onclick="setHPlat('',this)"><span data-i18n="allPlatforms">全部平台</span></button>
     <button class="hero-plat-chip" data-p="android" onclick="setHPlat('android',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Android</button>
     <button class="hero-plat-chip" data-p="ios" onclick="setHPlat('ios',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>iOS</button>
     <button class="hero-plat-chip" data-p="windows" onclick="setHPlat('windows',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Windows</button>
@@ -3838,10 +3954,10 @@ function _toggleTheme(){{const c=document.documentElement.getAttribute('data-the
     <button class="hero-plat-chip" data-p="linux" onclick="setHPlat('linux',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Linux</button>
   </div>
   <div class="hero-tags">
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><b>AI 安全检测</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><b>多平台支持</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><b>极速分发</b></div>
-    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><b>隐私安全</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><b data-i18n="tag1">AI 安全检测</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><b data-i18n="tag2">多平台支持</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><b data-i18n="tag3">极速分发</b></div>
+    <div class="hero-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><b data-i18n="tag4">隐私安全</b></div>
   </div>
 </section>
 
@@ -3854,9 +3970,9 @@ function _toggleTheme(){{const c=document.documentElement.getAttribute('data-the
         <div class="spot-title-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
-        <span>官方推荐</span>
+        <span data-i18n="featured">官方推荐</span>
       </div>
-      <a class="spot-view-all" onclick="setCat('',document.querySelector('#cc .chip'));setSort('newest');window.scrollTo({{top:400,behavior:'smooth'}})">查看全部 →</a>
+      <a class="spot-view-all" onclick="setCat('',document.querySelector('#cc .chip'));setSort('newest');window.scrollTo({{top:400,behavior:'smooth'}})"><span data-i18n="viewAll">查看全部 →</span></a>
     </div>
     <div class="feat-rail" id="feat-rail"></div>
   </div>
@@ -3868,7 +3984,7 @@ function _toggleTheme(){{const c=document.documentElement.getAttribute('data-the
         <div class="spot-title-icon" style="background:linear-gradient(135deg,#ef4444,#f97316)">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </div>
-        <span>本周热门</span>
+        <span data-i18n="hotWeek">本周热门</span>
       </div>
     </div>
     <div class="hot-grid" id="hot-grid"></div>
@@ -3879,22 +3995,22 @@ function _toggleTheme(){{const c=document.documentElement.getAttribute('data-the
 
 <div class="filters">
   <div class="frow">
-    <span class="flbl">分类</span>
+    <span class="flbl" data-i18n="catLabel">分类</span>
     <div class="chips" id="cc">
-      <button class="chip on" onclick="setCat('',this)">全部</button>
-      <button class="chip" onclick="setCat('tools',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>工具</button>
-      <button class="chip" onclick="setCat('social',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>社交</button>
-      <button class="chip" onclick="setCat('games',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>游戏</button>
-      <button class="chip" onclick="setCat('finance',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>金融</button>
-      <button class="chip" onclick="setCat('entertainment',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>娱乐</button>
-      <button class="chip" onclick="setCat('education',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>教育</button>
-      <button class="chip" onclick="setCat('productivity',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>效率</button>
-      <button class="chip" onclick="setCat('health',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>健康</button>
-      <button class="chip" onclick="setCat('other',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>其他</button>
+      <button class="chip on" onclick="setCat('',this)"><span data-i18n="catAll">全部</span></button>
+      <button class="chip" onclick="setCat('tools',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span data-i18n="cat_tools">工具</span></button>
+      <button class="chip" onclick="setCat('social',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span data-i18n="cat_social">社交</span></button>
+      <button class="chip" onclick="setCat('games',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg><span data-i18n="cat_games">游戏</span></button>
+      <button class="chip" onclick="setCat('finance',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span data-i18n="cat_finance">金融</span></button>
+      <button class="chip" onclick="setCat('entertainment',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span data-i18n="cat_entertainment">娱乐</span></button>
+      <button class="chip" onclick="setCat('education',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span data-i18n="cat_education">教育</span></button>
+      <button class="chip" onclick="setCat('productivity',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span data-i18n="cat_productivity">效率</span></button>
+      <button class="chip" onclick="setCat('health',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span data-i18n="cat_health">健康</span></button>
+      <button class="chip" onclick="setCat('other',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span data-i18n="cat_other">其他</span></button>
     </div>
   </div>
   <div class="frow">
-    <span class="flbl">平台</span>
+    <span class="flbl" data-i18n="platLabel">平台</span>
     <div class="chips" id="pc">
       <button class="chip on" data-p="" onclick="setPlat('',this)">全部</button>
       <button class="chip" data-p="android" onclick="setPlat('android',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Android</button>
@@ -3907,16 +4023,16 @@ function _toggleTheme(){{const c=document.documentElement.getAttribute('data-the
 </div>
 <div class="toolbar">
   <span id="stats"></span>
-  <select class="sort-sel" onchange="setSort(this.value)">
-    <option value="newest">最新上传</option>
-    <option value="popular">下载最多</option>
+  <select class="sort-sel" id="sort-sel" onchange="setSort(this.value)">
+    <option id="sort-opt-newest" value="newest">最新上传</option>
+    <option id="sort-opt-dl" value="popular">下载最多</option>
   </select>
 </div>
 <div id="grid" class="grid"></div>
 <div id="empty" class="empty" hidden>
   <div class="empty-em"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="52" height="52"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>
-  <div class="empty-t">暂无应用</div>
-  <div class="empty-s">当前筛选条件下没有找到应用<br>换个分类或平台试试？</div>
+  <div class="empty-t" data-i18n="noApps">暂无应用</div>
+  <div class="empty-s" data-i18n="noAppsSearch">当前筛选条件下没有找到应用<br>换个分类或平台试试？</div>
 </div>
 <div id="pages" class="pages"></div>
 <footer>Powered by <a href="{site}" target="_blank">AppSec AI</a> — 安全扫描 · 应用分发 · 应用市场</footer>
@@ -3949,6 +4065,10 @@ def _news_html() -> str:  # noqa: PLR0915
 [data-theme=light] .theme-btn:hover{background:rgba(0,0,0,.05)!important}
 .theme-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
 .theme-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.lang-toggle{background:transparent;border:1px solid var(--border);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:.78em;font-weight:700;color:var(--muted);transition:all .2s;flex-shrink:0}
+.lang-toggle:hover{background:rgba(255,255,255,.06);color:var(--text)}
+[data-theme=light] .lang-toggle{border-color:rgba(0,0,0,.1);color:#64748b}
+[data-theme=light] .lang-toggle:hover{background:rgba(0,0,0,.05);color:#0f172a}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a{text-decoration:none;color:inherit}
 header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;gap:10px}
@@ -4082,7 +4202,7 @@ function renderCards(articles){
         <div class="ncard-title">${esc(a.title||'')}</div>
         ${a.summary?`<div class="ncard-summary">${esc(a.summary)}</div>`:''}
         <div class="ncard-footer">
-          <div class="ncard-read" style="color:${nc.color}">阅读原文 ${_arrowSvg}</div>
+          <div class="ncard-read" style="color:${nc.color}">${LN().readMore} ${_arrowSvg}</div>
         </div>
       </div>`;
     const img=card.querySelector('img');
@@ -4115,7 +4235,7 @@ async function _load(reset=false){
     if(!arts.length&&_offset===0){document.getElementById('empty').hidden=false;}
     else{renderCards(arts);}
     _offset+=arts.length;
-    document.getElementById('results-info').textContent=_offset>0?`已加载 ${_offset} 条资讯`:'';
+    document.getElementById('results-info').textContent=_offset>0?LN().loaded(_offset):'';
   }catch(e){rmSk();console.error('[news]',e);}
   _loading=false;
   if(btn)btn.classList.remove('spin');
@@ -4124,6 +4244,57 @@ const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvg:_sunSvg);}}
 (()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvg:_sunSvg);}})();
+// ── i18n ────────────────────────────────────────
+const LANG_NEWS = {{
+  zh: {{
+    title: '科技资讯',
+    heroSub: '汇聚全球科技、软件、开发最新动态',
+    searchPh: '搜索资讯…',
+    backToMarket: '返回市场',
+    tabAll: '全部',
+    loadMore: '加载更多',
+    loading: '加载中…',
+    noNews: '暂无资讯',
+    readMore: '阅读原文',
+    loaded: n => `已加载 ${{n}} 条资讯`,
+    langBtn: 'EN',
+  }},
+  en: {{
+    title: 'Tech News',
+    heroSub: 'Latest updates from global tech, software, and dev communities',
+    searchPh: 'Search news…',
+    backToMarket: 'Back to Market',
+    tabAll: 'All',
+    loadMore: 'Load More',
+    loading: 'Loading…',
+    noNews: 'No news yet',
+    readMore: 'Read More',
+    loaded: n => `Loaded ${{n}} articles`,
+    langBtn: '中文',
+  }},
+}};
+let _langNews = localStorage.getItem('lang') || 'zh';
+function LN() {{ return LANG_NEWS[_langNews] || LANG_NEWS.zh; }}
+function applyI18nNews() {{
+  document.querySelectorAll('[data-i18n]').forEach(el => {{
+    const k = el.getAttribute('data-i18n');
+    if (LN()[k] !== undefined) el.textContent = LN()[k];
+  }});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {{
+    const k = el.getAttribute('data-i18n-ph');
+    if (LN()[k] !== undefined) el.placeholder = LN()[k];
+  }});
+  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LN().langBtn);
+}}
+function toggleLangPage() {{
+  _langNews = _langNews === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', _langNews);
+  applyI18nNews();
+  document.getElementById('grid').innerHTML = '';
+  _offset = 0; _hasMore = true;
+  _load(true);
+}}
+applyI18nNews();
 _load(true);"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -4150,27 +4321,28 @@ _load(true);"""
   </div>
   <a class="h-back" href="/market">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
-    返回市场
+    <span data-i18n="backToMarket">返回市场</span>
   </a>
   <button class="theme-btn" id="theme-btn-news" onclick="_toggleTheme()" title="切换主题"></button>
+  <button class="lang-toggle" id="lang-btn-news" onclick="toggleLangPage()">EN</button>
 </header>
 
 <div class="hero">
   <div class="hero-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
   </div>
-  <h1 class="hero-title">科技资讯</h1>
-  <p class="hero-sub">每日汇聚全球最新科技 · 软件 · 开发动态，自动更新</p>
+  <h1 class="hero-title" data-i18n="title">科技资讯</h1>
+  <p class="hero-sub" data-i18n="heroSub">每日汇聚全球最新科技 · 软件 · 开发动态，自动更新</p>
   <div class="search-wrap">
     <div class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-    <input id="si" class="search-input" type="search" placeholder="搜索资讯标题、摘要…" oninput="onSearchInput()" onkeydown="if(event.key==='Escape')clearSearch()">
+    <input id="si" class="search-input" type="search" placeholder="搜索资讯标题、摘要…" data-i18n-ph="searchPh" oninput="onSearchInput()" onkeydown="if(event.key==='Escape')clearSearch()">
     <button id="sc" class="search-clear" onclick="clearSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
 </div>
 
 <div class="tabs-bar">
   <div class="tabs">
-    <button class="tab on" onclick="setTab('',this)">全部</button>
+    <button class="tab on" onclick="setTab('',this)"><span data-i18n="tabAll">全部</span></button>
     <button class="tab" onclick="setTab('科技',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       科技
@@ -4198,13 +4370,13 @@ _load(true);"""
 <div id="grid" class="grid"></div>
 <div id="empty" class="empty" hidden>
   <div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="56" height="56"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg></div>
-  <div class="empty-t">暂无资讯</div>
+  <div class="empty-t" data-i18n="noNews">暂无资讯</div>
   <div class="empty-s">没有找到匹配的内容<br>换个分类或关键词试试</div>
 </div>
 <div class="load-wrap">
   <button id="load-btn" class="load-btn" onclick="_load()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.42"/></svg>
-    加载更多
+    <span data-i18n="loadMore">加载更多</span>
   </button>
 </div>
 <footer>Powered by <a href="{site}" target="_blank">AppSec AI</a> — 资讯每天凌晨 3:00 自动更新</footer>
