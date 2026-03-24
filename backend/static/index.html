@@ -1238,15 +1238,15 @@
     </div>
     <div class="modal-body">
       <div class="form-field">
-        <label class="form-label">当前密码</label>
+        <label class="form-label" id="cpw-label-cur">当前密码</label>
         <input class="form-input" id="cpw-cur" type="password" placeholder="输入当前密码">
       </div>
       <div class="form-field">
-        <label class="form-label">新密码</label>
+        <label class="form-label" id="cpw-label-new">新密码</label>
         <input class="form-input" id="cpw-new" type="password" placeholder="至少6位">
       </div>
       <div class="form-field">
-        <label class="form-label">确认新密码</label>
+        <label class="form-label" id="cpw-label-confirm">确认新密码</label>
         <input class="form-input" id="cpw-confirm" type="password" placeholder="再次输入新密码"
                onkeydown="if(event.key==='Enter')changePassword()">
       </div>
@@ -1910,6 +1910,39 @@ const LANG = {
     distDelConfirm:  '确定要删除这个分发链接吗？',
     distPermanent:   '永久',
     distUnlimited:   '不限次',
+    // Input placeholders
+    pwdPlaceholder:  '请输入密码',
+    nicknamePh:      '设置你的昵称（最多32字符）',
+    bioPh:           '介绍一下自己...',
+    distDescPh:      '版本更新说明...',
+    distSearchPh:    '搜索应用名称/包名…',
+    cpwCurPh:        '输入当前密码',
+    cpwNewPh:        '至少6位',
+    cpwConfirmPh:    '再次输入新密码',
+    // Change password modal
+    cpwTitle:        '修改密码',
+    cpwSub:          '请输入当前密码和新密码',
+    cpwLabelCur:     '当前密码',
+    cpwLabelNew:     '新密码',
+    cpwLabelConfirm: '确认新密码',
+    cpwBtn:          '确认修改',
+    // Referral modal
+    refTitle:        '推广邀请',
+    refSub:          '每成功邀请一位新用户注册，您将获得 5 Credits 奖励',
+    refCountLabel:   '已邀请用户',
+    refCreditsLabel: '已获得奖励',
+    refLinkLabel:    '我的推广链接',
+    refCopyBtn:      '复制',
+    refHowTitle:     '📋 如何使用',
+    refStep1:        '分享您的专属链接给朋友',
+    refStep2:        '朋友通过链接注册并验证邮箱',
+    refStep3:        '您立即获得 5 Credits 奖励到账',
+    // Select options
+    distExpiryOpts:    ['永久有效','1 天','3 天','7 天','30 天','90 天'],
+    distMaxdlOpts:     ['不限次数','1 次','5 次','10 次','50 次','100 次'],
+    distCategoryOpts:  ['请选择分类','🔧 工具','💬 社交','🎮 游戏','💰 金融','🎬 娱乐','📚 教育','⚡ 效率','💪 健康','📦 其他'],
+    distFilterPlatOpts:['全部平台','🤖 Android','🍎 iOS','🪟 Windows','🍏 macOS','🐧 Linux'],
+    distFilterCatOpts: ['全部分类','🔧 工具','💬 社交','🎮 游戏','💰 金融','🎵 娱乐','📚 教育','⚡ 效率','❤️ 健康','📦 其他'],
   },
   en: {
     pageTitle:    'AI Mobile Security Scanner',
@@ -2080,6 +2113,39 @@ const LANG = {
     distDelConfirm:  'Delete this distribution link?',
     distPermanent:   'Permanent',
     distUnlimited:   'Unlimited',
+    // Input placeholders
+    pwdPlaceholder:  'Enter password',
+    nicknamePh:      'Set your nickname (max 32 chars)',
+    bioPh:           'Tell us about yourself...',
+    distDescPh:      'Release notes...',
+    distSearchPh:    'Search by name or package…',
+    cpwCurPh:        'Enter current password',
+    cpwNewPh:        'At least 6 characters',
+    cpwConfirmPh:    'Confirm new password',
+    // Change password modal
+    cpwTitle:        'Change Password',
+    cpwSub:          'Enter your current password and new password',
+    cpwLabelCur:     'Current Password',
+    cpwLabelNew:     'New Password',
+    cpwLabelConfirm: 'Confirm New Password',
+    cpwBtn:          'Confirm',
+    // Referral modal
+    refTitle:        'Refer Friends',
+    refSub:          'Earn 5 Credits for every new user you invite',
+    refCountLabel:   'Users Invited',
+    refCreditsLabel: 'Credits Earned',
+    refLinkLabel:    'My Referral Link',
+    refCopyBtn:      'Copy',
+    refHowTitle:     '📋 How It Works',
+    refStep1:        'Share your unique referral link with friends',
+    refStep2:        'Friends register and verify their email via your link',
+    refStep3:        'You instantly receive 5 Credits as a reward',
+    // Select options
+    distExpiryOpts:    ['Permanent','1 Day','3 Days','7 Days','30 Days','90 Days'],
+    distMaxdlOpts:     ['Unlimited','1 Download','5 Downloads','10 Downloads','50 Downloads','100 Downloads'],
+    distCategoryOpts:  ['Select Category','🔧 Tools','💬 Social','🎮 Games','💰 Finance','🎬 Entertainment','📚 Education','⚡ Productivity','💪 Health','📦 Other'],
+    distFilterPlatOpts:['All Platforms','🤖 Android','🍎 iOS','🪟 Windows','🍏 macOS','🐧 Linux'],
+    distFilterCatOpts: ['All Categories','🔧 Tools','💬 Social','🎮 Games','💰 Finance','🎵 Entertainment','📚 Education','⚡ Productivity','❤️ Health','📦 Other'],
   },
 };
 
@@ -2822,6 +2888,46 @@ function applyI18n() {
   // Redeem input placeholder
   const ri = document.getElementById('redeem-input');
   if (ri) ri.placeholder = l.redeemPlaceholder;
+  // Other input placeholders
+  const _ph = (id, v) => { const el=document.getElementById(id); if(el) el.placeholder=v; };
+  _ph('login-password',    l.pwdPlaceholder);
+  _ph('reg-password',      l.pwdPlaceholder);
+  _ph('profile-nickname',  l.nicknamePh);
+  _ph('profile-bio',       l.bioPh);
+  _ph('dist-desc',         l.distDescPh);
+  _ph('dist-search',       l.distSearchPh);
+  _ph('cpw-cur',           l.cpwCurPh);
+  _ph('cpw-new',           l.cpwNewPh);
+  _ph('cpw-confirm',       l.cpwConfirmPh);
+  // Change password modal
+  setText('change-pw-title',   l.cpwTitle);
+  setText('change-pw-sub',     l.cpwSub);
+  setText('cpw-label-cur',     l.cpwLabelCur);
+  setText('cpw-label-new',     l.cpwLabelNew);
+  setText('cpw-label-confirm', l.cpwLabelConfirm);
+  setText('cpw-btn',           l.cpwBtn);
+  // Referral modal
+  setText('ref-modal-title',   l.refTitle);
+  setText('ref-modal-sub',     l.refSub);
+  setText('ref-count-label',   l.refCountLabel);
+  setText('ref-credits-label', l.refCreditsLabel);
+  setText('ref-link-label',    l.refLinkLabel);
+  setText('ref-copy-btn',      l.refCopyBtn);
+  setText('ref-how-title',     l.refHowTitle);
+  setText('ref-step1',         l.refStep1);
+  setText('ref-step2',         l.refStep2);
+  setText('ref-step3',         l.refStep3);
+  // Select options
+  const _opts = (selId, opts) => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    Array.from(sel.options).forEach((o, i) => { if (opts[i] !== undefined) o.text = opts[i]; });
+  };
+  _opts('dist-expiry',      l.distExpiryOpts);
+  _opts('dist-maxdl',       l.distMaxdlOpts);
+  _opts('dist-category',    l.distCategoryOpts);
+  _opts('dist-filter-plat', l.distFilterPlatOpts);
+  _opts('dist-filter-cat',  l.distFilterCatOpts);
   // Copy buttons (reset state)
   document.querySelectorAll('.copy-btn:not(.copied)').forEach(b => { b.textContent = l.btnCopy; });
   // Upload button text (if file selected, show "scan" label)
