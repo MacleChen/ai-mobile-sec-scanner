@@ -3752,15 +3752,15 @@ function clearSearch(){
 function renderCards(articles){
   const g=document.getElementById('grid');
   const _ph='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="44" height="44"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
-  articles.forEach(a=>{
+  articles.forEach((a,idx)=>{
     const nc=_nc(a.category);
+    const seed=a.id||(_offset+idx);
+    const fallbackImg=`https://picsum.photos/seed/${seed}/400/225`;
+    const imgUrl=a.image_url||fallbackImg;
     const card=document.createElement('a');
     card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
-    const media=a.image_url
-      ?`<div class="ncard-media"><img src="${esc(a.image_url)}" alt="" loading="lazy"></div>`
-      :`<div class="ncard-media" style="background:${nc.grad}"><div class="ncard-media-ph">${_ph}</div></div>`;
     card.innerHTML=`
-      ${media}
+      <div class="ncard-media"><img src="${esc(imgUrl)}" alt="" loading="lazy"></div>
       <div class="ncard-body">
         <div class="ncard-top">
           <span class="ncard-src" style="color:${nc.color}">${esc(a.source||'资讯')}</span>
@@ -3776,6 +3776,7 @@ function renderCards(articles){
       </div>`;
     const img=card.querySelector('img');
     if(img) img.addEventListener('error',()=>{
+      if(img.src!==fallbackImg){img.src=fallbackImg;return;}
       const m=img.parentNode;m.style.background=nc.grad;
       m.innerHTML=`<div class="ncard-media-ph">${_ph}</div>`;
     });
