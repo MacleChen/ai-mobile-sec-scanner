@@ -2050,6 +2050,7 @@ def _dist_preview_html(r: dict) -> str:
   <title>{app_name}{' v'+html_lib.escape(version) if version else ''} — 下载</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="{site}/favicon.svg" type="image/svg+xml">
+  <script>(()=>{{const t=localStorage.getItem('appsec-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}})()</script>
   <style>
     *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
     body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -2270,6 +2271,37 @@ def _dist_preview_html(r: dict) -> str:
                         border-radius:14px;padding:18px;margin-bottom:20px}}
     .review-form-title{{font-size:.78em;font-weight:700;color:#64748b;margin-bottom:12px;
                         text-transform:uppercase;letter-spacing:.08em}}
+    /* ── Theme ── */
+    .theme-btn{{background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;transition:all .2s;flex-shrink:0}}
+    .theme-btn:hover{{background:rgba(255,255,255,.08);color:#e2e8f0}}
+    [data-theme=light] body{{background:#f1f5f9;color:#0f172a}}
+    [data-theme=light] .main-card{{background:white;border-color:rgba(0,0,0,.1);box-shadow:0 8px 40px rgba(0,0,0,.1)}}
+    [data-theme=light] .content{{border-right-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .sidebar{{border-top-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .desc-box{{background:#f8fafc;border-color:rgba(0,0,0,.08);color:#475569}}
+    [data-theme=light] .meta-item{{background:#f8fafc;border-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .meta-item-label{{color:#94a3b8}}
+    [data-theme=light] .meta-item-val{{color:#1e293b}}
+    [data-theme=light] .qr-box{{background:#f8fafc;border-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .copy-wrap{{background:#f8fafc;border-color:rgba(0,0,0,.1)}}
+    [data-theme=light] .copy-wrap:hover{{background:#f1f5f9}}
+    [data-theme=light] .copy-url{{color:#94a3b8}}
+    [data-theme=light] .like-btn{{background:#f8fafc;border-color:rgba(0,0,0,.1);color:#64748b}}
+    [data-theme=light] .reviews-section{{border-top-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .review-card{{background:#f8fafc;border-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .review-card.mine{{background:rgba(99,102,241,.05);border-color:rgba(99,102,241,.25)}}
+    [data-theme=light] .review-nick{{color:#1e293b}}
+    [data-theme=light] .review-comment{{color:#64748b}}
+    [data-theme=light] .review-textarea{{background:#f8fafc;border-color:rgba(0,0,0,.12);color:#1e293b}}
+    [data-theme=light] .review-form-wrap{{background:#f8fafc;border-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .review-login-prompt{{background:#f8fafc;border-color:rgba(0,0,0,.08)}}
+    [data-theme=light] .ncard{{background:white;border-color:rgba(0,0,0,.09)}}
+    [data-theme=light] .ncard-sk{{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.06)}}
+    [data-theme=light] .ncard-title{{color:#1e293b}}
+    [data-theme=light] .news-sec-title{{color:#1e293b}}
+    [data-theme=light] .footer{{color:#94a3b8}}
+    [data-theme=light] .theme-btn{{border-color:rgba(0,0,0,.12);color:#64748b}}
+    [data-theme=light] .theme-btn:hover{{background:rgba(0,0,0,.05);color:#1e293b}}
   </style>
 </head>
 <body>
@@ -2300,7 +2332,10 @@ def _dist_preview_html(r: dict) -> str:
       <a class="brand" href="{site}" target="_blank" rel="noopener">
         <img src="{site}/favicon.svg" alt="logo"> AppSec AI
       </a>
-      <span style="font-size:.75em;color:#334155">安全应用分发平台</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:.75em;color:#64748b">安全应用分发平台</span>
+        <button class="theme-btn" id="theme-btn-dist" onclick="_toggleTheme()" title="切换主题"></button>
+      </div>
     </div>
 
     <!-- Main card -->
@@ -2744,6 +2779,10 @@ def _dist_preview_html(r: dict) -> str:
     }}catch(e){{}}
   }}
   loadNews();
+  const _sunSvgD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+  const _moonSvgD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvgD:_sunSvgD);}}
+  (()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvgD:_sunSvgD);}})();
   </script>
 </body>
 </html>"""
@@ -3409,6 +3448,19 @@ def _market_html() -> str:  # noqa: PLR0915
     site = os.getenv("SITE_URL", "https://maclechen.top")
     css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#060d1c;--border:rgba(255,255,255,.07);--text:#f1f5f9;--muted:#64748b;--muted2:#475569;--pr:#6366f1;--pr2:#8b5cf6;--card:rgba(13,20,38,.85)}
+[data-theme=light]{--bg:#f8fafc;--border:rgba(0,0,0,.09);--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--card:rgba(255,255,255,.9)}
+[data-theme=light] body{background:#f8fafc}
+[data-theme=light] header{background:rgba(248,250,252,.96)!important;border-bottom-color:rgba(0,0,0,.08)!important}
+[data-theme=light] .chip:not(.on){background:white;color:#475569;border-color:rgba(0,0,0,.1)}
+[data-theme=light] .chip:hover:not(.on){background:#f1f5f9!important;color:#0f172a!important}
+[data-theme=light] .ncard{background:white;border-color:rgba(0,0,0,.09)}
+[data-theme=light] .ncard:hover{box-shadow:0 8px 28px rgba(0,0,0,.1)!important;border-color:rgba(0,0,0,.14)!important}
+[data-theme=light] .ncard-sk{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.07)}
+[data-theme=light] .sort-sel{background:white;border-color:rgba(0,0,0,.12);color:#1e293b}
+[data-theme=light] .theme-btn{color:#475569!important;border-color:rgba(0,0,0,.12)!important}
+[data-theme=light] .theme-btn:hover{background:rgba(0,0,0,.05)!important}
+.theme-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
+.theme-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a{text-decoration:none;color:inherit}
 #prog{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--pr),var(--pr2),#06b6d4);transform:scaleX(0);transform-origin:left;transition:transform .35s;z-index:9999}
@@ -3547,7 +3599,17 @@ footer a{color:#3b82f6}
 /* Skeleton spot */
 .feat-card-sk{flex-shrink:0;width:280px;height:148px;border-radius:16px;background:var(--card);border:1px solid var(--border);animation:pulse 1.6s ease-in-out infinite}
 .hot-card-sk{background:var(--card);border:1px solid var(--border);border-radius:12px;height:62px;animation:pulse 1.6s ease-in-out infinite}
-.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:240px;animation:pulse 1.6s ease-in-out infinite}"""
+.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:240px;animation:pulse 1.6s ease-in-out infinite}
+[data-theme=light] .acard{background:white;border-color:rgba(0,0,0,.09)}
+[data-theme=light] .acard:hover{box-shadow:0 8px 28px rgba(0,0,0,.1)!important}
+[data-theme=light] .skc{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.08)}
+[data-theme=light] .feat-card{background:white!important;box-shadow:0 4px 20px rgba(0,0,0,.08)!important;border-color:rgba(0,0,0,.08)!important}
+[data-theme=light] .hot-card{background:white!important;border-color:rgba(0,0,0,.08)!important}
+[data-theme=light] .hero-wrap{background:linear-gradient(180deg,rgba(99,102,241,.05) 0%,transparent 100%)}
+[data-theme=light] .hero-input{background:rgba(0,0,0,.04)!important;border-color:rgba(0,0,0,.15)!important;color:#0f172a!important}
+[data-theme=light] .hero-input::placeholder{color:#94a3b8!important}
+[data-theme=light] .sb-input{background:rgba(0,0,0,.05)!important;border-color:rgba(0,0,0,.1)!important;color:#0f172a!important}
+[data-theme=light] #sticky-bar{background:rgba(248,250,252,.96)!important;border-bottom-color:rgba(0,0,0,.08)!important}"""
     js = """const PS=24;
 let q='',plat='',cat='',srt='newest',pg=1,total=0;
 const PL={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
@@ -3724,7 +3786,11 @@ async function loadSpotlight(){
 const _heroEl=document.getElementById('hero-sec');
 if(_heroEl){const _obs=new IntersectionObserver(([e])=>{document.getElementById('sticky-bar').classList.toggle('show',!e.isIntersecting);},{rootMargin:'-58px 0px 0px 0px'});_obs.observe(_heroEl);}
 loadSpotlight();
-load();"""
+load();
+const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvg:_sunSvg);}}
+(()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvg:_sunSvg);}})();"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -3733,6 +3799,7 @@ load();"""
   <title>应用市场 — AppSec AI</title>
   <meta name="description" content="浏览下载多平台应用，所有应用均可通过 AI 安全扫描认证">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>(()=>{{const t=localStorage.getItem('appsec-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}})()</script>
   <style>{css}</style>
 </head>
 <body>
@@ -3744,7 +3811,8 @@ load();"""
     <span class="logo-sub">应用市场</span>
   </a>
   <div style="flex:1"></div>
-  <a class="h-cta" href="{site}/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传应用</a>
+  <button class="theme-btn" id="theme-btn-mkt" onclick="_toggleTheme()" title="切换主题"></button>
+  <a class="h-cta" href="{site}/app" style="margin-left:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传应用</a>
 </header>
 <div id="sticky-bar">
   <div class="sb-wrap">
@@ -3868,6 +3936,19 @@ def _news_html() -> str:  # noqa: PLR0915
     site = os.getenv("SITE_URL", "https://maclechen.top")
     css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#060d1c;--border:rgba(255,255,255,.07);--text:#f1f5f9;--muted:#64748b;--muted2:#475569;--pr:#6366f1;--pr2:#8b5cf6;--card:rgba(13,20,38,.85)}
+[data-theme=light]{--bg:#f8fafc;--border:rgba(0,0,0,.09);--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--card:rgba(255,255,255,.9)}
+[data-theme=light] body{background:#f8fafc}
+[data-theme=light] header{background:rgba(248,250,252,.96)!important;border-bottom-color:rgba(0,0,0,.08)!important}
+[data-theme=light] .chip:not(.on){background:white;color:#475569;border-color:rgba(0,0,0,.1)}
+[data-theme=light] .chip:hover:not(.on){background:#f1f5f9!important;color:#0f172a!important}
+[data-theme=light] .ncard{background:white;border-color:rgba(0,0,0,.09)}
+[data-theme=light] .ncard:hover{box-shadow:0 8px 28px rgba(0,0,0,.1)!important;border-color:rgba(0,0,0,.14)!important}
+[data-theme=light] .ncard-sk{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.07)}
+[data-theme=light] .sort-sel{background:white;border-color:rgba(0,0,0,.12);color:#1e293b}
+[data-theme=light] .theme-btn{color:#475569!important;border-color:rgba(0,0,0,.12)!important}
+[data-theme=light] .theme-btn:hover{background:rgba(0,0,0,.05)!important}
+.theme-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
+.theme-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a{text-decoration:none;color:inherit}
 header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;gap:10px}
@@ -4039,6 +4120,10 @@ async function _load(reset=false){
   _loading=false;
   if(btn)btn.classList.remove('spin');
 }
+const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvg:_sunSvg);}}
+(()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvg:_sunSvg);}})();
 _load(true);"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -4048,6 +4133,7 @@ _load(true);"""
   <title>科技资讯 — AppSec AI</title>
   <meta name="description" content="每日汇聚全球最新科技、软件、开发动态">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>(()=>{{const t=localStorage.getItem('appsec-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}})()</script>
   <style>{css}</style>
 </head>
 <body>
@@ -4066,6 +4152,7 @@ _load(true);"""
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
     返回市场
   </a>
+  <button class="theme-btn" id="theme-btn-news" onclick="_toggleTheme()" title="切换主题"></button>
 </header>
 
 <div class="hero">
