@@ -3057,24 +3057,23 @@ async def market_spotlight():
 
 
 @app.get("/market/news")
-async def market_news(limit: int = 30, category: str = ""):
-    lim = min(int(limit), 60)
+async def market_news(limit: int = 30, offset: int = 0, category: str = "", q: str = ""):
+    lim = min(max(int(limit), 1), 60)
+    off = max(int(offset), 0)
     with _db() as c:
+        sql = ("SELECT id,title,summary,url,source,category,published_at,created_at "
+               "FROM news_articles WHERE is_active=1")
+        params: list = []
         if category:
-            rows = c.execute(
-                """SELECT id,title,summary,url,source,category,published_at,created_at
-                   FROM news_articles WHERE is_active=1 AND category=?
-                   ORDER BY id DESC LIMIT ?""",
-                (category, lim),
-            ).fetchall()
-        else:
-            rows = c.execute(
-                """SELECT id,title,summary,url,source,category,published_at,created_at
-                   FROM news_articles WHERE is_active=1
-                   ORDER BY id DESC LIMIT ?""",
-                (lim,),
-            ).fetchall()
-    return {"news": [dict(r) for r in rows], "total": len(rows)}
+            sql += " AND category=?"
+            params.append(category)
+        if q:
+            sql += " AND (title LIKE ? OR summary LIKE ?)"
+            params += [f"%{q}%", f"%{q}%"]
+        sql += " ORDER BY id DESC LIMIT ? OFFSET ?"
+        params += [lim, off]
+        rows = c.execute(sql, params).fetchall()
+    return {"news": [dict(r) for r in rows], "count": len(rows)}
 
 
 class FeatureAppBody(BaseModel):
@@ -3247,7 +3246,7 @@ footer a{color:#3b82f6}
 .news-cat-btn.on{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4);color:#22d3ee}
 .news-cat-btn:hover:not(.on){background:rgba(255,255,255,.06);color:var(--text);border-color:rgba(255,255,255,.14)}
 /* rail */
-.news-rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding-bottom:4px}
+.news-rail{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding-bottom:4px}
 @media(max-width:640px){.news-rail{grid-template-columns:1fr}}
 /* card */
 .ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit;overflow:hidden;position:relative}
@@ -3266,7 +3265,12 @@ footer a{color:#3b82f6}
 .ncard:hover .ncard-read{gap:6px}
 .ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:160px;animation:pulse 1.6s ease-in-out infinite}
 /* news empty */
-.news-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.83em}"""
+.news-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.83em}
+.news-more-link{font-size:.76em;color:var(--muted);font-weight:600;transition:color .15s;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.news-more-link:hover{color:#22d3ee}
+.news-more-row{padding:14px 0 6px;display:flex;justify-content:center}
+.news-more-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 24px;border-radius:24px;background:rgba(6,182,212,.09);border:1px solid rgba(6,182,212,.25);color:#22d3ee;font-size:.8em;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s}
+.news-more-btn:hover{background:rgba(6,182,212,.18);box-shadow:0 4px 18px rgba(6,182,212,.15)}"""
     js = """const PS=24;
 let q='',plat='',cat='',srt='newest',pg=1,total=0;
 const PL={android:'Android',ios:'iOS',windows:'Windows',macos:'macOS',linux:'Linux',other:'Other'};
@@ -3429,24 +3433,16 @@ function renderNews(articles){
 async function loadNews(){
   const wrap=document.getElementById('news-wrap');
   const rail=document.getElementById('news-rail');
-  // show skeletons
   rail.innerHTML='';
-  for(let i=0;i<6;i++){const d=document.createElement('div');d.className='ncard-sk';rail.appendChild(d);}
+  for(let i=0;i<4;i++){const d=document.createElement('div');d.className='ncard-sk';rail.appendChild(d);}
   try{
-    const r=await fetch('/market/news?limit=30',{cache:'no-store'});
+    const r=await fetch('/market/news?limit=4',{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
-    _newsAll=d.news||[];
-    if(_newsAll.length){
-      wrap.style.display='';
-      renderNews(_newsAll);
-    }else{
-      wrap.style.display='none';
-    }
-  }catch(e){
-    wrap.style.display='none';
-    console.error('[news]',e);
-  }
+    _newsAll=(d.news||[]).slice(0,4);
+    if(_newsAll.length){wrap.style.display='';renderNews(_newsAll);}
+    else{wrap.style.display='none';}
+  }catch(e){wrap.style.display='none';console.error('[news]',e);}
 }
 // ── Spotlight: Featured + Hot ─────────────────────────────
 function renderFeatured(apps){
@@ -3636,16 +3632,19 @@ load();"""
           <div class="news-hd-sub">每日科技 · 软件 · 开发动态</div>
         </div>
       </div>
-      <div class="news-cats" id="ncats">
-        <button class="news-cat-btn on" onclick="filterNews('',this)">全部</button>
-        <button class="news-cat-btn" onclick="filterNews('科技',this)">科技</button>
-        <button class="news-cat-btn" onclick="filterNews('软件',this)">软件</button>
-        <button class="news-cat-btn" onclick="filterNews('Tech',this)">Tech</button>
-        <button class="news-cat-btn" onclick="filterNews('Dev',this)">Dev</button>
-        <button class="news-cat-btn" onclick="filterNews('Security',this)">Security</button>
-      </div>
+      <a class="news-more-link" href="/news">
+        查看全部
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
     </div>
     <div class="news-rail" id="news-rail"></div>
+    <div class="news-more-row">
+      <a class="news-more-btn" href="/news">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
+        查看全部资讯
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
   </div>
 </div>
 
@@ -3702,6 +3701,261 @@ load();"""
 @app.get("/market", response_class=HTMLResponse)
 async def market_page():
     return HTMLResponse(_market_html())
+
+
+def _news_html() -> str:  # noqa: PLR0915
+    site = os.getenv("SITE_URL", "https://maclechen.top")
+    css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060d1c;--border:rgba(255,255,255,.07);--text:#f1f5f9;--muted:#64748b;--muted2:#475569;--pr:#6366f1;--pr2:#8b5cf6;--card:rgba(13,20,38,.85)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;gap:10px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.95em;white-space:nowrap;flex-shrink:0}
+.logo img{width:24px;height:24px}
+.bread{display:flex;align-items:center;gap:6px;font-size:.82em;color:var(--muted);flex:1;min-width:0}
+.bread-sep{opacity:.4}
+.bread-cur{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-back{display:inline-flex;align-items:center;gap:5px;font-size:.78em;color:var(--muted);transition:color .15s;flex-shrink:0;padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
+.h-back:hover{color:var(--text);border-color:rgba(255,255,255,.15)}
+.hero{background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(6,182,212,.11) 0%,transparent 60%);padding:52px 20px 40px;text-align:center}
+.hero-icon{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 36px rgba(6,182,212,.35)}
+.hero-title{font-size:2.3em;font-weight:900;letter-spacing:-.03em;background:linear-gradient(135deg,#67e8f9 0%,#a5b4fc 50%,#6ee7b7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero-sub{color:var(--muted);font-size:.88em;margin-bottom:30px}
+.search-wrap{max-width:500px;margin:0 auto;position:relative}
+.search-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:30px;padding:13px 48px;color:var(--text);font-size:.92em;outline:none;transition:border-color .25s,background .25s,box-shadow .25s}
+.search-input:focus{border-color:rgba(6,182,212,.5);background:rgba(255,255,255,.1);box-shadow:0 4px 28px rgba(6,182,212,.15)}
+.search-input::placeholder{color:var(--muted)}
+.search-icon{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;display:flex;align-items:center}
+.search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:var(--muted);cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .15s}
+.search-clear:hover{background:rgba(255,255,255,.2)}
+.tabs-bar{position:sticky;top:58px;z-index:90;background:rgba(6,13,28,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.tabs{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:13px 18px;font-size:.82em;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .18s;white-space:nowrap;background:none;border-left:none;border-right:none;border-top:none;display:flex;align-items:center;gap:6px}
+.tab.on{color:#22d3ee;border-bottom-color:#22d3ee}
+.tab:hover:not(.on){color:var(--text)}
+.tab-count{font-size:.68em;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.08);font-weight:700;line-height:1.4}
+.tab-count.on{background:rgba(6,182,212,.2);color:#22d3ee}
+.toolbar{max-width:1200px;margin:0 auto;padding:12px 20px 2px;display:flex;align-items:center;gap:8px}
+#results-info{font-size:.75em;color:var(--muted)}
+.grid{max-width:1200px;margin:0 auto;padding:14px 20px 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);gap:13px}}
+@media(max-width:540px){.grid{grid-template-columns:1fr;gap:11px;padding:12px 14px 28px}}
+.ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit}
+.ncard:hover{transform:translateY(-4px);box-shadow:0 18px 52px rgba(0,0,0,.65);border-color:rgba(255,255,255,.15)}
+.ncard-accent{height:3px;flex-shrink:0}
+.ncard-body{padding:15px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ncard-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ncard-src{font-size:.64em;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.ncard-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.ncard-cat{display:inline-flex;padding:1px 7px;border-radius:7px;font-size:.6em;font-weight:700;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--muted2)}
+.ncard-time{font-size:.62em;color:var(--muted);margin-left:auto;flex-shrink:0}
+.ncard-title{font-size:.9em;font-weight:700;line-height:1.48;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);flex:1}
+.ncard-summary{font-size:.73em;color:var(--muted2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--border);margin-top:auto}
+.ncard-read{font-size:.71em;font-weight:700;display:inline-flex;align-items:center;gap:3px;transition:gap .15s}
+.ncard:hover .ncard-read{gap:6px}
+.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:200px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+.load-wrap{display:flex;justify-content:center;padding:8px 20px 60px}
+.load-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 36px;border-radius:28px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);color:#22d3ee;font-size:.84em;font-weight:700;cursor:pointer;transition:all .2s}
+.load-btn:hover{background:rgba(6,182,212,.2);box-shadow:0 4px 20px rgba(6,182,212,.18)}
+.load-btn.spin{opacity:.6;pointer-events:none}
+.empty{text-align:center;padding:90px 20px;max-width:380px;margin:0 auto}
+.empty-ico{margin-bottom:18px;opacity:.25}
+.empty-t{font-size:1.05em;font-weight:700;color:var(--muted2);margin-bottom:8px}
+.empty-s{font-size:.83em;color:var(--muted);line-height:1.7}
+footer{text-align:center;padding:24px;font-size:.73em;color:#1e293b;border-top:1px solid var(--border)}
+footer a{color:#3b82f6}"""
+    js = """const _NC={
+  '科技':  {grad:'linear-gradient(90deg,#06b6d4,#3b82f6)',   color:'#22d3ee'},
+  '软件':  {grad:'linear-gradient(90deg,#a78bfa,#7c3aed)',   color:'#a78bfa'},
+  'Tech':  {grad:'linear-gradient(90deg,#60a5fa,#1d4ed8)',   color:'#60a5fa'},
+  'Dev':   {grad:'linear-gradient(90deg,#4ade80,#15803d)',   color:'#4ade80'},
+  'Security':{grad:'linear-gradient(90deg,#f87171,#b91c1c)', color:'#f87171'},
+};
+const _DNC={grad:'linear-gradient(90deg,#6366f1,#8b5cf6)',color:'#a5b4fc'};
+function _nc(c){return _NC[c]||_DNC;}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function relTime(dt){
+  if(!dt)return '';
+  const d=new Date(dt.replace(' ','T'));
+  if(isNaN(d))return '';
+  const s=(Date.now()-d.getTime())/1000;
+  if(s<120)return '刚刚';
+  if(s<3600)return Math.floor(s/60)+'分钟前';
+  if(s<86400)return Math.floor(s/3600)+'小时前';
+  if(s<604800)return Math.floor(s/86400)+'天前';
+  return d.toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
+}
+const LIMIT=24;
+let _cat='',_q='',_offset=0,_hasMore=true,_loading=false;
+const _arrowSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
+function setTab(cat,el){
+  _cat=cat;_offset=0;_hasMore=true;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('grid').innerHTML='';
+  document.getElementById('load-btn').style.display='';
+  _load(true);
+}
+let _st;
+function onSearchInput(){clearTimeout(_st);_st=setTimeout(()=>{
+  _q=document.getElementById('si').value.trim();
+  document.getElementById('sc').style.display=_q?'flex':'none';
+  _offset=0;_hasMore=true;
+  document.getElementById('grid').innerHTML='';
+  document.getElementById('load-btn').style.display='';
+  _load(true);
+},380);}
+function clearSearch(){
+  document.getElementById('si').value='';
+  document.getElementById('sc').style.display='none';
+  _q='';_offset=0;_hasMore=true;
+  document.getElementById('grid').innerHTML='';
+  document.getElementById('load-btn').style.display='';
+  _load(true);
+}
+function renderCards(articles){
+  const g=document.getElementById('grid');
+  articles.forEach(a=>{
+    const nc=_nc(a.category);
+    const card=document.createElement('a');
+    card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
+    card.innerHTML=`
+      <div class="ncard-accent" style="background:${nc.grad}"></div>
+      <div class="ncard-body">
+        <div class="ncard-top">
+          <span class="ncard-src" style="color:${nc.color}">${esc(a.source||'资讯')}</span>
+          <div class="ncard-dot"></div>
+          <span class="ncard-cat">${esc(a.category||'')}</span>
+          <span class="ncard-time">${relTime(a.created_at)}</span>
+        </div>
+        <div class="ncard-title">${esc(a.title||'')}</div>
+        ${a.summary?`<div class="ncard-summary">${esc(a.summary)}</div>`:''}
+        <div class="ncard-footer">
+          <div class="ncard-read" style="color:${nc.color}">阅读原文 ${_arrowSvg}</div>
+        </div>
+      </div>`;
+    g.appendChild(card);
+  });
+}
+function showSk(n){const g=document.getElementById('grid');for(let i=0;i<n;i++){const d=document.createElement('div');d.className='ncard-sk';g.appendChild(d);}}
+function rmSk(){document.querySelectorAll('.ncard-sk').forEach(e=>e.remove());}
+async function _load(reset=false){
+  if(_loading||!_hasMore)return;
+  _loading=true;
+  const btn=document.getElementById('load-btn');
+  if(btn)btn.classList.add('spin');
+  document.getElementById('empty').hidden=true;
+  if(reset)showSk(12);
+  try{
+    const p=new URLSearchParams({limit:LIMIT,offset:_offset,category:_cat,q:_q});
+    const r=await fetch('/market/news?'+p,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    rmSk();
+    const arts=d.news||[];
+    if(arts.length<LIMIT){_hasMore=false;if(btn)btn.style.display='none';}
+    else{if(btn)btn.style.display='';}
+    if(!arts.length&&_offset===0){document.getElementById('empty').hidden=false;}
+    else{renderCards(arts);}
+    _offset+=arts.length;
+    document.getElementById('results-info').textContent=_offset>0?`已加载 ${_offset} 条资讯`:'';
+  }catch(e){rmSk();console.error('[news]',e);}
+  _loading=false;
+  if(btn)btn.classList.remove('spin');
+}
+_load(true);"""
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>科技资讯 — AppSec AI</title>
+  <meta name="description" content="每日汇聚全球最新科技、软件、开发动态">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>{css}</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="{site}">
+    <img src="/favicon.svg" alt="logo">
+    AppSec AI
+  </a>
+  <div class="bread">
+    <span class="bread-sep">/</span>
+    <a href="/market" style="color:var(--muted);transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">应用市场</a>
+    <span class="bread-sep">/</span>
+    <span class="bread-cur">科技资讯</span>
+  </div>
+  <a class="h-back" href="/market">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+    返回市场
+  </a>
+</header>
+
+<div class="hero">
+  <div class="hero-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
+  </div>
+  <h1 class="hero-title">科技资讯</h1>
+  <p class="hero-sub">每日汇聚全球最新科技 · 软件 · 开发动态，自动更新</p>
+  <div class="search-wrap">
+    <div class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <input id="si" class="search-input" type="search" placeholder="搜索资讯标题、摘要…" oninput="onSearchInput()" onkeydown="if(event.key==='Escape')clearSearch()">
+    <button id="sc" class="search-clear" onclick="clearSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <div class="tabs">
+    <button class="tab on" onclick="setTab('',this)">全部</button>
+    <button class="tab" onclick="setTab('科技',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      科技
+    </button>
+    <button class="tab" onclick="setTab('软件',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      软件
+    </button>
+    <button class="tab" onclick="setTab('Tech',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Tech
+    </button>
+    <button class="tab" onclick="setTab('Dev',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Dev
+    </button>
+    <button class="tab" onclick="setTab('Security',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Security
+    </button>
+  </div>
+</div>
+
+<div class="toolbar"><span id="results-info"></span></div>
+<div id="grid" class="grid"></div>
+<div id="empty" class="empty" hidden>
+  <div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="56" height="56"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg></div>
+  <div class="empty-t">暂无资讯</div>
+  <div class="empty-s">没有找到匹配的内容<br>换个分类或关键词试试</div>
+</div>
+<div class="load-wrap">
+  <button id="load-btn" class="load-btn" onclick="_load()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.42"/></svg>
+    加载更多
+  </button>
+</div>
+<footer>Powered by <a href="{site}" target="_blank">AppSec AI</a> — 资讯每天凌晨 3:00 自动更新</footer>
+<script>{js}</script>
+</body>
+</html>"""
+
+
+@app.get("/news", response_class=HTMLResponse)
+async def news_page():
+    return HTMLResponse(_news_html())
 
 
 @app.get("/robots.txt")
