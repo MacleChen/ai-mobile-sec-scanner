@@ -2145,7 +2145,7 @@ def _dist_preview_html(r: dict) -> str:
                        border:1px solid rgba(255,255,255,.1)}}
     .ov-btn:hover{{opacity:.85}}
     /* ── Footer ── */
-    .footer{{margin-top:28px;font-size:.75em;color:#334155;
+    .footer{{margin-top:32px;margin-bottom:24px;font-size:.75em;color:#334155;
              display:flex;align-items:center;gap:6px;justify-content:center}}
     .footer a{{color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:5px}}
     .footer img{{width:16px;height:16px;opacity:.6}}
@@ -2401,13 +2401,6 @@ def _dist_preview_html(r: dict) -> str:
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="footer">
-      Powered by
-      <a href="{site}" target="_blank" rel="noopener">
-        <img src="{site}/favicon.svg" alt="logo"> AppSec AI
-      </a>
     </div>
 
     <!-- News section -->
@@ -2966,6 +2959,14 @@ def _dist_preview_html(r: dict) -> str:
   function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvgD:_sunSvgD);}}
   (()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvgD:_sunSvgD);}})();
   </script>
+
+  <div class="footer">
+    Powered by
+    <a href="{site}" target="_blank" rel="noopener">
+      <img src="{site}/favicon.svg" alt="logo"> AppSec AI
+    </a>
+  </div>
+
 </body>
 </html>"""
 
