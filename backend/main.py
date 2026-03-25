@@ -1,8 +1,9 @@
-from fastapi import FastAPI, UploadFile, BackgroundTasks, Header, Depends, HTTPException, Request, Form
+from fastapi import FastAPI, UploadFile, BackgroundTasks, Header, Depends, HTTPException, Request, Form, File
 from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse, Response, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from typing import List
 import bcrypt as _bcrypt_lib
 from jose import jwt, JWTError
 import httpx
@@ -270,6 +271,8 @@ def _migrate_db():
         # virtual engagement counts
         "ALTER TABLE app_releases ADD COLUMN virtual_reviews_count INTEGER DEFAULT 0",
         "ALTER TABLE app_releases ADD COLUMN virtual_likes_count   INTEGER DEFAULT 0",
+        "ALTER TABLE app_releases ADD COLUMN short_desc   TEXT DEFAULT ''",
+        "ALTER TABLE app_releases ADD COLUMN screenshots  TEXT DEFAULT '[]'",
     ]
     with _db() as c:
         for sql in migrations:
@@ -1914,6 +1917,15 @@ def _dist_preview_html(r: dict) -> str:
     dl_count     = r.get('download_count', 0)
     max_dl       = r.get('max_downloads', 0)
     icon_b64     = r.get('icon_b64') or ''
+    short_desc   = r.get('short_desc', '') or ''
+    screenshots_raw = r.get('screenshots', '[]') or '[]'
+    try:
+        import json as _json2
+        screenshots_list = _json2.loads(screenshots_raw)
+        if not isinstance(screenshots_list, list):
+            screenshots_list = []
+    except Exception:
+        screenshots_list = []
     page_url     = f"{site}/dist/{slug}"
     dl_url       = f"{site}/dist/{slug}/download"
     qr_url       = f"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={urllib.parse.quote(page_url, safe='')}&ecc=H&margin=8"
@@ -1973,6 +1985,22 @@ def _dist_preview_html(r: dict) -> str:
         "linux":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
     }
     plat_emoji = _plat_svgs.get(platform, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>')
+    # Build screenshots HTML
+    if screenshots_list:
+        ss_items = "".join(
+            f'<div class="ss-item"><img src="data:image/jpeg;base64,{b64}" alt="Screenshot {i+1}" loading="lazy" onclick="openSsModal(this)"></div>'
+            for i, b64 in enumerate(screenshots_list)
+        )
+        screenshots_html = f'''
+    <div class="ss-gallery">
+      <div class="ss-track">{ss_items}</div>
+    </div>
+    <div id="ss-modal" class="ss-modal" onclick="closeSsModal()">
+      <img id="ss-modal-img" src="" alt="">
+    </div>'''
+    else:
+        screenshots_html = ""
+    short_desc_html = f'<p class="app-short-desc">{html_lib.escape(short_desc)}</p>' if short_desc else ""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -2237,6 +2265,15 @@ def _dist_preview_html(r: dict) -> str:
     .lang-toggle:hover{{background:rgba(255,255,255,.08);color:#e2e8f0}}
     [data-theme=light] .lang-toggle{{border-color:rgba(0,0,0,.1);color:#64748b}}
     [data-theme=light] .lang-toggle:hover{{background:rgba(0,0,0,.05);color:#0f172a}}
+    .ss-gallery{{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;padding-bottom:8px}}
+    .ss-track{{display:flex;gap:10px;width:max-content}}
+    .ss-item img{{height:220px;width:auto;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.1);cursor:zoom-in;transition:transform .2s}}
+    .ss-item img:hover{{transform:scale(1.02)}}
+    .ss-modal{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out}}
+    .ss-modal.open{{display:flex}}
+    .ss-modal img{{max-width:92vw;max-height:88vh;border-radius:12px;object-fit:contain}}
+    .app-short-desc{{font-size:.95em;color:var(--muted,#94a3b8);margin:8px 0 16px;line-height:1.6}}
+    [data-theme=light] .ss-item img{{border-color:rgba(0,0,0,.12)}}
   </style>
 </head>
 <body>
@@ -2289,6 +2326,7 @@ def _dist_preview_html(r: dict) -> str:
           <div class="hero-name">{app_name}</div>
           {f'<div class="hero-version"><span data-i18n="versionPrefix">版本</span> {html_lib.escape(version)}</div>' if version else ''}
           {f'<div class="hero-pkg">{pkg_name}</div>' if pkg_name else ''}
+          {short_desc_html}
           <div class="social-stats">
             <div class="sstat"><svg viewBox="0 0 24 24" fill="#f87171" stroke="none" width="13" height="13" style="margin-right:3px;vertical-align:-2px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="sstat-val" id="ss-likes">…</span> <span data-i18n="likesLabel">喜欢</span></div>
             <div class="sstat-sep"></div>
@@ -2303,6 +2341,7 @@ def _dist_preview_html(r: dict) -> str:
       <div class="body">
         <!-- Left: content -->
         <div class="content">
+          {screenshots_html}
           {f'<div class="section-label" data-i18n="appDesc">应用介绍</div>\n          <div class="desc-box">{description}</div>' if description else ''}
 
           <div class="meta-grid" style="{'margin-top:0' if not description else ''}">
@@ -2403,6 +2442,9 @@ def _dist_preview_html(r: dict) -> str:
       setTimeout(()=>el.textContent='{page_url}',2000);
     }});
   }}
+
+  function openSsModal(img){{document.getElementById('ss-modal').classList.add('open');document.getElementById('ss-modal-img').src=img.src;}}
+  function closeSsModal(){{document.getElementById('ss-modal').classList.remove('open');}}
 
   // ── Download / iOS OTA Install ───────────────────────────────
   const _IS_IPA = '{r["file_type"].lower()}' === 'ipa';
@@ -3136,6 +3178,8 @@ async def dist_upload(
     max_downloads: int = Form(0),
     is_public:     int = Form(0),
     category:      str = Form(""),
+    short_desc:    str = Form(""),
+    screenshots:   List[UploadFile] = File(default=[]),
     user: dict = Depends(_current_user),
 ):
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
@@ -3201,6 +3245,17 @@ async def dist_upload(
         expires_at = (datetime.now() + timedelta(days=expires_days)).strftime("%Y-%m-%d %H:%M:%S")
 
     platform = _PLATFORM_MAP.get(ext, "other")
+    # Process screenshots (up to 6, stored as base64 JSON)
+    import json as _json
+    screenshots_b64 = []
+    for ss_file in screenshots[:6]:
+        if ss_file and ss_file.filename:
+            ss_ext = (ss_file.filename or "").rsplit(".", 1)[-1].lower()
+            if ss_ext in ("jpg", "jpeg", "png", "gif", "webp"):
+                ss_data = await ss_file.read()
+                if len(ss_data) <= 8 * 1024 * 1024:  # 8MB limit per image
+                    screenshots_b64.append(base64.b64encode(ss_data).decode())
+    screenshots_json = _json.dumps(screenshots_b64)
     with _db() as c:
         pub = 1 if is_public else 0
         if is_update:
@@ -3209,21 +3264,25 @@ async def dist_upload(
                    version=?, file_size=?, description=?, expires_at=?,
                    max_downloads=?, download_count=0, is_active=1,
                    created_at=datetime('now'),
-                   pkg_name=?, display_name=?, icon_b64=?, platform=?, is_public=?, category=?
+                   pkg_name=?, display_name=?, icon_b64=?, platform=?, is_public=?, category=?,
+                   short_desc=?, screenshots=?
                    WHERE slug=?""",
                 (resolved_version, size, description.strip(), expires_at,
                  max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip(), slug),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip(),
+                 short_desc.strip(), screenshots_json, slug),
             )
         else:
             c.execute(
                 """INSERT INTO app_releases
                    (slug, user_id, app_name, version, file_type, file_size,
-                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform, is_public, category)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    description, expires_at, max_downloads, pkg_name, display_name, icon_b64, platform, is_public, category,
+                    short_desc, screenshots)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (slug, user["id"], resolved_name, resolved_version, ext, size,
                  description.strip(), expires_at, max(0, max_downloads),
-                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip()),
+                 meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip(),
+                 short_desc.strip(), screenshots_json),
             )
 
     # ── Deduct 1 credit (atomic: check and deduct in one statement) ─
@@ -3453,7 +3512,7 @@ async def dist_ios_manifest(slug: str, token: str = ""):
 @app.get("/dist/{slug}", response_class=HTMLResponse)
 async def dist_preview(slug: str):
     with _db() as c:
-        row = c.execute("SELECT * FROM app_releases WHERE slug=?", (slug,)).fetchone()
+        row = c.execute("SELECT *, short_desc, screenshots FROM app_releases WHERE slug=?", (slug,)).fetchone()
     if not row:
         raise HTTPException(404, "链接不存在")
     return HTMLResponse(_dist_preview_html(dict(row)))

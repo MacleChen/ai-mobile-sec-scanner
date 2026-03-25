@@ -715,6 +715,12 @@
     /* ── Distribution panel ─────────────────── */
     .dist-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
     .dist-form-grid .form-field.full { grid-column: 1/-1; }
+    .ss-upload-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; min-height: 0; }
+    .ss-thumb { position: relative; width: 88px; height: 88px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); cursor: default; }
+    .ss-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .ss-thumb-del { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,.65); border: none; border-radius: 50%; width: 20px; height: 20px; color: white; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+    .ss-add-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: .83em; font-weight: 600; transition: all .2s; }
+    .ss-add-btn:hover { border-color: #6366f1; color: #6366f1; background: rgba(99,102,241,.06); }
     .dist-select {
       width: 100%; background: rgba(255,255,255,.06); border: 1px solid var(--border);
       border-radius: 8px; padding: 10px 14px; font-size: .95em; outline: none;
@@ -1631,8 +1637,24 @@
           </select>
         </div>
         <div class="form-field full">
-          <label class="form-label" id="dist-label-desc">备注说明</label>
-          <input class="form-input" id="dist-desc" type="text" placeholder="版本更新说明...">
+          <label class="form-label" id="dist-label-short-desc" data-i18n="distShortDescLabel">应用简介</label>
+          <input class="form-input" id="dist-short-desc" type="text" maxlength="120" placeholder="一句话介绍你的应用..." data-i18n-ph="distShortDescPh">
+          <div style="font-size:.72em;color:var(--muted);margin-top:4px" id="dist-short-desc-counter">0 / 120</div>
+        </div>
+        <div class="form-field full">
+          <label class="form-label" id="dist-label-desc" data-i18n="distDescLabel">详细描述</label>
+          <textarea class="form-input" id="dist-desc" rows="4" style="resize:vertical;min-height:90px" placeholder="版本更新说明、功能介绍..." data-i18n-ph="distDescPh"></textarea>
+        </div>
+        <div class="form-field full">
+          <label class="form-label" id="dist-label-screenshots" data-i18n="distScreenshotsLabel">宣传截图 <span style="font-weight:400;color:var(--muted);font-size:.85em">(最多 6 张)</span></label>
+          <div class="ss-upload-grid" id="ss-upload-grid">
+            <!-- JS will render preview slots here -->
+          </div>
+          <button type="button" class="ss-add-btn" id="ss-add-btn" onclick="document.getElementById('ss-file-input').click()">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/></svg>
+            <span data-i18n="distAddScreenshot">添加截图</span>
+          </button>
+          <input type="file" id="ss-file-input" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none" onchange="handleSsUpload(this)">
         </div>
         <div class="form-field full" style="margin-top:4px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85em;color:#94a3b8">
@@ -1920,6 +1942,11 @@ const LANG = {
     nicknamePh:      '设置你的昵称（最多32字符）',
     bioPh:           '介绍一下自己...',
     distDescPh:      '版本更新说明...',
+    distShortDescLabel: '应用简介',
+    distShortDescPh: '一句话介绍你的应用（最多120字）',
+    distDescLabel: '详细描述',
+    distScreenshotsLabel: '宣传截图',
+    distAddScreenshot: '添加截图',
     distSearchPh:    '搜索应用名称/包名…',
     cpwCurPh:        '输入当前密码',
     cpwNewPh:        '至少6位',
@@ -2146,6 +2173,11 @@ const LANG = {
     nicknamePh:      'Set your nickname (max 32 chars)',
     bioPh:           'Tell us about yourself...',
     distDescPh:      'Release notes...',
+    distShortDescLabel: 'Short Description',
+    distShortDescPh: 'One-line description (max 120 chars)',
+    distDescLabel: 'Detailed Description',
+    distScreenshotsLabel: 'Screenshots',
+    distAddScreenshot: 'Add Screenshot',
     distSearchPh:    'Search by name or package…',
     cpwCurPh:        'Enter current password',
     cpwNewPh:        'At least 6 characters',
@@ -3380,6 +3412,14 @@ distFileInput.addEventListener('change', () => {
   if (distFileInput.files[0]) setDistFile(distFileInput.files[0]);
 });
 
+const distShortDesc = document.getElementById('dist-short-desc');
+if (distShortDesc) {
+  distShortDesc.addEventListener('input', () => {
+    const counter = document.getElementById('dist-short-desc-counter');
+    if (counter) counter.textContent = `${distShortDesc.value.length} / 120`;
+  });
+}
+
 function setDistFile(file) {
   const nameEl = document.getElementById('dist-file-name');
   nameEl.textContent = `✓ ${file.name}  (${(file.size/1024/1024).toFixed(1)} MB)`;
@@ -3387,6 +3427,33 @@ function setDistFile(file) {
 }
 
 // ── Distribution: upload (XHR with real-time progress) ──────
+let _ssFiles = []; // up to 6 File objects
+
+function handleSsUpload(input) {
+  const files = Array.from(input.files);
+  const remaining = 6 - _ssFiles.length;
+  const toAdd = files.slice(0, remaining);
+  _ssFiles = [..._ssFiles, ...toAdd].slice(0, 6);
+  input.value = '';
+  renderSsThumbs();
+}
+
+function renderSsThumbs() {
+  const grid = document.getElementById('ss-upload-grid');
+  const addBtn = document.getElementById('ss-add-btn');
+  if (!grid) return;
+  grid.innerHTML = _ssFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="ss-thumb"><img src="${url}" alt="Screenshot ${i+1}"><button class="ss-thumb-del" onclick="removeSs(${i})" title="删除">✕</button></div>`;
+  }).join('');
+  if (addBtn) addBtn.style.display = _ssFiles.length >= 6 ? 'none' : 'inline-flex';
+}
+
+function removeSs(i) {
+  _ssFiles.splice(i, 1);
+  renderSsThumbs();
+}
+
 function distUpload() {
   const l = L();
   if (!userInfo) { showToast(l.distErrLogin); openLoginModal(); return; }
@@ -3416,6 +3483,8 @@ function distUpload() {
   fd.append('max_downloads', document.getElementById('dist-maxdl').value || '0');
   fd.append('is_public',     document.getElementById('dist-is-public').checked ? '1' : '0');
   fd.append('category',      document.getElementById('dist-category').value || '');
+  fd.append('short_desc', document.getElementById('dist-short-desc')?.value?.trim() || '');
+  _ssFiles.forEach(f => fd.append('screenshots', f));
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/dist/upload');
@@ -3464,6 +3533,8 @@ function distUpload() {
       document.getElementById('dist-desc').value = '';
       document.getElementById('dist-expiry').value = '';
       document.getElementById('dist-maxdl').value = '0';
+      _ssFiles = [];
+      renderSsThumbs();
       setTimeout(() => { msg.textContent = ''; loadDistList(); }, 1800);
     } else if (xhr.status === 402) {
       msg.className = 'form-msg err';
