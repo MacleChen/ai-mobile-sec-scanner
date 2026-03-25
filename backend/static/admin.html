@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
   <title>管理后台 · AI 移动安全扫描器</title>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script>(()=>{const t=localStorage.getItem('appsec-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})()</script>
@@ -407,11 +408,11 @@
           <input class="search-input" id="code-search"
                  placeholder="搜索兑换码、备注…" oninput="filterCodes()">
           <select class="filter-sel" id="code-status" onchange="filterCodes()">
-            <option value="all">全部状态</option>
-            <option value="active">✅ 有效</option>
-            <option value="used">🟡 已用完</option>
-            <option value="expired">🔴 已过期</option>
-            <option value="revoked">⬛ 已撤销</option>
+            <option value="all" data-i18n-opt="filterAll">全部状态</option>
+            <option value="active" data-i18n-opt="filterActive">✅ 有效</option>
+            <option value="used" data-i18n-opt="filterUsed">🟡 已用完</option>
+            <option value="expired" data-i18n-opt="filterExpired">🔴 已过期</option>
+            <option value="revoked" data-i18n-opt="filterRevoked">⬛ 已撤销</option>
           </select>
           <button class="btn btn-sm btn-ghost" onclick="loadCodes()">🔄 <span data-i18n="btnRefreshShort">刷新</span></button>
         </div>
@@ -541,10 +542,11 @@ async function doLogin() {
   err.textContent = '';
   btn.disabled = true; btn.textContent = '登录中…';
   try {
-    const r = await fetch(
-      `/admin/login?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`,
-      { method: 'POST' }
-    );
+    const r = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
     const d = await r.json();
     if (d.ok && d.token) {
       adminToken = d.token;
@@ -643,12 +645,12 @@ async function doGenerate() {
     if (d.codes) {
       lastCodes = d.codes;
       renderResult(d);
-      toast(`✅ 已生成 ${d.count} 个兑换码`);
+      toast(`✅ ${LA().generateSuccess} (${d.count})`);
     } else {
-      err.textContent = d.error || '生成失败';
+      err.textContent = d.error || LA().generateFail;
     }
   } catch (e) { if (e.message !== '403') err.textContent = '网络错误，请重试'; }
-  btn.disabled = false; btn.textContent = '生成兑换码';
+  btn.disabled = false; btn.textContent = LA().btnGenerate;
 }
 
 function renderResult(d) {
@@ -657,29 +659,29 @@ function renderResult(d) {
   const actions = document.getElementById('result-actions');
   const parts   = [];
   if (d.credits_each)              parts.push(`${d.credits_each} Credits`);
-  if (d.max_uses > 1)              parts.push(`每码最多 ${d.max_uses} 人使用`);
-  if (d.expires_at)                parts.push(`到期 ${d.expires_at.slice(0,10)}`);
-  else                             parts.push('永不过期');
+  if (d.max_uses > 1)              parts.push(`${d.max_uses} ${LA().usersPerCode || 'users/code'}`);
+  if (d.expires_at)                parts.push(`${LA().expiresOn || 'Expires'} ${d.expires_at.slice(0,10)}`);
+  else                             parts.push(LA().never);
   meta.textContent = parts.join('　·　');
 
   area.innerHTML = d.codes.map(c => `
     <div class="code-item">
       <span class="code-text">${c}</span>
-      <button class="copy-btn" onclick="copySingle(this,'${c}')">复制</button>
+      <button class="copy-btn" onclick="copySingle(this,'${c}')">${LA().btnCopy}</button>
     </div>`).join('');
   actions.style.display = 'flex';
 }
 
 function copySingle(btn, code) {
   navigator.clipboard.writeText(code).then(() => {
-    btn.textContent = '已复制'; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+    btn.textContent = LA().copySuccess; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = LA().btnCopy; btn.classList.remove('copied'); }, 1500);
   });
 }
 
 function copyAll() {
   navigator.clipboard.writeText(lastCodes.join('\n'))
-    .then(() => toast(`已复制 ${lastCodes.length} 个兑换码`));
+    .then(() => toast(`${LA().copySuccess} (${lastCodes.length})`));
 }
 
 function exportTxt() {
@@ -695,7 +697,7 @@ function exportTxt() {
 async function loadCodes() {
   const tbody = document.getElementById('codes-tbody');
   tbody.innerHTML = `<tr><td colspan="8"
-    style="text-align:center;color:#94a3b8;padding:32px">加载中…</td></tr>`;
+    style="text-align:center;color:#94a3b8;padding:32px">${LA().loading}</td></tr>`;
   try {
     const d = await api('/admin/codes?limit=500');
     allCodes = d.codes || [];
@@ -731,17 +733,17 @@ function renderPage() {
   const start  = page * PAGE;
   const slice  = filtered.slice(start, start + PAGE);
   const total  = filtered.length;
-  const LABEL  = { active: '有效', used: '已用完', expired: '已过期', revoked: '已撤销' };
+  const LABEL  = { active: LA().statusActive, used: LA().statusUsedUp, expired: LA().statusExpired, revoked: LA().statusRevoked };
   const CLS    = { active: 'badge-active', used: 'badge-used',
                    expired: 'badge-expired', revoked: 'badge-revoked' };
 
   if (!slice.length) {
     tbody.innerHTML = `<tr><td colspan="8"
-      style="text-align:center;color:#94a3b8;padding:32px">暂无数据</td></tr>`;
+      style="text-align:center;color:#94a3b8;padding:32px">${LA().noData}</td></tr>`;
   } else {
     tbody.innerHTML = slice.map(r => {
       const st      = codeStatus(r);
-      const expiry  = r.expires_at ? r.expires_at.slice(0, 10) : '永久';
+      const expiry  = r.expires_at ? r.expires_at.slice(0, 10) : LA().statusPermanent;
       const created = r.created_at ? r.created_at.slice(0, 16).replace('T', ' ') : '—';
       const note    = r.note || '—';
       const canRevoke = st === 'active';
@@ -749,7 +751,7 @@ function renderPage() {
         <td>
           <span class="code-cell">${fmtCode(r.code)}</span>
           <button class="copy-btn" style="margin-left:6px"
-                  onclick="copyCode('${r.code}')">复制</button>
+                  onclick="copyCode('${r.code}')">${LA().btnCopy}</button>
         </td>
         <td>${r.credits}</td>
         <td>${r.uses_count} / ${r.max_uses}</td>
@@ -759,7 +761,7 @@ function renderPage() {
             title="${note}">${note}</td>
         <td>${created}</td>
         <td>${canRevoke
-          ? `<button class="btn btn-sm btn-danger" onclick="revokeCode('${r.code}',this)">撤销</button>`
+          ? `<button class="btn btn-sm btn-danger" onclick="revokeCode('${r.code}',this)">${LA().btnRevoke}</button>`
           : '<span style="color:#cbd5e1">—</span>'
         }</td>
       </tr>`;
@@ -776,7 +778,7 @@ function renderPage() {
 function changePage(d) { page += d; renderPage(); }
 
 function copyCode(code) {
-  navigator.clipboard.writeText(fmtCode(code)).then(() => toast('已复制'));
+  navigator.clipboard.writeText(fmtCode(code)).then(() => toast(LA().copySuccess));
 }
 
 async function revokeCode(code, btn) {
@@ -785,16 +787,16 @@ async function revokeCode(code, btn) {
   try {
     const d = await api(`/admin/codes/${encodeURIComponent(code)}/revoke`, { method: 'POST' });
     if (d.ok) {
-      toast('已撤销');
+      toast(LA().revokeSuccess);
       const row = allCodes.find(r => r.code === code);
       if (row) row.is_revoked = 1;
       filterCodes();
     } else {
-      btn.disabled = false; btn.textContent = '撤销';
-      toast(d.error || '撤销失败');
+      btn.disabled = false; btn.textContent = LA().btnRevoke;
+      toast(d.error || LA().revokeFail);
     }
   } catch (e) {
-    btn.disabled = false; btn.textContent = '撤销';
+    btn.disabled = false; btn.textContent = LA().btnRevoke;
     if (e.message !== '403') toast('网络错误');
   }
 }
@@ -812,18 +814,21 @@ async function doChangePassword() {
   if (newPw !== confirm)    { err.textContent = '两次输入的新密码不一致'; return; }
   btn.disabled = true; btn.textContent = '修改中…';
   try {
-    const q = new URLSearchParams({ current_password: oldPw, new_password: newPw });
-    const d = await api(`/admin/change-password?${q}`, { method: 'POST' });
+    const d = await api('/admin/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: oldPw, new_password: newPw })
+    });
     if (d.ok) {
-      toast('✅ 密码已修改，下次登录生效');
+      toast(`✅ ${LA().pwdChangeSuccess}`);
       document.getElementById('cp-old').value = '';
       document.getElementById('cp-new').value = '';
       document.getElementById('cp-confirm').value = '';
     } else {
-      err.textContent = d.error || '修改失败';
+      err.textContent = d.error || LA().pwdChangeFail;
     }
   } catch (e) { if (e.message !== '403') err.textContent = '网络错误'; }
-  btn.disabled = false; btn.textContent = '修改密码';
+  btn.disabled = false; btn.textContent = LA().btnChangePassword;
 }
 
 async function doAddAdmin() {
@@ -856,12 +861,12 @@ async function doAddAdmin() {
 
 async function loadAdmins() {
   const container = document.getElementById('acct-list');
-  container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">加载中…</div>';
+  container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">' + LA().loading + '</div>';
   try {
     const d = await api('/admin/accounts');
     const accounts = d.accounts || [];
     if (!accounts.length) {
-      container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">暂无账号</div>';
+      container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">' + LA().noData + '</div>';
       return;
     }
     container.innerHTML = accounts.map(a => {
@@ -995,6 +1000,40 @@ const LANG_ADMIN = {
     labelConfirmPwd: '确认密码',
     btnAddAdmin: '添加管理员',
     cardAdminList: '👥 管理员列表',
+    btnCopy: '复制',
+    btnRevoke: '撤销',
+    usersPerCode: '人/码',
+    expiresOn: '到期',
+    // Status labels
+    statusPermanent: '永久',
+    statusActive: '有效',
+    statusUsedUp: '已用完',
+    statusExpired: '已过期',
+    statusRevoked: '已撤销',
+    // Table content
+    noData: '暂无数据',
+    loading: '加载中...',
+    never: '永不过期',
+    unlimited: '不限',
+    // Toast messages
+    generateSuccess: '生成成功',
+    generateFail: '生成失败',
+    revokeSuccess: '已撤销',
+    revokeFail: '撤销失败',
+    copySuccess: '已复制',
+    loginSuccess: '登录成功',
+    loginFail: '用户名或密码错误',
+    pwdChangeSuccess: '密码修改成功',
+    pwdChangeFail: '密码修改失败',
+    saveSuccess: '保存成功',
+    saveFail: '保存失败',
+    // Search/filter
+    searchCodePh: '搜索兑换码...',
+    filterAll: '全部状态',
+    filterActive: '有效',
+    filterUsed: '已使用',
+    filterExpired: '已过期',
+    filterRevoked: '已撤销',
   },
   en: {
     // Login
@@ -1060,6 +1099,40 @@ const LANG_ADMIN = {
     labelConfirmPwd: 'Confirm Password',
     btnAddAdmin: 'Add Admin',
     cardAdminList: '👥 Admin List',
+    btnCopy: 'Copy',
+    btnRevoke: 'Revoke',
+    usersPerCode: 'users/code',
+    expiresOn: 'Expires',
+    // Status labels
+    statusPermanent: 'Permanent',
+    statusActive: 'Active',
+    statusUsedUp: 'Used up',
+    statusExpired: 'Expired',
+    statusRevoked: 'Revoked',
+    // Table content
+    noData: 'No data',
+    loading: 'Loading...',
+    never: 'Never expires',
+    unlimited: 'Unlimited',
+    // Toast messages
+    generateSuccess: 'Generated successfully',
+    generateFail: 'Generation failed',
+    revokeSuccess: 'Revoked',
+    revokeFail: 'Revoke failed',
+    copySuccess: 'Copied',
+    loginSuccess: 'Login successful',
+    loginFail: 'Invalid username or password',
+    pwdChangeSuccess: 'Password changed',
+    pwdChangeFail: 'Password change failed',
+    saveSuccess: 'Saved',
+    saveFail: 'Save failed',
+    // Search/filter
+    searchCodePh: 'Search codes...',
+    filterAll: 'All status',
+    filterActive: 'Active',
+    filterUsed: 'Used',
+    filterExpired: 'Expired',
+    filterRevoked: 'Revoked',
   },
 };
 let _langAdmin = localStorage.getItem('lang') || 'zh';
@@ -1069,11 +1142,23 @@ function applyI18nAdmin() {
     const k = el.getAttribute('data-i18n');
     if (LA()[k] !== undefined) el.textContent = LA()[k];
   });
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const k = el.getAttribute('data-i18n-opt');
+    if (LA()[k] !== undefined) {
+      // Preserve leading emoji prefix if present
+      const cur = el.textContent;
+      const emojiMatch = cur.match(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}⬛✅🟡🔴]\s*/u);
+      el.textContent = (emojiMatch ? emojiMatch[0] : '') + LA()[k];
+    }
+  });
+  const searchEl = document.getElementById('code-search');
+  if (searchEl) searchEl.placeholder = LA().searchCodePh || searchEl.placeholder;
   document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LA().langBtn);
 }
 function toggleLangPage() {
   _langAdmin = _langAdmin === 'zh' ? 'en' : 'zh';
   localStorage.setItem('lang', _langAdmin);
+  document.documentElement.lang = _langAdmin === 'zh' ? 'zh-CN' : 'en';
   applyI18nAdmin();
 }
 applyI18nAdmin();

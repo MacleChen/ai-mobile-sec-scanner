@@ -15,20 +15,22 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:     #050b18;
-      --bg2:    #0a1628;
-      --card:   rgba(255,255,255,.045);
-      --border: rgba(255,255,255,.08);
-      --blue:   #3b82f6;
-      --blue-l: #60a5fa;
-      --purple: #8b5cf6;
-      --green:  #10b981;
-      --text:   #f1f5f9;
-      --muted:  #94a3b8;
-      --radius: 16px;
+      --bg:       #050b18;
+      --bg2:      #0a1628;
+      --card:     rgba(255,255,255,.045);
+      --border:   rgba(255,255,255,.08);
+      --blue:     #3b82f6;
+      --blue-l:   #60a5fa;
+      --purple:   #8b5cf6;
+      --green:    #10b981;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --radius:   16px;
+      --surface2: rgba(255,255,255,.06);
+      --accent:   #6366f1;
     }
     /* ── Light mode ─────────────────── */
-    [data-theme=light]{--bg:#f8fafc;--bg2:#f1f5f9;--card:rgba(255,255,255,.9);--border:rgba(0,0,0,.09);--text:#0f172a;--muted:#64748b}
+    [data-theme=light]{--bg:#f8fafc;--bg2:#f1f5f9;--card:rgba(255,255,255,.9);--border:rgba(0,0,0,.09);--text:#0f172a;--muted:#64748b;--surface2:#f1f5f9;--accent:#6366f1}
     [data-theme=light] body{background:#f8fafc;color:#0f172a}
     [data-theme=light] .orb-1{background:rgba(59,130,246,.06)}
     [data-theme=light] .orb-2{background:rgba(139,92,246,.05)}
@@ -69,7 +71,8 @@
     /* ── Scrollbar ─────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 4px; }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); }
 
     /* ── Noise texture ─────────────── */
     body::before {
@@ -974,7 +977,7 @@
       </div>
       <div class="form-field">
         <label id="login-label-pwd">密码</label>
-        <input class="form-input" id="login-password" type="password" placeholder="请输入密码" id="login-pwd-input" autocomplete="current-password"
+        <input class="form-input" id="login-password" type="password" placeholder="请输入密码" autocomplete="current-password"
                onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="form-msg" id="login-msg"></div>
@@ -1945,6 +1948,29 @@ const LANG = {
     distCategoryOpts:  ['请选择分类','🔧 工具','💬 社交','🎮 游戏','💰 金融','🎬 娱乐','📚 教育','⚡ 效率','💪 健康','📦 其他'],
     distFilterPlatOpts:['全部平台','🤖 Android','🍎 iOS','🪟 Windows','🍏 macOS','🐧 Linux'],
     distFilterCatOpts: ['全部分类','🔧 工具','💬 社交','🎮 游戏','💰 金融','🎵 娱乐','📚 教育','⚡ 效率','❤️ 健康','📦 其他'],
+    // Status/action messages
+    loggingIn:       '登录中...',
+    sending:         '发送中...',
+    verifying:       '验证中...',
+    redeeming:       '兑换中...',
+    creatingOrder:   '正在创建订单...',
+    networkError:    '网络错误，请重试',
+    copiedToClipboard: '已复制到剪贴板',
+    saveError:       '保存失败，请重试',
+    logoutSuccess:   '已退出登录',
+    welcomeBack:     '欢迎回来，',
+    // Change password messages
+    cpwSuccess:      '密码修改成功',
+    cpwMismatch:     '两次密码不一致',
+    cpwShort:        '密码至少6位',
+    // Upload/dist messages
+    uploadProgress:  '上传中...',
+    uploadSuccess:   '上传成功',
+    uploadFail:      '上传失败',
+    deleteSuccess:   '删除成功',
+    toggleSuccess:   '状态已更新',
+    // Payment methods
+    alipayMethod:    '支付宝',
   },
   en: {
     pageTitle:    'AI Mobile Security Scanner',
@@ -2148,6 +2174,29 @@ const LANG = {
     distCategoryOpts:  ['Select Category','🔧 Tools','💬 Social','🎮 Games','💰 Finance','🎬 Entertainment','📚 Education','⚡ Productivity','💪 Health','📦 Other'],
     distFilterPlatOpts:['All Platforms','🤖 Android','🍎 iOS','🪟 Windows','🍏 macOS','🐧 Linux'],
     distFilterCatOpts: ['All Categories','🔧 Tools','💬 Social','🎮 Games','💰 Finance','🎵 Entertainment','📚 Education','⚡ Productivity','❤️ Health','📦 Other'],
+    // Status/action messages
+    loggingIn:       'Signing in...',
+    sending:         'Sending...',
+    verifying:       'Verifying...',
+    redeeming:       'Redeeming...',
+    creatingOrder:   'Creating order...',
+    networkError:    'Network error, please try again',
+    copiedToClipboard: 'Copied to clipboard',
+    saveError:       'Save failed, please try again',
+    logoutSuccess:   'Logged out',
+    welcomeBack:     'Welcome back, ',
+    // Change password messages
+    cpwSuccess:      'Password changed successfully',
+    cpwMismatch:     'Passwords do not match',
+    cpwShort:        'Password must be at least 6 characters',
+    // Upload/dist messages
+    uploadProgress:  'Uploading...',
+    uploadSuccess:   'Upload successful',
+    uploadFail:      'Upload failed',
+    deleteSuccess:   'Deleted',
+    toggleSuccess:   'Status updated',
+    // Payment methods
+    alipayMethod:    'Alipay',
   },
 };
 
@@ -2284,7 +2333,7 @@ function doLogout() {
   localStorage.removeItem('jwt');
   hide('user-dropdown');
   renderAuthState();
-  showToast('已退出登录');
+  showToast(L().logoutSuccess);
 }
 
 function toggleUserDropdown() {
@@ -2321,7 +2370,7 @@ async function doLogin() {
   const btn   = document.getElementById('login-submit-btn');
   if (!email || !pw) { msg.className='form-msg err'; msg.textContent='请填写邮箱和密码'; return; }
   btn.disabled = true;
-  msg.className='form-msg'; msg.textContent='登录中...';
+  msg.className='form-msg'; msg.textContent=L().loggingIn;
   try {
     const resp = await fetch('/auth/login', {
       method: 'POST',
@@ -2335,7 +2384,7 @@ async function doLogin() {
       userInfo = d.user;
       closeLoginModal();
       renderAuthState();
-      showToast(`欢迎回来，${userInfo.email}`);
+      showToast(`${L().welcomeBack}${userInfo.email}`);
       _maybeRedirectAfterAuth();
     } else if (d.need_verify) {
       pendingVerifyEmail = d.email;
@@ -2344,7 +2393,7 @@ async function doLogin() {
     } else {
       msg.className='form-msg err'; msg.textContent = d.error || '登录失败';
     }
-  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  } catch(_) { msg.className='form-msg err'; msg.textContent=L().networkError; }
   btn.disabled = false;
 }
 
@@ -2369,9 +2418,9 @@ async function doRegister() {
   const msg   = document.getElementById('reg-msg');
   const btn   = document.getElementById('reg-submit-btn');
   if (!email || !pw) { msg.className='form-msg err'; msg.textContent='请填写邮箱和密码'; return; }
-  if (pw.length < 6) { msg.className='form-msg err'; msg.textContent='密码至少6位'; return; }
+  if (pw.length < 6) { msg.className='form-msg err'; msg.textContent=L().cpwShort; return; }
   btn.disabled = true;
-  msg.className='form-msg'; msg.textContent='发送中...';
+  msg.className='form-msg'; msg.textContent=L().sending;
   try {
     const refCode = localStorage.getItem('_ref_code') || '';
     const resp = await fetch('/auth/register', {
@@ -2387,7 +2436,7 @@ async function doRegister() {
     } else {
       msg.className='form-msg err'; msg.textContent = d.error || '注册失败';
     }
-  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  } catch(_) { msg.className='form-msg err'; msg.textContent=L().networkError; }
   btn.disabled = false;
 }
 
@@ -2405,7 +2454,7 @@ async function doVerify() {
   const code = document.getElementById('verify-code').value.trim();
   const msg  = document.getElementById('verify-msg');
   if (!code || code.length !== 6) { msg.className='form-msg err'; msg.textContent='请输入6位验证码'; return; }
-  msg.className='form-msg'; msg.textContent='验证中...';
+  msg.className='form-msg'; msg.textContent=L().verifying;
   try {
     const resp = await fetch('/auth/verify', {
       method: 'POST',
@@ -2426,7 +2475,7 @@ async function doVerify() {
     } else {
       msg.className='form-msg err'; msg.textContent = d.error || '验证失败';
     }
-  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  } catch(_) { msg.className='form-msg err'; msg.textContent=L().networkError; }
 }
 
 let resendCooldown = false;
@@ -2436,7 +2485,7 @@ async function doResend() {
   const link = document.getElementById('resend-link');
   resendCooldown = true;
   link.style.opacity = '0.4';
-  msg.className='form-msg'; msg.textContent='发送中...';
+  msg.className='form-msg'; msg.textContent=L().sending;
   try {
     const resp = await fetch('/auth/resend', {
       method: 'POST',
@@ -2449,7 +2498,7 @@ async function doResend() {
     } else {
       msg.className='form-msg err'; msg.textContent = d.error || '发送失败';
     }
-  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  } catch(_) { msg.className='form-msg err'; msg.textContent=L().networkError; }
   setTimeout(() => { resendCooldown=false; link.style.opacity=''; }, 60000);
 }
 
@@ -2472,7 +2521,7 @@ function selectPkg(el) {
 async function doPay(method) {
   if (!userInfo) { closeBuyModal(); openLoginModal(); return; }
   const msg = document.getElementById('buy-msg');
-  msg.className='form-msg'; msg.textContent='正在创建订单...';
+  msg.className='form-msg'; msg.textContent=L().creatingOrder;
   try {
     const resp = await fetch('/orders/create', {
       method: 'POST',
@@ -2489,7 +2538,7 @@ async function doPay(method) {
     } else {
       msg.className='form-msg err'; msg.textContent=d.detail || '创建订单失败，请重试';
     }
-  } catch(_) { msg.className='form-msg err'; msg.textContent='网络错误，请重试'; }
+  } catch(_) { msg.className='form-msg err'; msg.textContent=L().networkError; }
 }
 
 function fmtRedeemInput(el) {
@@ -2505,7 +2554,7 @@ async function doRedeem() {
   const code = document.getElementById('redeem-input').value.trim();
   const msg  = document.getElementById('redeem-msg');
   if (!code) { msg.className='redeem-msg err'; msg.textContent='请输入兑换码'; return; }
-  msg.className='redeem-msg'; msg.textContent='兑换中...';
+  msg.className='redeem-msg'; msg.textContent=L().redeeming;
   try {
     const r = await fetch(`/auth/redeem?code=${encodeURIComponent(code)}`, {
       method: 'POST',
@@ -2522,7 +2571,7 @@ async function doRedeem() {
     } else {
       msg.className='redeem-msg err'; msg.textContent = d.error || '兑换失败';
     }
-  } catch(_) { msg.className='redeem-msg err'; msg.textContent='网络错误，请重试'; }
+  } catch(_) { msg.className='redeem-msg err'; msg.textContent=L().networkError; }
 }
 
 // ── Order History Modal ──────────────────────────────────────
@@ -2613,9 +2662,9 @@ async function saveProfile() {
       renderAuthState();
       setTimeout(() => { msg.textContent = ''; msg.className = 'form-msg'; }, 2000);
     } else {
-      msg.className = 'form-msg err'; msg.textContent = '保存失败，请重试';
+      msg.className = 'form-msg err'; msg.textContent = L().saveError;
     }
-  } catch(_) { msg.className = 'form-msg err'; msg.textContent = '网络错误'; }
+  } catch(_) { msg.className = 'form-msg err'; msg.textContent = L().networkError; }
   btn.disabled = false;
 }
 
@@ -2674,8 +2723,8 @@ async function changePassword() {
   const btn  = document.getElementById('cpw-btn');
   msg.className = 'form-msg'; msg.textContent = '';
   if (!cur)          { msg.className='form-msg err'; msg.textContent='请输入当前密码'; return; }
-  if (nw.length < 6) { msg.className='form-msg err'; msg.textContent='新密码至少6位'; return; }
-  if (nw !== conf)   { msg.className='form-msg err'; msg.textContent='两次密码不一致'; return; }
+  if (nw.length < 6) { msg.className='form-msg err'; msg.textContent=L().cpwShort; return; }
+  if (nw !== conf)   { msg.className='form-msg err'; msg.textContent=L().cpwMismatch; return; }
   btn.disabled = true;
   try {
     const resp = await fetch('/auth/change-password', {
@@ -2685,13 +2734,13 @@ async function changePassword() {
     });
     const d = await resp.json();
     if (resp.ok && d.ok) {
-      msg.className = 'form-msg ok'; msg.textContent = '✓ 密码修改成功';
+      msg.className = 'form-msg ok'; msg.textContent = '✓ ' + L().cpwSuccess;
       ['cpw-cur','cpw-new','cpw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
       setTimeout(closeChangePwModal, 1500);
     } else {
       msg.className = 'form-msg err'; msg.textContent = d.detail || '修改失败，请重试';
     }
-  } catch(_) { msg.className = 'form-msg err'; msg.textContent = '网络错误'; }
+  } catch(_) { msg.className = 'form-msg err'; msg.textContent = L().networkError; }
   btn.disabled = false;
 }
 
@@ -2710,7 +2759,7 @@ async function uploadAvatar(input) {
     }
   };
   reader.readAsDataURL(file);
-  msg.className = 'form-msg'; msg.textContent = '上传中...';
+  msg.className = 'form-msg'; msg.textContent = L().uploadProgress;
   const fd = new FormData();
   fd.append('file', file);
   try {
@@ -2732,12 +2781,12 @@ async function uploadAvatar(input) {
       msg.className = 'form-msg ok'; msg.textContent = '✓ 头像已更新';
       setTimeout(() => { msg.textContent = ''; msg.className = 'form-msg'; }, 2500);
     } else {
-      msg.className = 'form-msg err'; msg.textContent = '上传失败，请选择有效图片';
+      msg.className = 'form-msg err'; msg.textContent = L().uploadFail;
       // Restore previous state on failure
       if (prev) prev.innerHTML = _avatarPreviewHtml(userInfo?.nickname || userInfo?.email, userInfo?.avatar_b64);
     }
   } catch(_) {
-    msg.className = 'form-msg err'; msg.textContent = '网络错误';
+    msg.className = 'form-msg err'; msg.textContent = L().networkError;
     if (prev) prev.innerHTML = _avatarPreviewHtml(userInfo?.nickname || userInfo?.email, userInfo?.avatar_b64);
   }
   input.value = '';
@@ -2765,7 +2814,7 @@ async function openOrderHistory() {
           </span>
         </div>
         <div style="margin-top:4px;color:#64748b;font-size:.85em">
-          USDT · ${o.created_at.slice(0,16).replace('T',' ')}
+          ${o.pay_method === 'alipay' ? (L().alipayMethod || '支付宝') : 'USDT'} · ${o.created_at.slice(0,16).replace('T',' ')}
         </div>
         <div class="order-no">${o.order_no}</div>
       </div>`).join('');
@@ -3355,7 +3404,7 @@ function distUpload() {
   msg.className = 'form-msg'; msg.textContent = '';
   progWrap.style.display = 'block';
   progFill.style.width = '0%';
-  progText.textContent = lang === 'en' ? 'Uploading…' : '上传中…';
+  progText.textContent = lang === 'en' ? 'Uploading…' : L().uploadProgress;
   progPct.textContent  = '0%';
 
   const fd = new FormData();
@@ -3425,7 +3474,7 @@ function distUpload() {
     }
   };
 
-  xhr.onerror   = () => { progWrap.style.display='none'; btn.disabled=false; msg.className='form-msg err'; msg.textContent=lang==='en'?'Network error':'网络错误，请重试'; };
+  xhr.onerror   = () => { progWrap.style.display='none'; btn.disabled=false; msg.className='form-msg err'; msg.textContent=lang==='en'?'Network error':L().networkError; };
   xhr.ontimeout = () => { progWrap.style.display='none'; btn.disabled=false; msg.className='form-msg err'; msg.textContent=lang==='en'?'Upload timed out':'上传超时，请重试'; };
 
   xhr.send(fd);
@@ -3450,7 +3499,7 @@ async function loadDistList() {
   const l = L();
   const wrap = document.getElementById('dist-releases-wrap');
   const pgEl = document.getElementById('dist-pagination');
-  wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>`;
+  wrap.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${L().orderLoading}</div>`;
   pgEl.style.display = 'none';
   const q    = (document.getElementById('dist-search') || {value:''}).value.trim();
   const plat = (document.getElementById('dist-filter-plat') || {value:''}).value;
@@ -3556,7 +3605,7 @@ async function loadDistList() {
       pgEl.innerHTML = html;
     }
   } catch(e) {
-    wrap.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px">加载失败，请重试</div>`;
+    wrap.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px">${L().orderError}</div>`;
   }
 }
 
@@ -3569,9 +3618,9 @@ async function deleteRelease(slug, btn) {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${jwt}` },
     });
-    if (resp.ok) { showToast('已删除'); loadDistList(); }
+    if (resp.ok) { showToast(L().deleteSuccess); loadDistList(); }
     else { let msg = '删除失败'; try { const d = await resp.json(); msg = d.detail || msg; } catch(_) {} showToast(msg); btn.disabled = false; }
-  } catch(e) { showToast('网络错误'); btn.disabled = false; }
+  } catch(e) { showToast(L().networkError); btn.disabled = false; }
 }
 
 // ── Distribution: toggle public ─────────────────────────────
@@ -3590,7 +3639,7 @@ async function togglePublic(slug, btn) {
       showToast(d.detail || '操作失败');
       btn.disabled = false;
     }
-  } catch(e) { showToast('网络错误'); btn.disabled = false; }
+  } catch(e) { showToast(L().networkError); btn.disabled = false; }
 }
 
 // ── Distribution: QR popup ──────────────────────────────────

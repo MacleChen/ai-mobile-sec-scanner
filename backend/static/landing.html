@@ -6,8 +6,8 @@
   <meta name="google-site-verification" content="KaCgi5qQFlXOOuw7HGIPrB3BXuRGnYXdMSIZwassnMY">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>AppSec AI · 移动应用安全检测平台 — AI 深度扫描 APK/IPA</title>
-  <meta name="description" content="AI 驱动的移动应用安全检测平台，深度扫描 Android/iOS 应用，自动识别漏洞、追踪器与高危权限，秒级生成专业安全报告。注册即赠 1 次免费扫描。">
-  <meta name="keywords" content="APK安全检测,IPA安全检测,移动应用安全,Android安全扫描,iOS安全扫描,APP漏洞检测,移动安全测试,apk漏洞分析,移动应用渗透测试,AI安全报告,MobSF,权限分析,追踪器检测,代码安全审计,移动安全工具,应用分发,APK分发,IPA分发,应用市场,独立开发者,内测分发">
+  <meta name="description" content="AI驱动的移动应用安全检测平台 | 支持APK/IPA文件扫描 | 自动检测隐私泄露、恶意代码、安全漏洞 | 深度扫描 Android/iOS 应用，自动识别权限滥用、追踪器 SDK，秒级生成专业安全报告。开发者首选工具，注册即赠 1 次免费扫描。">
+  <meta name="keywords" content="APK安全检测,APK分析,IPA安全检测,移动应用安全,移动安全检测,Android安全扫描,Android安全,iOS安全扫描,iOS安全,APP漏洞检测,APP隐私泄露,移动安全测试,apk漏洞分析,移动应用渗透测试,AI安全报告,AI安全扫描,MobSF,权限分析,追踪器检测,代码安全审计,恶意代码检测,移动应用审计,移动安全工具,应用分发,APK分发,IPA分发,应用市场,独立开发者,内测分发">
   <meta name="author" content="AppSec AI">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <meta name="format-detection" content="telephone=no">
@@ -19,10 +19,14 @@
   <meta property="og:url" content="https://maclechen.top/">
   <meta property="og:site_name" content="AppSec AI">
   <meta property="og:locale" content="zh_CN">
+  <meta property="og:image" content="https://maclechen.top/static/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AppSec AI · 移动应用安全检测">
   <meta name="twitter:description" content="上传 APK/IPA，2 分钟获得专业安全报告。注册即赠 1 次免费扫描。">
+  <meta name="twitter:image" content="https://maclechen.top/static/og-image.png">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/favicon.svg">
   <!-- JSON-LD Structured Data -->
@@ -153,6 +157,29 @@
         ]
       }
     ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AI Mobile Scanner",
+    "url": "https://maclechen.top",
+    "description": "AI驱动的移动应用安全检测平台，支持APK和IPA文件分析，自动识别隐私泄露、恶意行为、安全漏洞",
+    "applicationCategory": "SecurityApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CNY",
+      "description": "免费额度，按需付费"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "AI Mobile Scanner",
+      "url": "https://maclechen.top"
+    },
+    "keywords": "APK分析,IPA安全检测,移动安全,APP隐私检测,Android安全,iOS安全,AI安全扫描"
   }
   </script>
   <script>(()=>{const t=localStorage.getItem('appsec-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})()</script>
@@ -1094,6 +1121,10 @@
   <a href="#faq" onclick="closeMobileMenu()" data-i18n="navFaq">FAQ</a>
   <div class="mobile-menu-divider"></div>
   <a href="/app" class="btn-primary-sm" data-i18n="navLogin2">登录</a>
+  <div class="mobile-menu-controls" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border,rgba(0,0,0,0.1));">
+    <button class="theme-btn" onclick="_toggleTheme()" id="mobile-theme-btn" title="Toggle theme"></button>
+    <button class="lang-toggle" onclick="toggleLangPage()" id="mobile-lang-btn">EN</button>
+  </div>
 </div>
 
 <!-- ═══ HERO ═══════════════════════════════════════════════ -->
@@ -1298,7 +1329,7 @@
 <section id="testimonials">
   <div class="container">
     <div class="scan-counter-wrap fade-in">
-      <div class="scan-counter-num" id="scanCounterEl">3,218</div>
+      <div class="scan-counter-num" id="scanCounterEl"><span id="scan-count">3,218</span></div>
       <div class="scan-counter-label" data-i18n="scanCounterLabel">次安全扫描已完成 · 来自全球开发者与安全团队</div>
     </div>
     <div class="section-title fade-in">
@@ -2578,6 +2609,7 @@ function applyI18nLanding() {
 function toggleLangPage() {
   _langLanding = _langLanding === 'zh' ? 'en' : 'zh';
   localStorage.setItem('lang', _langLanding);
+  document.documentElement.lang = _langLanding === 'zh' ? 'zh-CN' : 'en';
   applyI18nLanding();
 }
 applyI18nLanding();
@@ -2593,6 +2625,13 @@ function _toggleTheme() {
   document.querySelectorAll('.theme-btn').forEach(b => b.innerHTML = n === 'dark' ? _moonSvg : _sunSvg);
 }
 (()=>{const t = document.documentElement.getAttribute('data-theme') || 'dark'; document.querySelectorAll('.theme-btn').forEach(b => b.innerHTML = t === 'dark' ? _moonSvg : _sunSvg);})();
+// ── Dynamic scan counter ─────────────────────────────────────
+fetch('/api/stats').then(r => r.ok ? r.json() : null).then(d => {
+  if (d && d.scan_count) {
+    const el = document.getElementById('scan-count');
+    if (el) el.textContent = d.scan_count.toLocaleString();
+  }
+}).catch(() => {});
 </script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" onload="lucide.createIcons()"></script>
 </body>

@@ -60,7 +60,6 @@ async def startup_event():
     asyncio.create_task(_baidu_push())
     # Run metadata backfill in background so startup isn't blocked
     asyncio.get_event_loop().run_in_executor(None, _backfill_metadata)
-    asyncio.get_event_loop().run_in_executor(None, _backfill_virtual_counts)
 
 _tasks: dict = {}
 _dl_tokens: dict = {}   # one-time download tokens: hex -> {slug, expires_at}
@@ -76,6 +75,9 @@ _bearer = HTTPBearer(auto_error=False)
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
 JWT_ALG = "HS256"
 JWT_EXP_DAYS = 7
+
+if JWT_SECRET in ("changeme", "secret", "default", "change-me", "") or len(JWT_SECRET) < 32:
+    print("[WARNING] JWT_SECRET is weak or default — set a strong secret in production!")
 
 # ── Payment packages ────────────────────────────────────────
 PACKAGES = {
@@ -273,8 +275,8 @@ def _migrate_db():
         for sql in migrations:
             try:
                 c.execute(sql)
-            except Exception:
-                pass  # Column already exists
+            except Exception as e:
+                print(f"[migrate] warning: {e}")  # Column already exists or similar
         # Backfill platform for existing records that have empty platform
         c.execute("UPDATE app_releases SET platform='android' WHERE file_type='apk'  AND (platform IS NULL OR platform='')")
         c.execute("UPDATE app_releases SET platform='ios'     WHERE file_type='ipa'  AND (platform IS NULL OR platform='')")
@@ -292,110 +294,13 @@ def _migrate_db():
                 try:
                     c.execute("UPDATE users_v2 SET referral_code=? WHERE id=? AND (referral_code='' OR referral_code IS NULL)", (code, u["id"]))
                     break
-                except Exception:
+                except Exception as e:
+                    print(f"[migrate] warning: referral code collision for user {u['id']}: {e}")
                     continue
         pass  # backfill runs in startup_event after all functions are defined
 
 _init_db()
 _migrate_db()
-
-# ── Virtual engagement (fake reviews/likes for target account) ─
-_VIRT_TARGET_EMAIL = "851327579@qq.com"
-
-_VIRT_NAMES = [
-    "陈小明","李华","王雷","张伟","刘洋","赵磊","孙浩","周鑫","吴强","郑文",
-    "小白兔123","技术控","码农一枚","Apple用户","安卓爱好者","digital_nomad",
-    "软件测评师","极客小哥","开发老鸟","测试工程师","用户体验官","App猎人",
-    "夜猫子程序员","产品经理小李","设计师阿强","运营专员","全栈工程师",
-    "iPhone用户","Mac用户","林小燕","黄浩然","方圆圆","余欣欣","何志远",
-    "码字人生","数字游民","极简主义者","效率至上","工具控","tech_lover",
-    "app_fan","mobile_geek","software_fan","dev_life","极客小哥哥",
-    "王小明","陈浩","刘晓燕","张婷婷","李明明","周杰","赵小雨","孙晓红",
-    "深夜码农","产品汪","测试喵","运维老王","架构师","前端er","后端大佬",
-    "用户6688","用户7799","用户8811","用户9922","用户1023","用户3344",
-]
-_VIRT_COMMENTS = [
-    "非常好用，强烈推荐！","功能齐全，操作简单，五星好评！",
-    "用了很久了，一直很稳定，没有什么问题","界面设计很漂亮，使用体验很好",
-    "下载速度很快，安装也方便","比同类软件好用很多，会继续使用",
-    "开发者很用心，更新也及时","功能很强大，满足了我的所有需求",
-    "稳定可靠，用了好几个月没出过问题","简洁易用，新手也能快速上手",
-    "很好用，推荐给朋友们了","性能不错，运行很流畅",
-    "细节做得很好，使用体验极佳","这款应用解决了我的大问题，太实用了",
-    "比预期的好很多，给满分！","已经用了半年多，体验一直很好",
-    "功能完善，没有广告，很良心","界面清爽，功能实用，值得下载",
-    "更新很频繁，问题修复很快","好用！已经推荐给同事了",
-    "作者很厉害，软件质量很高","用起来很顺手，以后会一直用",
-    "功能比我想象中的多，惊喜！","安全可靠，数据有保障",
-    "无bug运行，非常满意","配置简单，功能强大，赞！",
-    "UI设计得很好看，操作也很直观","改变了我的工作方式，感谢开发者",
-    "效率提升了很多，非常满意","比同类产品强太多了，不用犹豫直接下载",
-    "真心好用，周围朋友都在用","完全免费还这么好用，良心软件",
-    "比我之前用的那款强多了","这个版本更新很大，体验提升明显",
-    "装机必备，已经用了两年了","团队在用，稳定性很好",
-    "支持国产优秀软件！","功能强大又轻量，不占内存",
-    "","","","",  # some reviews without comments (natural mix)
-]
-_VIRT_RATING_POOL = [5,5,5,5,5,5,4,4,4,5,4,5,5,4,3,5,5,4,5,5]  # ~60% 5-star
-
-def _seeded_rand(seed_str: str, idx: int):
-    """Return a seeded Random instance for reproducible virtual data."""
-    import random as _rand_mod
-    r = _rand_mod.Random(hash(seed_str + str(idx)))
-    return r
-
-def _gen_virtual_reviews(slug: str, total: int, start: int, end: int) -> list:
-    """Generate deterministic virtual reviews for positions [start, end)."""
-    import random as _rand_mod
-    from datetime import datetime, timedelta
-    results = []
-    base_date = datetime(2024, 1, 1)
-    for i in range(start, min(end, total)):
-        r = _rand_mod.Random(hash(slug + "rev" + str(i)))
-        name = r.choice(_VIRT_NAMES)
-        rating = r.choice(_VIRT_RATING_POOL)
-        comment = r.choice(_VIRT_COMMENTS)
-        days_ago = r.randint(0, 400)
-        date_str = (base_date + timedelta(days=r.randint(0, 730))).strftime("%Y-%m-%d")
-        results.append({
-            "id": -(i + 1),  # negative id = virtual
-            "rating": rating,
-            "comment": comment,
-            "created_at": date_str,
-            "nickname": name,
-            "avatar_b64": "",
-            "is_mine": False,
-        })
-    return results
-
-def _set_virtual_counts(slug: str) -> None:
-    """Set random virtual review/like counts for a release (only if not already set)."""
-    import random as _rand_mod
-    r = _rand_mod.Random(hash(slug + "virt"))
-    vr = r.randint(10_000, 1_000_000)
-    vl = r.randint(1_000, 100_000)
-    with _db() as c:
-        c.execute(
-            "UPDATE app_releases SET virtual_reviews_count=?, virtual_likes_count=?"
-            " WHERE slug=? AND virtual_reviews_count=0",
-            (vr, vl, slug),
-        )
-
-def _backfill_virtual_counts() -> None:
-    """Set virtual counts for all existing apps from the target email."""
-    with _db() as c:
-        target = c.execute(
-            "SELECT id FROM users_v2 WHERE email=?", (_VIRT_TARGET_EMAIL,)
-        ).fetchone()
-        if not target:
-            return
-        slugs = c.execute(
-            "SELECT slug FROM app_releases WHERE user_id=? AND virtual_reviews_count=0",
-            (target["id"],)
-        ).fetchall()
-    for row in slugs:
-        _set_virtual_counts(row["slug"])
-
 
 # ── Redemption code helpers ──────────────────────────────────
 
@@ -420,6 +325,21 @@ def _check_redeem_rate(user_id: int) -> bool:
         return False
     prev.append(now)
     _redeem_attempts[user_id] = prev
+    return True
+
+# IP-based rate limiters for auth endpoints: {ip: [timestamps]}
+_login_attempts: dict = {}
+_register_attempts: dict = {}
+_resend_attempts: dict = {}
+
+def _check_ip_rate(store: dict, ip: str, max_attempts: int, window: int = 60) -> bool:
+    """Return True if allowed, False if rate-limited. Keyed by IP string."""
+    now = time.time()
+    prev = [t for t in store.get(ip, []) if now - t < window]
+    if len(prev) >= max_attempts:
+        return False
+    prev.append(now)
+    store[ip] = prev
     return True
 
 
@@ -599,6 +519,18 @@ class ChangePasswordBody(BaseModel):
     current_password: str
     new_password: str
 
+class AdminLoginBody(BaseModel):
+    username: str
+    password: str
+
+class AdminChangePasswordBody(BaseModel):
+    current_password: str
+    new_password: str
+
+class AdminCreateAccountBody(BaseModel):
+    username: str
+    password: str
+
 
 # ── Report HTML labels (zh / en) ──────────────────────────────
 _LABELS = {
@@ -673,20 +605,7 @@ def _mobsf_headers():
     return {"Authorization": os.getenv("MOBSF_API_KEY")}
 
 
-# ── Credits API ───────────────────────────────────────────────
-
-@app.get("/credits/{token}")
-async def get_credits(token: str):
-    """Return credits balance for a token."""
-    with _db() as c:
-        row = c.execute("SELECT credits, total_scans FROM users WHERE token=?", (token,)).fetchone()
-    if row:
-        return {"credits": row["credits"], "total_scans": row["total_scans"]}
-    # New token: create with 0 credits
-    with _db() as c:
-        c.execute("INSERT OR IGNORE INTO users(token, credits) VALUES(?,0)", (token,))
-    return {"credits": 0, "total_scans": 0}
-
+# ── Credits API (v2) ───────────────────────────────────────────
 
 @app.post("/credits/redeem")
 async def redeem_code(token: str, code: str):
@@ -714,8 +633,10 @@ async def redeem_code(token: str, code: str):
 
 
 @app.post("/admin/login")
-async def admin_login(username: str, password: str):
+async def admin_login(body: AdminLoginBody):
     """Login to the admin panel; returns a short-lived admin JWT."""
+    username = body.username
+    password = body.password
     with _db() as c:
         row = c.execute(
             "SELECT password_hash FROM admin_accounts WHERE username=?", (username,)
@@ -732,10 +653,11 @@ async def admin_me(admin_user: str = Depends(_require_admin)):
 
 @app.post("/admin/change-password")
 async def admin_change_password(
-    current_password: str,
-    new_password: str,
+    body: AdminChangePasswordBody,
     admin_user: str = Depends(_require_admin),
 ):
+    current_password = body.current_password
+    new_password = body.new_password
     if len(new_password) < 6:
         return JSONResponse({"ok": False, "error": "新密码至少 6 位"}, status_code=400)
     with _db() as c:
@@ -763,11 +685,11 @@ async def admin_list_accounts(_: str = Depends(_require_admin)):
 
 @app.post("/admin/accounts")
 async def admin_create_account(
-    username: str,
-    password: str,
+    body: AdminCreateAccountBody,
     _: str = Depends(_require_admin),
 ):
-    username = username.strip()
+    username = body.username.strip()
+    password = body.password
     if len(username) < 2:
         return JSONResponse({"ok": False, "error": "用户名至少 2 个字符"}, status_code=400)
     if len(password) < 6:
@@ -956,8 +878,11 @@ def _gen_ref_code() -> str:
     return "".join(random.choices(_REF_CHARS, k=8))
 
 @app.post("/auth/register")
-async def auth_register(body: RegisterBody):
+async def auth_register(body: RegisterBody, request: Request):
     """Register with email + password; send 6-digit verification code."""
+    ip = request.client.host if request.client else "unknown"
+    if not _check_ip_rate(_register_attempts, ip, 5, 60):
+        return JSONResponse({"ok": False, "error": "注册请求过于频繁，请稍后再试"}, status_code=429)
     email = body.email.strip().lower()
     if not email or "@" not in email:
         return JSONResponse({"ok": False, "error": "邮箱格式不正确"}, status_code=400)
@@ -1049,8 +974,11 @@ async def auth_verify(body: VerifyBody):
 
 
 @app.post("/auth/resend")
-async def auth_resend(body: ResendBody):
+async def auth_resend(body: ResendBody, request: Request):
     """Resend verification code (rate-limit: not if sent < 60s ago)."""
+    ip = request.client.host if request.client else "unknown"
+    if not _check_ip_rate(_resend_attempts, ip, 3, 60):
+        return JSONResponse({"ok": False, "error": "请求过于频繁，请稍后再试"}, status_code=429)
     email = body.email.strip().lower()
     with _db() as c:
         existing = c.execute("SELECT expires_at FROM verify_codes WHERE email=?", (email,)).fetchone()
@@ -1076,8 +1004,11 @@ async def auth_resend(body: ResendBody):
 
 
 @app.post("/auth/login")
-async def auth_login(body: LoginBody):
+async def auth_login(body: LoginBody, request: Request):
     """Login with email + password; return JWT."""
+    ip = request.client.host if request.client else "unknown"
+    if not _check_ip_rate(_login_attempts, ip, 10, 60):
+        return JSONResponse({"ok": False, "error": "登录尝试过于频繁，请稍后再试"}, status_code=429)
     email = body.email.strip().lower()
     with _db() as c:
         user = c.execute("SELECT * FROM users_v2 WHERE email=?", (email,)).fetchone()
@@ -3086,9 +3017,7 @@ async def dist_toggle_like(slug: str, user: dict = Depends(_current_user)):
             c.execute("INSERT INTO app_likes(slug, user_id) VALUES(?,?)", (slug, user["id"]))
             liked = True
         count = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
-        vl = c.execute("SELECT virtual_likes_count FROM app_releases WHERE slug=?", (slug,)).fetchone()
-        virtual_likes = vl["virtual_likes_count"] if vl else 0
-    return {"liked": liked, "count": count + virtual_likes}
+    return {"liked": liked, "count": count}
 
 # ── App Reviews ──────────────────────────────────────────────
 
@@ -3124,12 +3053,6 @@ async def dist_get_reviews(slug: str, request: Request, page: int = 0):
             ORDER BY r.created_at DESC
         """, (slug,)).fetchall()
         real_likes = c.execute("SELECT COUNT(*) FROM app_likes WHERE slug=?", (slug,)).fetchone()[0]
-        rel = c.execute(
-            "SELECT virtual_reviews_count, virtual_likes_count FROM app_releases WHERE slug=?",
-            (slug,)
-        ).fetchone()
-        virtual_reviews_total = rel["virtual_reviews_count"] if rel else 0
-        virtual_likes = rel["virtual_likes_count"] if rel else 0
         my_review = None
         liked = False
         if user:
@@ -3153,29 +3076,18 @@ async def dist_get_reviews(slug: str, request: Request, page: int = 0):
         for r in rows
     ]
     total_real = len(real_reviews)
-    total_count = total_real + virtual_reviews_total
-    total_likes = real_likes + virtual_likes
+    total_count = total_real
+    total_likes = real_likes
 
-    # Paginate: real reviews first, then virtual
+    # Paginate real reviews
     start = page * PER_PAGE
     end = start + PER_PAGE
-    page_reviews = []
-    if start < total_real:
-        page_reviews = real_reviews[start:end]
-    virt_start = max(0, start - total_real)
-    virt_end = max(0, end - total_real)
-    if virt_end > virt_start and virtual_reviews_total > 0:
-        page_reviews += _gen_virtual_reviews(slug, virtual_reviews_total, virt_start, virt_end)
+    page_reviews = real_reviews[start:end]
 
-    # Avg rating: weight real reviews heavily, virtual ~4.4
+    # Avg rating from real reviews only
     real_ratings = [r["rating"] for r in real_reviews]
     if real_ratings:
-        real_avg = sum(real_ratings) / len(real_ratings)
-        virt_weight = min(virtual_reviews_total, 500)
-        combined_avg = round((real_avg * len(real_ratings) + 4.4 * virt_weight) /
-                              (len(real_ratings) + virt_weight), 1)
-    elif virtual_reviews_total > 0:
-        combined_avg = 4.4
+        combined_avg = round(sum(real_ratings) / len(real_ratings), 1)
     else:
         combined_avg = None
 
@@ -3230,12 +3142,18 @@ async def dist_upload(
     if ext not in _ALLOWED_EXTS:
         raise HTTPException(400, "不支持的文件格式")
 
+    # ── Magic byte validation ────────────────────────────────────
+    _MAGIC_HEADER = await file.read(4)
+    await file.seek(0)
+    _ZIP_MAGIC = b'PK'
+    if ext in ("apk", "ipa", "zip") and not _MAGIC_HEADER.startswith(_ZIP_MAGIC):
+        raise HTTPException(400, "文件格式无效：APK/IPA 文件必须是有效的 ZIP 格式")
+
     # ── Credits check ────────────────────────────────────────────
     with _db() as c:
         _u = c.execute("SELECT credits FROM users_v2 WHERE id=?", (user["id"],)).fetchone()
     if not _u or _u["credits"] <= 0:
         raise HTTPException(402, "Credits 不足，请先购买")
-
     resolved_name = app_name.strip() or (file.filename or "未命名").rsplit(".", 1)[0]
 
     # ── Deduplication: same user + app_name + file_type → update existing ──
@@ -3308,20 +3226,19 @@ async def dist_upload(
                  meta["pkg_name"], meta["display_name"], meta["icon_b64"], platform, pub, category.strip()),
             )
 
-    # ── Deduct 1 credit ─────────────────────────────────────────
+    # ── Deduct 1 credit (atomic: check and deduct in one statement) ─
     with _db() as c:
-        c.execute(
+        updated = c.execute(
             "UPDATE users_v2 SET credits=credits-1, updated_at=datetime('now')"
-            " WHERE id=? AND credits>0",
+            " WHERE id=? AND credits>=1",
             (user["id"],),
-        )
+        ).rowcount
+        if updated == 0:
+            raise HTTPException(402, "Credits 不足，请先购买")
         _row = c.execute("SELECT credits FROM users_v2 WHERE id=?", (user["id"],)).fetchone()
         credits_left = _row["credits"] if _row else 0
 
     site = os.getenv("SITE_URL", "https://maclechen.top")
-    # Auto-set virtual engagement for target account
-    if user.get("email") == _VIRT_TARGET_EMAIL:
-        _set_virtual_counts(slug)
     return {"ok": True, "slug": slug, "url": f"{site}/dist/{slug}",
             "updated": is_update, "credits_left": credits_left}
 
@@ -3431,6 +3348,10 @@ async def dist_request_download(slug: str, request: Request):
         credits_left -= 1
 
     dl_token = uuid.uuid4().hex
+    # Guard against unbounded growth of the token dict
+    if len(_dl_tokens) > 10000:
+        # Clear all entries — tokens expire in 5 min anyway, this is safe
+        _dl_tokens.clear()
     _dl_tokens[dl_token] = {"slug": slug, "expires_at": now + 300}
     return {"token": dl_token, "is_owner": is_owner, "credits_left": credits_left if not is_owner else None}
 
@@ -4861,17 +4782,24 @@ async def _run_scan(task_id: str, filename: str, tmp_path: str, lang: str = "zh"
                 "⚠️ AI analysis unavailable (Gemini API free tier daily quota exceeded). "
                 "MobSF static analysis results are complete — please review the data above."
             )
-        # Deduct 1 credit on successful scan
+        # Deduct 1 credit on successful scan (atomic)
         _auth_type = _tasks[task_id].get("auth_type", "legacy")
         if _auth_type == "jwt":
             _uid = _tasks[task_id].get("user_id")
             if _uid:
                 with _db() as c:
-                    c.execute(
+                    updated = c.execute(
                         "UPDATE users_v2 SET credits=credits-1, total_scans=total_scans+1,"
-                        " updated_at=datetime('now') WHERE id=? AND credits>0",
+                        " updated_at=datetime('now') WHERE id=? AND credits>=1",
                         (_uid,),
-                    )
+                    ).rowcount
+                    if updated == 0:
+                        # credits may have been spent between check and deduct; non-fatal
+                        c.execute(
+                            "UPDATE users_v2 SET total_scans=total_scans+1,"
+                            " updated_at=datetime('now') WHERE id=?",
+                            (_uid,),
+                        )
         else:
             _token = _tasks[task_id].get("token", "")
             if _token:
