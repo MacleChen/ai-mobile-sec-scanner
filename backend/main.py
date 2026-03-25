@@ -3483,17 +3483,17 @@ async def market_list(
 ):
     where = "is_active=1 AND is_public=1"
     params: list = []
-    if platform:
+    if platform and platform != "all":
         where += " AND platform=?"
         params.append(platform)
-    if category:
+    if category and category != "all":
         where += " AND category=?"
         params.append(category)
     if q:
         like = f"%{q}%"
         where += " AND (app_name LIKE ? OR display_name LIKE ? OR pkg_name LIKE ?)"
         params.extend([like, like, like])
-    order = "download_count DESC, created_at DESC" if sort == "popular" else "created_at DESC"
+    order = "download_count DESC, created_at DESC" if sort in ("popular", "hot") else "created_at DESC"
     with _db() as c:
         total = c.execute(
             f"SELECT COUNT(*) FROM app_releases WHERE {where}", params
