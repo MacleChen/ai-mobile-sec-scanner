@@ -4031,6 +4031,7 @@ function toggleLangPage() {{
   load();
 }}
 applyI18nMkt();"""
+    js = js.replace('{{', '{').replace('}}', '}')
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
