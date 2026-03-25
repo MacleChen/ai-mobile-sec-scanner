@@ -4030,7 +4030,8 @@ function toggleLangPage() {{
   applyI18nMkt();
   load();
 }}
-applyI18nMkt();"""
+applyI18nMkt();
+load();"""
     js = js.replace('{{', '{').replace('}}', '}')
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
