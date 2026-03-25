@@ -2029,34 +2029,47 @@ def _dist_preview_html(r: dict) -> str:
                 box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04)}}
     /* ── Hero banner ── */
     .hero{{background:linear-gradient({plat_grad});
-           padding:36px 40px 32px;display:flex;align-items:flex-start;gap:28px;
+           padding:44px 44px 40px;display:flex;align-items:center;gap:32px;
            position:relative;overflow:hidden}}
-    .hero::after{{content:'';position:absolute;inset:0;
-                  background:radial-gradient(ellipse at top left,rgba(255,255,255,.12) 0%,transparent 60%);
-                  pointer-events:none}}
-    .hero-icon{{flex-shrink:0;width:100px;height:100px;border-radius:24px;
-                box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 3px rgba(255,255,255,.2);
-                overflow:hidden;background:rgba(255,255,255,.12)}}
+    .hero::before{{content:'';position:absolute;inset:0;
+                   background:radial-gradient(ellipse 90% 80% at 10% 5%,rgba(255,255,255,.22) 0%,transparent 55%),
+                               radial-gradient(ellipse 60% 60% at 90% 100%,rgba(0,0,0,.18) 0%,transparent 50%);
+                   pointer-events:none;z-index:0}}
+    .hero::after{{content:'';position:absolute;bottom:0;left:0;right:0;height:80px;
+                  background:linear-gradient(to bottom,transparent,rgba(0,0,0,.18));
+                  pointer-events:none;z-index:0}}
+    .hero-icon{{flex-shrink:0;width:112px;height:112px;border-radius:28px;
+                box-shadow:0 0 0 1.5px rgba(255,255,255,.35),
+                           0 0 0 5px rgba(255,255,255,.1),
+                           0 16px 48px rgba(0,0,0,.5),
+                           0 4px 16px rgba(0,0,0,.3);
+                overflow:hidden;background:rgba(255,255,255,.15);
+                position:relative;z-index:1;flex-shrink:0}}
     .hero-icon img{{width:100%;height:100%;object-fit:cover;display:block}}
     .hero-icon-ph{{width:100%;height:100%;display:flex;align-items:center;
-                   justify-content:center;color:rgba(255,255,255,.7)}}
-    .hero-info{{flex:1;min-width:0}}
-    .hero-badges{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}}
-    .badge{{display:inline-flex;align-items:center;gap:4px;padding:3px 12px;
-            border-radius:20px;font-size:.7em;font-weight:700;letter-spacing:.05em;
-            background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.28);
-            backdrop-filter:blur(4px)}}
-    .hero-name{{font-size:1.7em;font-weight:900;color:white;letter-spacing:-.02em;
-                line-height:1.2;word-break:break-word}}
-    .hero-version{{font-size:.9em;color:rgba(255,255,255,.7);margin-top:6px;font-weight:500}}
-    .hero-pkg{{font-size:.75em;color:rgba(255,255,255,.55);margin-top:4px;
-               font-family:'SF Mono',monospace;word-break:break-all}}
+                   justify-content:center;color:rgba(255,255,255,.8);font-size:2.5em}}
+    .hero-info{{flex:1;min-width:0;position:relative;z-index:1}}
+    .hero-badges{{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}}
+    .badge{{display:inline-flex;align-items:center;gap:4px;padding:4px 13px;
+            border-radius:20px;font-size:.67em;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+            background:rgba(255,255,255,.14);color:rgba(255,255,255,.95);
+            border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(10px);
+            box-shadow:0 1px 4px rgba(0,0,0,.15)}}
+    .hero-name{{font-size:1.9em;font-weight:900;color:white;letter-spacing:-.03em;
+                line-height:1.15;word-break:break-word;
+                text-shadow:0 2px 16px rgba(0,0,0,.3)}}
+    .hero-version{{font-size:.85em;color:rgba(255,255,255,.65);margin-top:6px;font-weight:500;letter-spacing:.01em}}
+    .hero-pkg{{font-size:.72em;color:rgba(255,255,255,.45);margin-top:3px;
+               font-family:'SF Mono','Fira Code',monospace;word-break:break-all}}
+    .app-short-desc{{font-size:.9em;color:rgba(255,255,255,.8);margin:10px 0 0;
+                     line-height:1.65;text-shadow:0 1px 6px rgba(0,0,0,.2)}}
+    .social-stats{{display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap}}
     /* ── Body: two columns ── */
     .body{{display:grid;grid-template-columns:1fr minmax(0,280px);gap:0}}
     @media(max-width:680px){{
-      .hero{{flex-direction:column;gap:20px;padding:28px 24px}}
-      .hero-icon{{width:80px;height:80px}}
-      .hero-name{{font-size:1.4em}}
+      .hero{{flex-direction:column;gap:24px;padding:32px 24px 28px}}
+      .hero-icon{{width:88px;height:88px;border-radius:22px}}
+      .hero-name{{font-size:1.5em}}
       .body{{grid-template-columns:1fr}}
       .sidebar{{border-left:none!important;border-top:1px solid rgba(255,255,255,.07)}}
     }}
@@ -2064,11 +2077,13 @@ def _dist_preview_html(r: dict) -> str:
     .content{{padding:32px 36px;border-right:1px solid rgba(255,255,255,.07);min-width:0;overflow:hidden}}
     @media(max-width:680px){{.content{{padding:24px 20px}}}}
     /* Description */
-    .section-label{{font-size:.7em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-                    color:#475569;margin-bottom:10px}}
-    .desc-box{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
-               border-radius:12px;padding:16px;font-size:.88em;color:#94a3b8;
-               line-height:1.7;white-space:pre-wrap;word-break:break-word}}
+    .section-label{{font-size:.68em;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+                    color:#6366f1;margin-bottom:14px;display:flex;align-items:center;gap:10px}}
+    .section-label::after{{content:'';flex:1;height:1px;
+                            background:linear-gradient(90deg,rgba(99,102,241,.35),transparent)}}
+    .desc-box{{background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.14);
+               border-radius:14px;padding:18px 20px;font-size:.88em;color:#94a3b8;
+               line-height:1.8;white-space:pre-wrap;word-break:break-word}}
     /* Meta grid */
     .meta-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}}
     @media(max-width:400px){{.meta-grid{{grid-template-columns:1fr}}}}
@@ -2172,11 +2187,12 @@ def _dist_preview_html(r: dict) -> str:
     .ncard-sk{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;height:220px;animation:pulse 1.6s ease-in-out infinite}}
     @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.5}}}}
     /* ── Social stats bar ── */
-    .social-stats{{display:flex;align-items:center;gap:18px;margin-top:14px;flex-wrap:wrap}}
-    .sstat{{display:flex;align-items:center;gap:5px;font-size:.82em;
-             color:rgba(255,255,255,.7);font-weight:600}}
+    .sstat{{display:inline-flex;align-items:center;gap:5px;font-size:.8em;font-weight:600;
+             color:rgba(255,255,255,.8);background:rgba(255,255,255,.12);
+             border:1px solid rgba(255,255,255,.2);border-radius:20px;
+             padding:5px 13px;backdrop-filter:blur(8px)}}
     .sstat-val{{font-weight:800;color:white}}
-    .sstat-sep{{width:1px;height:14px;background:rgba(255,255,255,.25)}}
+    .sstat-sep{{display:none}}
     /* ── Like button ── */
     .like-btn{{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
                background:rgba(255,255,255,.05);color:#94a3b8;font-size:.9em;font-weight:700;
@@ -2272,8 +2288,10 @@ def _dist_preview_html(r: dict) -> str:
     .ss-modal{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out}}
     .ss-modal.open{{display:flex}}
     .ss-modal img{{max-width:92vw;max-height:88vh;border-radius:12px;object-fit:contain}}
-    .app-short-desc{{font-size:.95em;color:var(--muted,#94a3b8);margin:8px 0 16px;line-height:1.6}}
     [data-theme=light] .ss-item img{{border-color:rgba(0,0,0,.12)}}
+    [data-theme=light] .section-label{{color:#6366f1}}
+    [data-theme=light] .section-label::after{{background:linear-gradient(90deg,rgba(99,102,241,.25),transparent)}}
+    [data-theme=light] .desc-box{{background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15);color:#475569}}
   </style>
 </head>
 <body>
