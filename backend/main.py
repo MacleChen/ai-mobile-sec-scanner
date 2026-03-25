@@ -2052,8 +2052,8 @@ def _dist_preview_html(r: dict) -> str:
     .hero-pkg{{font-size:.75em;color:rgba(255,255,255,.55);margin-top:4px;
                font-family:'SF Mono',monospace;word-break:break-all}}
     /* ── Body: two columns ── */
-    .body{{display:grid;grid-template-columns:1fr 280px;gap:0}}
-    @media(max-width:640px){{
+    .body{{display:grid;grid-template-columns:1fr minmax(0,280px);gap:0}}
+    @media(max-width:680px){{
       .hero{{flex-direction:column;gap:20px;padding:28px 24px}}
       .hero-icon{{width:80px;height:80px}}
       .hero-name{{font-size:1.4em}}
@@ -2061,8 +2061,8 @@ def _dist_preview_html(r: dict) -> str:
       .sidebar{{border-left:none!important;border-top:1px solid rgba(255,255,255,.07)}}
     }}
     /* ── Left: main content ── */
-    .content{{padding:32px 36px;border-right:1px solid rgba(255,255,255,.07)}}
-    @media(max-width:640px){{.content{{padding:24px 20px}}}}
+    .content{{padding:32px 36px;border-right:1px solid rgba(255,255,255,.07);min-width:0;overflow:hidden}}
+    @media(max-width:680px){{.content{{padding:24px 20px}}}}
     /* Description */
     .section-label{{font-size:.7em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
                     color:#475569;margin-bottom:10px}}
@@ -2091,7 +2091,7 @@ def _dist_preview_html(r: dict) -> str:
              font-weight:800;text-decoration:none!important;transition:opacity .2s}}
     .ai-cta:hover{{opacity:.85}}
     /* ── Sidebar ── */
-    .sidebar{{padding:28px 24px;display:flex;flex-direction:column;gap:20px}}
+    .sidebar{{padding:28px 20px;display:flex;flex-direction:column;gap:20px;min-width:0;overflow:hidden}}
     /* Download button */
     .dl-btn{{width:100%;padding:15px;border-radius:14px;
              background:linear-gradient(135deg,#3b82f6,#7c3aed);color:white;border:none;
@@ -2112,11 +2112,11 @@ def _dist_preview_html(r: dict) -> str:
     .copy-icon{{flex-shrink:0;font-size:.9em;color:#475569}}
     /* QR */
     .qr-box{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
-             border-radius:14px;padding:16px;text-align:center}}
+             border-radius:14px;padding:16px;text-align:center;overflow:hidden}}
     .qr-box-title{{font-size:.72em;color:#475569;margin-bottom:12px;font-weight:600;
                    text-transform:uppercase;letter-spacing:.08em}}
-    .qr-container{{position:relative;display:inline-block}}
-    .qr-container img.qr-img{{width:160px;height:160px;border-radius:10px;display:block}}
+    .qr-container{{position:relative;display:inline-block;max-width:100%}}
+    .qr-container img.qr-img{{width:160px;height:160px;max-width:100%;border-radius:10px;display:block}}
     .qr-logo{{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
               width:38px;height:38px;background:white;border-radius:8px;padding:3px;
               display:flex;align-items:center;justify-content:center;
