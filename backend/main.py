@@ -3755,7 +3755,7 @@ function doSearch(){q=document.getElementById('si').value.trim();const s2=docume
 function doSearch2(){q=document.getElementById('si2').value.trim();const s=document.getElementById('si');if(s)s.value=q;pg=1;load()}
 function setCat(c,el){cat=c;pg=1;document.querySelectorAll('#cc .chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');load()}
 function setPlat(p,el){plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));if(el)el.classList.add('on');document.querySelectorAll('#hpc .hero-plat-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-p')===(p||'')));load()}
-function setHPlat(p,el){document.querySelectorAll('#hpc .hero-plat-chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');const pc=document.querySelector('#pc [data-p="'+(p||'')+'"]');if(pc){setPlat(p,pc);}else{plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));load();}}
+function setHPlat(p,el){document.querySelectorAll('#hpc .hero-plat-chip').forEach(b=>b.classList.remove('on'));el.classList.add('on');const pc=document.querySelector('#pc [data-p="'+(p||'')+'"]');if(pc){setPlat(p,pc);}else{plat=p;pg=1;document.querySelectorAll('#pc .chip').forEach(b=>b.classList.remove('on'));load();}}}}
 function setSort(s){srt=s;pg=1;load()}
 function goPage(p){pg=p;load();window.scrollTo({top:300,behavior:'smooth'})}
 function renderSkeleton(){
