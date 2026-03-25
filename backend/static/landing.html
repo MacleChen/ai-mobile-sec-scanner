@@ -771,6 +771,45 @@
     .dist-mkt-badge.blue   { background: rgba(59,130,246,.15);  border: 1px solid rgba(59,130,246,.3);  color: var(--blue-l); }
     .dist-mkt-badge.green  { background: rgba(16,185,129,.15);  border: 1px solid rgba(16,185,129,.3);  color: #34d399; }
 
+    /* dist preview mockup – theme-aware */
+    .dist-preview-mockup {
+      background: rgba(5,11,24,.8); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px; overflow: hidden; margin-bottom: 16px;
+    }
+    .dist-preview-bar {
+      background: rgba(255,255,255,.04); padding: 10px 14px;
+      display: flex; align-items: center; gap: 6px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .dist-preview-body { padding: 22px; text-align: center; }
+    .mkt-filter-row {
+      padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,.06);
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    /* light-mode overrides for mockup sections */
+    [data-theme=light] .dist-mkt-card {
+      background: rgba(255,255,255,.85);
+      box-shadow: 0 8px 32px rgba(0,0,0,.08);
+    }
+    [data-theme=light] .dist-preview-mockup {
+      background: #f1f5f9; border-color: rgba(0,0,0,.1);
+    }
+    [data-theme=light] .dist-preview-bar {
+      background: rgba(0,0,0,.04); border-bottom-color: rgba(0,0,0,.08);
+    }
+    [data-theme=light] .dist-mkt-badge.purple { color: #7c3aed; }
+    [data-theme=light] .dist-mkt-badge.blue   { color: #2563eb; }
+    [data-theme=light] .dist-mkt-badge.green  { color: #059669; }
+    [data-theme=light] .mkt-preview-wrap {
+      background: #ffffff;
+      box-shadow: 0 32px 80px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.06);
+    }
+    [data-theme=light] .mkt-preview-header { background: rgba(0,0,0,.03); }
+    [data-theme=light] .mkt-preview-url { background: rgba(0,0,0,.04); }
+    [data-theme=light] .mkt-filter-row { border-bottom-color: rgba(0,0,0,.08); }
+    [data-theme=light] .mkt-filter-btn { background: rgba(0,0,0,.04); }
+    [data-theme=light] .mkt-app-card { background: rgba(0,0,0,.03); }
+
     /* ── Marketplace section ────────────────── */
     .mkt-flow-strip {
       display: flex; align-items: center; justify-content: center;
@@ -1708,14 +1747,14 @@
       </div>
       <div class="dist-mkt-card fade-in fade-in-d1">
         <!-- Preview card mockup -->
-        <div style="background:rgba(5,11,24,.8);border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;margin-bottom:16px">
-          <div style="background:rgba(255,255,255,.04);padding:10px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div class="dist-preview-mockup">
+          <div class="dist-preview-bar">
             <div style="width:8px;height:8px;border-radius:50%;background:#ff5f57"></div>
             <div style="width:8px;height:8px;border-radius:50%;background:#febc2e"></div>
             <div style="width:8px;height:8px;border-radius:50%;background:#28c840"></div>
             <div style="flex:1;text-align:center;font-size:.7em;color:#475569"><i data-lucide="lock" style="width:10px;height:10px;display:inline-block;vertical-align:-1px;margin-right:3px"></i>maclechen.top/dist/ab3x7k</div>
           </div>
-          <div style="padding:22px;text-align:center">
+          <div class="dist-preview-body">
             <div style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(139,92,246,.35));margin:0 auto 12px;display:flex;align-items:center;justify-content:center"><i data-lucide="smartphone" style="width:32px;height:32px;stroke:#a78bfa"></i></div>
             <div style="font-size:1em;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px">我的应用 v2.1.0</div>
             <div style="font-size:.72em;color:#64748b;margin-bottom:10px">com.example.myapp</div>
@@ -1829,7 +1868,7 @@
         <div class="mkt-preview-url"><i data-lucide="globe" style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:4px"></i>maclechen.top/market</div>
         <div></div>
       </div>
-      <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:8px;flex-wrap:wrap">
+      <div class="mkt-filter-row">
       <span class="mkt-filter-btn active" data-i18n="mktFilterAll">全部</span>
         <span class="mkt-filter-btn">Android</span>
         <span class="mkt-filter-btn">iOS</span>
