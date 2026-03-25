@@ -3693,10 +3693,10 @@ header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.94);backdrop-f
 .hero-tag b{color:var(--text)}
 @media(max-width:640px){.hero{padding:52px 16px 36px}.hero-title{font-size:1.9em}.hero-input{padding:12px 108px 12px 44px;font-size:.92em}.hero-sbtn{padding:0 14px;font-size:.78em}.hero-logo{width:56px;height:56px;margin-bottom:16px}}
 .filters{border-bottom:1px solid var(--border);padding:2px 20px 0;max-width:1440px;margin:0 auto}
-.frow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.04)}
+.frow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.04);min-width:0}
 .frow:first-child{border-top:none}
-.flbl{font-size:.7em;color:var(--muted);width:30px;flex-shrink:0}
-.chips{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+.flbl{font-size:.7em;color:var(--muted);width:42px;flex-shrink:0;white-space:nowrap}
+.chips{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px;flex:1;min-width:0}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex-shrink:0;padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.78em;transition:all .15s;white-space:nowrap}
 .chip.on{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.45);color:#a5b4fc;font-weight:600}
