@@ -5091,7 +5091,7 @@ function renderCards(articles){{
           <span class="ncard-src" style="color:${{nc.color}}">${{esc(a.source||'资讯')}}</span>
           <div class="ncard-dot"></div>
           <span class="ncard-cat">${{esc(a.category||'')}}</span>
-          <span class="ncard-time">${{relTime(a.published_at||a.created_at)}}</span>
+          <span class="ncard-time" data-dt="${{a.published_at||a.created_at}}">${{relTime(a.published_at||a.created_at)}}</span>
         </div>
         <div class="ncard-title">${{esc(a.title||'')}}</div>
         ${{a.summary?`<div class="ncard-summary">${{esc(a.summary)}}</div>`:''}}
@@ -5221,7 +5221,7 @@ const LANG_NEWS={{
   en:{{
     title:'Tech News',heroSub:'Latest updates from global tech, software & dev communities, auto-updated daily at 3AM',
     searchPh:'Search news title, source…',backToMarket:'Back to Market',
-    tabAll:'All',tabTech:'Tech CN',tabSoftware:'Software CN',
+    tabAll:'All',tabTech:'Tech (ZH)',tabSoftware:'Software (ZH)',
     loadMore:'Load More',noNews:'No news yet',emptyHint:'Try a different category or keyword',
     readMore:'Read More',loaded:n=>`Loaded ${{n}} articles`,
     breadMarket:'App Market',breadNews:'Tech News',
@@ -5233,6 +5233,7 @@ const LANG_NEWS={{
 let _langNews=localStorage.getItem('lang')||'zh';
 function LN(){{return LANG_NEWS[_langNews]||LANG_NEWS.zh;}}
 function applyI18nNews(){{
+  document.title=LN().title+' — AppSec AI';
   document.querySelectorAll('[data-i18n]').forEach(el=>{{
     const k=el.getAttribute('data-i18n');
     if(LN()[k]!==undefined)el.textContent=LN()[k];
@@ -5333,11 +5334,11 @@ window.addEventListener('scroll',()=>{{
     <button class="tab on" onclick="setTab('',this)"><span data-i18n="tabAll">全部</span></button>
     <button class="tab" onclick="setTab('科技',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      科技
+      <span data-i18n="tabTech">科技</span>
     </button>
     <button class="tab" onclick="setTab('软件',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      软件
+      <span data-i18n="tabSoftware">软件</span>
     </button>
     <button class="tab" onclick="setTab('Tech',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
