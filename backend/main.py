@@ -1018,6 +1018,58 @@ async def admin_datastats(_: None = Depends(_require_admin)):
     }
 
 
+@app.get("/admin/reviews")
+async def admin_list_reviews(
+    q: str = "", slug: str = "", rating: int = 0,
+    _: None = Depends(_require_admin)
+):
+    """List all reviews with user email and app name, searchable."""
+    filters = ["1=1"]
+    params: list = []
+    if q:
+        filters.append("(rv.comment LIKE ? OR u.email LIKE ?)")
+        params += [f"%{q}%", f"%{q}%"]
+    if slug:
+        filters.append("rv.slug = ?")
+        params.append(slug)
+    if rating:
+        filters.append("rv.rating = ?")
+        params.append(rating)
+    where = " AND ".join(filters)
+    with _db() as c:
+        rows = c.execute(f"""
+            SELECT rv.id, rv.slug, rv.rating, rv.comment, rv.created_at,
+                   u.email,
+                   COALESCE(NULLIF(a.display_name,''), a.app_name) AS app_name
+            FROM app_reviews rv
+            LEFT JOIN users_v2 u ON u.id = rv.user_id
+            LEFT JOIN app_releases a ON a.slug = rv.slug
+            WHERE {where}
+            ORDER BY rv.created_at DESC
+            LIMIT 500
+        """, params).fetchall()
+    return {"reviews": [dict(r) for r in rows]}
+
+
+@app.put("/admin/reviews/{review_id}")
+async def admin_update_review(review_id: int, body: dict, _: None = Depends(_require_admin)):
+    rating  = body.get("rating")
+    comment = body.get("comment")
+    if rating is not None:
+        rating = max(1, min(5, int(rating)))
+    with _db() as c:
+        row = c.execute("SELECT id FROM app_reviews WHERE id=?", (review_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "Review not found")
+        if rating is not None and comment is not None:
+            c.execute("UPDATE app_reviews SET rating=?, comment=? WHERE id=?", (rating, comment, review_id))
+        elif rating is not None:
+            c.execute("UPDATE app_reviews SET rating=? WHERE id=?", (rating, review_id))
+        elif comment is not None:
+            c.execute("UPDATE app_reviews SET comment=? WHERE id=?", (comment, review_id))
+    return {"ok": True}
+
+
 @app.delete("/admin/reviews/{review_id}")
 async def admin_delete_review(review_id: int, _: None = Depends(_require_admin)):
     with _db() as c:

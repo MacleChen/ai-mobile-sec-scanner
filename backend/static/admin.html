@@ -256,6 +256,10 @@ select.filter-sel{padding:7px 10px;border:1px solid var(--input-border);border-r
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span class="sb-label">数据统计</span>
     </a>
+    <a class="sb-item" onclick="switchPage('reviews')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="sb-label">评论管理</span>
+    </a>
 
     <div class="sb-section">系统</div>
     <a class="sb-item" onclick="switchPage('settings')" href="#">
@@ -578,9 +582,82 @@ select.filter-sel{padding:7px 10px;border:1px solid var(--input-border);border-r
         </div>
       </div>
 
+      <!-- Reviews -->
+      <div class="page" id="page-reviews">
+        <div class="page-header"><h2>评论管理</h2><p>查看、编辑、删除所有用户评论</p></div>
+        <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card"><div class="stat-icon" style="background:#ede9fe;color:#7c3aed">💬</div><div class="stat-label">总评论数</div><div class="stat-value" id="rv-total">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;color:#16a34a">⭐</div><div class="stat-label">平均评分</div><div class="stat-value" id="rv-avg">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;color:#dc2626">1⭐</div><div class="stat-label">差评数 (1-2星)</div><div class="stat-value" id="rv-bad">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#fef9c3;color:#a16207">📱</div><div class="stat-label">涉及应用数</div><div class="stat-value" id="rv-apps">—</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <input class="search-input" id="rv-search" placeholder="搜索评论内容或用户邮箱..." oninput="filterReviews()">
+            <select class="filter-sel" id="rv-rating-filter" onchange="filterReviews()">
+              <option value="">全部评分</option>
+              <option value="5">⭐⭐⭐⭐⭐ 5星</option>
+              <option value="4">⭐⭐⭐⭐ 4星</option>
+              <option value="3">⭐⭐⭐ 3星</option>
+              <option value="2">⭐⭐ 2星</option>
+              <option value="1">⭐ 1星</option>
+            </select>
+            <select class="filter-sel" id="rv-app-filter" onchange="filterReviews()">
+              <option value="">全部应用</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" onclick="loadReviews()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.05-5.56"/></svg>
+              刷新
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>用户</th><th>应用</th><th>评分</th><th>评论内容</th><th>时间</th><th>操作</th>
+              </tr></thead>
+              <tbody id="rv-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="rv-pagination"></div>
+        </div>
+        <!-- Edit modal -->
+        <div id="rv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
+          <div class="card" style="width:420px;margin:0">
+            <div class="card-title">编辑评论</div>
+            <div class="form-row">
+              <label class="form-label">用户</label>
+              <input id="rv-modal-user" class="form-input" readonly>
+            </div>
+            <div class="form-row">
+              <label class="form-label">应用</label>
+              <input id="rv-modal-app" class="form-input" readonly>
+            </div>
+            <div class="form-row">
+              <label class="form-label">评分</label>
+              <select id="rv-modal-rating" class="form-input">
+                <option value="5">⭐⭐⭐⭐⭐ 5星</option>
+                <option value="4">⭐⭐⭐⭐ 4星</option>
+                <option value="3">⭐⭐⭐ 3星</option>
+                <option value="2">⭐⭐ 2星</option>
+                <option value="1">⭐ 1星</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">评论内容</label>
+              <textarea id="rv-modal-comment" class="form-input" rows="4" style="resize:vertical"></textarea>
+            </div>
+            <div class="form-err" id="rv-modal-err"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn btn-secondary" onclick="closeReviewModal()">取消</button>
+              <button class="btn btn-primary" id="rv-modal-btn" onclick="saveReview()">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Help Docs -->
       <div class="page" id="page-helpdocs">
-        <div class="page-header"><h2>帮助文档</h2><p>系统使用说明与常见问题</p></div>
         <div class="card">
           <div class="doc-section">
             <h3>🚀 快速开始</h3>
@@ -715,7 +792,7 @@ async function doLogout() {
 const PAGE_TITLES = {
   dashboard: '仪表盘', finance: '资金管理', apps: '应用管理',
   users: '用户管理', codes: '兑换码', datastats: '数据统计',
-  settings: '账号设置', helpdocs: '帮助文档'
+  reviews: '评论管理', settings: '账号设置', helpdocs: '帮助文档'
 };
 let _currentPage = 'dashboard';
 
@@ -737,6 +814,7 @@ function switchPage(name) {
   if (name === 'users'   && !_usersLoaded)  loadUsers();
   if (name === 'codes'   && !_codesLoaded)  loadCodes();
   if (name === 'datastats' && !_dsLoaded)   loadDataStats();
+  if (name === 'reviews'   && !_rvLoaded)   loadReviews();
   if (name === 'settings') loadAdmins();
 }
 
@@ -1104,6 +1182,142 @@ async function revokeCode(code, btn) {
       filterCodes();
     } else { btn.disabled = false; btn.textContent = LA().btnRevoke; toast(d.error || LA().revokeFail); }
   } catch(e) { btn.disabled = false; btn.textContent = LA().btnRevoke; if(e.message!=='403') toast('网络错误'); }
+}
+
+// ── Reviews ────────────────────────────────────────────────
+let allReviews = [], _rvLoaded = false, _rvPage = 1;
+const RV_PER_PAGE = 20;
+let _rvEditId = null;
+
+async function loadReviews() {
+  _rvLoaded = true;
+  document.getElementById('rv-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr>';
+  try {
+    const d = await api('/admin/reviews');
+    allReviews = d.reviews || [];
+    // Stats
+    document.getElementById('rv-total').textContent = allReviews.length;
+    const avg = allReviews.length ? (allReviews.reduce((s,r)=>s+(r.rating||0),0)/allReviews.length).toFixed(1) : '—';
+    document.getElementById('rv-avg').textContent = avg;
+    document.getElementById('rv-bad').textContent = allReviews.filter(r=>r.rating<=2).length;
+    const uniqueApps = new Set(allReviews.map(r=>r.slug)).size;
+    document.getElementById('rv-apps').textContent = uniqueApps;
+    // Populate app filter
+    const appSel = document.getElementById('rv-app-filter');
+    const prevSlug = appSel.value;
+    appSel.innerHTML = '<option value="">全部应用</option>';
+    const seen = new Set();
+    allReviews.forEach(r => {
+      if (r.slug && !seen.has(r.slug)) {
+        seen.add(r.slug);
+        const opt = document.createElement('option');
+        opt.value = r.slug; opt.textContent = r.app_name || r.slug;
+        appSel.appendChild(opt);
+      }
+    });
+    if (prevSlug) appSel.value = prevSlug;
+    _rvPage = 1; filterReviews();
+  } catch(e) {
+    if (e.message !== '403')
+      document.getElementById('rv-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:20px">加载失败</td></tr>';
+  }
+}
+
+function filterReviews() {
+  const q  = (document.getElementById('rv-search').value || '').toLowerCase();
+  const rf = document.getElementById('rv-rating-filter').value;
+  const af = document.getElementById('rv-app-filter').value;
+  const rows = allReviews.filter(r => {
+    const matchQ = !q || (r.comment||'').toLowerCase().includes(q) || (r.email||'').toLowerCase().includes(q) || (r.app_name||'').toLowerCase().includes(q);
+    const matchR = !rf || String(r.rating) === rf;
+    const matchA = !af || r.slug === af;
+    return matchQ && matchR && matchA;
+  });
+  renderTablePage(rows, _rvPage, RV_PER_PAGE, 'rv-tbody', 'rv-pagination',
+    r => {
+      const stars = '⭐'.repeat(Math.max(0, Math.min(5, r.rating||0)));
+      const ratingColor = r.rating >= 4 ? '#16a34a' : r.rating >= 3 ? '#a16207' : '#dc2626';
+      return `<tr>
+        <td style="font-size:12px">
+          <div style="font-weight:500">${r.email||'—'}</div>
+        </td>
+        <td style="font-size:12px">
+          <a href="/dist/${r.slug}" target="_blank" style="color:#3b82f6;text-decoration:none">${r.app_name||r.slug||'—'}</a>
+        </td>
+        <td><span style="color:${ratingColor};font-weight:700">${r.rating}星</span> <span style="font-size:11px">${stars}</span></td>
+        <td style="max-width:220px">
+          <div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px" title="${(r.comment||'').replace(/"/g,'&quot;')}">${r.comment||'<span style=color:var(--text-sub)>（无内容）</span>'}</div>
+        </td>
+        <td style="font-size:12px;color:var(--text-sub)">${(r.created_at||'').slice(0,10)}</td>
+        <td>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-secondary btn-xs" onclick="openReviewModal(${r.id})">编辑</button>
+            <button class="btn btn-danger btn-xs" onclick="deleteReviewAdmin(${r.id},this)">删除</button>
+          </div>
+        </td>
+      </tr>`;
+    },
+    p => { _rvPage = p; filterReviews(); }
+  );
+}
+
+function openReviewModal(id) {
+  const r = allReviews.find(x => x.id === id);
+  if (!r) return;
+  _rvEditId = id;
+  document.getElementById('rv-modal-user').value    = r.email || '—';
+  document.getElementById('rv-modal-app').value     = r.app_name || r.slug || '—';
+  document.getElementById('rv-modal-rating').value  = String(r.rating || 5);
+  document.getElementById('rv-modal-comment').value = r.comment || '';
+  document.getElementById('rv-modal-err').textContent = '';
+  document.getElementById('rv-modal').style.display = 'flex';
+}
+function closeReviewModal() {
+  document.getElementById('rv-modal').style.display = 'none';
+  _rvEditId = null;
+}
+document.getElementById('rv-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeReviewModal();
+});
+
+async function saveReview() {
+  if (!_rvEditId) return;
+  const rating  = parseInt(document.getElementById('rv-modal-rating').value);
+  const comment = document.getElementById('rv-modal-comment').value.trim();
+  const err     = document.getElementById('rv-modal-err');
+  const btn     = document.getElementById('rv-modal-btn');
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    const d = await api(`/admin/reviews/${_rvEditId}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ rating, comment })
+    });
+    if (d.ok) {
+      toast('✅ 评论已更新');
+      closeReviewModal();
+      // Update local cache
+      const row = allReviews.find(x => x.id === _rvEditId);
+      if (row) { row.rating = rating; row.comment = comment; }
+      filterReviews();
+    } else { err.textContent = d.error || '保存失败'; }
+  } catch(e) { if(e.message!=='403') err.textContent = '网络错误'; }
+  btn.disabled = false; btn.textContent = '保存';
+}
+
+async function deleteReviewAdmin(id, btn) {
+  if (!confirm('确认删除此评论？此操作不可恢复。')) return;
+  const prev = btn.innerHTML; btn.disabled = true; btn.textContent = '…';
+  try {
+    const d = await api(`/admin/reviews/${id}`, { method: 'DELETE' });
+    if (d.ok) {
+      toast('已删除');
+      allReviews = allReviews.filter(r => r.id !== id);
+      document.getElementById('rv-total').textContent = allReviews.length;
+      filterReviews();
+    } else { toast(d.error || '删除失败'); btn.innerHTML = prev; btn.disabled = false; }
+  } catch(e) { btn.innerHTML = prev; btn.disabled = false; if(e.message!=='403') toast('网络错误'); }
 }
 
 // ── Data Stats ─────────────────────────────────────────────
