@@ -2738,6 +2738,7 @@ def _dist_preview_html(r: dict) -> str:
       <div class="news-grid" id="news-grid">
         <div class="ncard-sk"></div><div class="ncard-sk"></div>
         <div class="ncard-sk"></div><div class="ncard-sk"></div>
+        <div class="ncard-sk"></div><div class="ncard-sk"></div>
       </div>
     </div>
   </div>
@@ -3047,7 +3048,7 @@ def _dist_preview_html(r: dict) -> str:
 
   async function loadNews(){{
     try{{
-      const r=await fetch('/market/news?limit=4');
+      const r=await fetch('/market/news?limit=6');
       if(!r.ok) return;
       const d=await r.json();
       if(!d.news||!d.news.length) return;
