@@ -3046,6 +3046,20 @@ def _dist_preview_html(r: dict) -> str:
   const _newsph='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/></svg>';
   function esc(s){{const d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
 
+  // ── News image fallback pool (same curated set as /news page) ──
+  const _NI={{
+    '科技':['1485827404703-89b55fcc595e','1518770660439-4636190af475','1531297484001-80022131f5a1','1451187580459-43490279c0fa','1620712943543-bcc4688e7485','1581091226825-a6a9a573deb8','1519389950473-47ba0277781c','1558494949-ef010cbdcc31','1677442135703-1787eea5ce01','1550745165-9bc0b252726f','1496181133206-80ce9b88a853','1526378787940-576a539ba69d','1473163928189-364b2c4e1135','1593508512255-86ab42a8e620','1488590528505-98d2b5aba04b','1535378917042-10a22c95931a','1601132359864-c974e79890ac','1562408590-e32931084e23','1461749280684-dccba630e2f6','1526374965328-7f61d4dc18c5'],
+    '软件':['1537432376769-00f5c2f4c8d2','1555066931-4365d14bab8c','1498050108023-c5249f4df085','1504868584819-f8e8b4b6d7e3','1542831371-29b0f74f9713','1580584726412-9f39b6e5f4cc','1517180102446-f818bef035b5','1587620962725-abab7fe55159','1569012871812-f38ee64cd54c','1547658719-da2b51169166','1627398242454-45a1465c2479','1593642632559-0c6d3fc62b89','1515879218367-8466d910aaa4','1605379399642-870262d3d051','1607798748738-b15c40d33d57','1614741118887-7a4ee193a5fa','1593642702821-c8da6771f0c6','1555099962-4199c345e5dd','1571171637578-41bc2dd41cd2','1586717791821-3f44a563fa4c'],
+    'Tech':['1518770660439-4636190af475','1485827404703-89b55fcc595e','1531297484001-80022131f5a1','1607798748738-b15c40d33d57','1451187580459-43490279c0fa','1550745165-9bc0b252726f','1620712943543-bcc4688e7485','1519389950473-47ba0277781c','1581091226825-a6a9a573deb8','1593508512255-86ab42a8e620','1496181133206-80ce9b88a853','1526378787940-576a539ba69d','1488590528505-98d2b5aba04b','1535378917042-10a22c95931a','1558494949-ef010cbdcc31','1474487548417-781cb6d646b3','1468436385273-8abca6dfd8d3','1562408590-e32931084e23','1473163928189-364b2c4e1135','1601132359864-c974e79890ac'],
+    'Dev':['1461749280684-dccba630e2f6','1526374965328-7f61d4dc18c5','1555066931-4365d14bab8c','1542831371-29b0f74f9713','1504868584819-f8e8b4b6d7e3','1498050108023-c5249f4df085','1517180102446-f818bef035b5','1580580984955-93f8de7c3921','1605379399642-870262d3d051','1587620962725-abab7fe55159','1629654297299-c8506221ca97','1537432376769-00f5c2f4c8d2','1515879218367-8466d910aaa4','1571171637578-41bc2dd41cd2','1627398242454-45a1465c2479','1555099962-4199c345e5dd','1580584726412-9f39b6e5f4cc','1569012871812-f38ee64cd54c','1593642632559-0c6d3fc62b89','1614741118887-7a4ee193a5fa'],
+    'Security':['1563986768609-322da13575f3','1550751827-4bd374c3f58b','1526374965328-7f61d4dc18c5','1614064641938-3bbee52942c7','1555949963-ff9fe0c870eb','1504384764586-bb4cdc1707b0','1510511459019-5dda7724fd87','1616763355603-9755a912d6e2','1633265486498-f2dc3be4df66','1558494949-ef010cbdcc31','1548092372-0d1bd40894a3','1531482615713-2afd69097998','1590859808308-3d2d9c515b1a','1487058792275-0ad4aaf24ca7','1573164713988-8665fc963095','1601132359864-c974e79890ac','1518770660439-4636190af475','1485827404703-89b55fcc595e','1535378917042-10a22c95931a','1677442135703-1787eea5ce01'],
+  }};
+  const _NIF=['1518770660439-4636190af475','1461749280684-dccba630e2f6','1531297484001-80022131f5a1','1485827404703-89b55fcc595e','1607798748738-b15c40d33d57','1563986768609-322da13575f3','1526374965328-7f61d4dc18c5','1550751827-4bd374c3f58b','1620712943543-bcc4688e7485','1581091226825-a6a9a573deb8','1555066931-4365d14bab8c','1542831371-29b0f74f9713','1580584726412-9f39b6e5f4cc','1593508512255-86ab42a8e620','1496181133206-80ce9b88a853','1555949963-ff9fe0c870eb','1614064641938-3bbee52942c7','1519389950473-47ba0277781c','1504868584819-f8e8b4b6d7e3','1537432376769-00f5c2f4c8d2'];
+  function _niUrl(id){{return 'https://images.unsplash.com/photo-'+id+'?w=480&q=75';}}
+  function _niPool(a){{return _NI[a.category]||_NIF;}}
+  function _niSeed(a){{return (a.title||'').split('').reduce((h,c)=>(h*31+c.charCodeAt(0))&0xffff,a.id||0);}}
+  function _niFallback(a){{const p=_niPool(a);return _niUrl(p[_niSeed(a)%p.length]);}}
+
   async function loadNews(){{
     try{{
       const r=await fetch('/market/news?limit=6');
@@ -3056,10 +3070,8 @@ def _dist_preview_html(r: dict) -> str:
       g.innerHTML='';
       d.news.forEach((a,idx)=>{{
         const nc=_nc(a.category);
-        // Use article image, or fall back to a deterministic picsum photo based on article id
-        const seed=a.id||idx;
-        const fallbackImg=`https://picsum.photos/seed/${{seed}}/400/225`;
-        const imgUrl=a.image_url||fallbackImg;
+        const pool=_niPool(a), seed=_niSeed(a);
+        const imgUrl=a.image_url||_niUrl(pool[seed%pool.length]);
         const card=document.createElement('a');
         card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
         card.innerHTML=`<div class="ncard-media"><img src="${{esc(imgUrl)}}" alt="" loading="lazy"></div>`
@@ -3069,9 +3081,10 @@ def _dist_preview_html(r: dict) -> str:
           <div class="ncard-src">${{esc(a.source||'')}}</div>
         </div>`;
         const img=card.querySelector('img');
+        let _att=0;
         if(img) img.addEventListener('error',()=>{{
-          // If even picsum fails, fall back to gradient
-          if(img.src!==fallbackImg){{ img.src=fallbackImg; return; }}
+          _att++;
+          if(_att<pool.length){{img.src=_niUrl(pool[(seed+_att*7)%pool.length]);return;}}
           const m=img.parentNode;m.style.background=`linear-gradient(${{nc.grad}})`;
           m.innerHTML=`<div class="ncard-media-ph">${{_newsph}}</div>`;
         }});
