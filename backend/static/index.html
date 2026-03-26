@@ -1649,13 +1649,13 @@
           <textarea class="form-input" id="dist-desc" rows="4" style="resize:vertical;min-height:90px" placeholder="版本更新说明、功能介绍..." data-i18n-ph="distDescPh"></textarea>
         </div>
         <div class="form-field full">
-          <label class="form-label" id="dist-label-screenshots" data-i18n="distScreenshotsLabel">宣传截图 <span style="font-weight:400;color:var(--muted);font-size:.85em">(最多 6 张)</span></label>
+          <label class="form-label" id="dist-label-screenshots"><span id="dist-screenshots-label-text">宣传截图</span> <span id="dist-screenshots-max" style="font-weight:400;color:var(--muted);font-size:.85em">（最多 6 张）</span></label>
           <div class="ss-upload-grid" id="ss-upload-grid">
             <!-- JS will render preview slots here -->
           </div>
           <button type="button" class="ss-add-btn" id="ss-add-btn" onclick="document.getElementById('ss-file-input').click()">
             <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/></svg>
-            <span data-i18n="distAddScreenshot">添加截图</span>
+            <span id="dist-add-screenshot-text">添加截图</span>
           </button>
           <input type="file" id="ss-file-input" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none" onchange="handleSsUpload(this)">
         </div>
@@ -1914,7 +1914,7 @@ const LANG = {
     distLabelExpiry: '有效天数',
     distLabelMaxdl:  '最大下载次数',
     distLabelCategory:'应用分类',
-    distLabelDesc:   '备注说明',
+    distLabelDesc:   '详细描述',
     distLabelPublic: '上架到应用市场（公开展示，用户可浏览下载）',
     distSubmitText:  '上传并生成分发链接',
     distReleasesTitle:'我的分发',
@@ -1950,6 +1950,11 @@ const LANG = {
     distDescLabel: '详细描述',
     distScreenshotsLabel: '宣传截图',
     distAddScreenshot: '添加截图',
+    distNoCreditsMsg:  'Credits 不足，无法上传文件。请先购买 Credits。',
+    distBuyBtn:        '立即购买',
+    distProgressText:  '上传中…',
+    distReleasesPlaceholder: '暂无分发记录',
+    distScreenshotsMax: '（最多 6 张）',
     distSearchPh:    '搜索应用名称/包名…',
     cpwCurPh:        '输入当前密码',
     cpwNewPh:        '至少6位',
@@ -2181,6 +2186,11 @@ const LANG = {
     distDescLabel: 'Detailed Description',
     distScreenshotsLabel: 'Screenshots',
     distAddScreenshot: 'Add Screenshot',
+    distNoCreditsMsg:  'Insufficient Credits. Please purchase Credits to upload.',
+    distBuyBtn:        'Buy Now',
+    distProgressText:  'Uploading…',
+    distReleasesPlaceholder: 'No releases yet',
+    distScreenshotsMax: '(max 6)',
     distSearchPh:    'Search by name or package…',
     cpwCurPh:        'Enter current password',
     cpwNewPh:        'At least 6 characters',
@@ -2971,6 +2981,14 @@ function applyI18n() {
   setText('dist-qr-hint',       l.distQrHint);
   setText('dist-qr-copy-text',  l.distCopyLink);
   setText('dist-qr-close-btn',  l.distClose);
+  setText('dist-no-credits-msg',        l.distNoCreditsMsg);
+  setText('dist-buy-btn',               l.distBuyBtn);
+  setText('dist-progress-text',         l.distProgressText);
+  setText('dist-releases-placeholder',  l.distReleasesPlaceholder);
+  setText('dist-label-short-desc',      l.distShortDescLabel);
+  setText('dist-screenshots-label-text',l.distScreenshotsLabel);
+  setText('dist-screenshots-max',       l.distScreenshotsMax);
+  setText('dist-add-screenshot-text',   l.distAddScreenshot);
   // Redeem input placeholder
   const ri = document.getElementById('redeem-input');
   if (ri) ri.placeholder = l.redeemPlaceholder;
@@ -2981,6 +2999,7 @@ function applyI18n() {
   _ph('profile-nickname',  l.nicknamePh);
   _ph('profile-bio',       l.bioPh);
   _ph('dist-desc',         l.distDescPh);
+  _ph('dist-short-desc',   l.distShortDescPh);
   _ph('dist-search',       l.distSearchPh);
   _ph('cpw-cur',           l.cpwCurPh);
   _ph('cpw-new',           l.cpwNewPh);
