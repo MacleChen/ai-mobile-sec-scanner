@@ -816,14 +816,213 @@ async def admin_stats(_: None = Depends(_require_admin)):
             "SELECT COUNT(*) FROM codes WHERE is_revoked=0 AND uses_count < max_uses"
             " AND (expires_at IS NULL OR expires_at > datetime('now'))"
         ).fetchone()[0]
+        total_apps    = c.execute("SELECT COUNT(*) FROM app_releases WHERE is_active=1").fetchone()[0]
+        total_orders  = c.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
     return {
-        "users": users,
+        "total_users": users,
         "total_scans": total_scans,
+        "total_codes": codes_total,
+        "revoked_codes": codes_revoked,
+        "active_codes": codes_active,
+        "total_uses": code_uses,
+        "total_apps": total_apps,
+        "total_orders": total_orders,
+        # legacy keys kept for compat
+        "users": users,
         "codes_total": codes_total,
         "codes_revoked": codes_revoked,
         "codes_active": codes_active,
         "code_uses_total": code_uses,
     }
+
+
+@app.get("/admin/orders")
+async def admin_orders(_: None = Depends(_require_admin)):
+    """List all payment orders with user email."""
+    with _db() as c:
+        rows = c.execute("""
+            SELECT o.order_no, o.credits, o.amount, o.status, o.pay_method,
+                   o.created_at, o.paid_at,
+                   u.email
+            FROM orders o
+            LEFT JOIN users_v2 u ON u.id = o.user_id
+            ORDER BY o.created_at DESC
+            LIMIT 500
+        """).fetchall()
+    return {"orders": [dict(r) for r in rows]}
+
+
+@app.get("/admin/apps")
+async def admin_list_apps(_: None = Depends(_require_admin)):
+    """List all app releases with owner info."""
+    with _db() as c:
+        rows = c.execute("""
+            SELECT a.slug, a.app_name, a.display_name, a.version, a.file_type,
+                   a.platform, a.category, a.download_count, a.is_public,
+                   a.is_active, a.is_featured, a.file_size,
+                   a.icon_b64, a.created_at,
+                   u.email AS owner_email
+            FROM app_releases a
+            LEFT JOIN users_v2 u ON u.id = a.user_id
+            WHERE a.is_active = 1
+            ORDER BY a.created_at DESC
+            LIMIT 500
+        """).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        # Build small icon data-URL (skip huge b64 strings; just flag presence)
+        raw_b64 = d.pop("icon_b64", "") or ""
+        if raw_b64:
+            ext = "png"
+            if raw_b64.startswith("/9j/"): ext = "jpeg"
+            d["icon_url"] = f"data:image/{ext};base64,{raw_b64[:4096]}"
+        else:
+            d["icon_url"] = ""
+        name = d.get("display_name") or d.get("app_name") or ""
+        d["name"] = name
+        result.append(d)
+    return {"apps": result}
+
+
+@app.post("/admin/apps/{slug}/publish")
+async def admin_publish_app(slug: str, _: None = Depends(_require_admin)):
+    with _db() as c:
+        c.execute("UPDATE app_releases SET is_public=1 WHERE slug=? AND is_active=1", (slug,))
+    return {"ok": True}
+
+
+@app.post("/admin/apps/{slug}/unpublish")
+async def admin_unpublish_app(slug: str, _: None = Depends(_require_admin)):
+    with _db() as c:
+        c.execute("UPDATE app_releases SET is_public=0 WHERE slug=? AND is_active=1", (slug,))
+    return {"ok": True}
+
+
+@app.delete("/admin/apps/{slug}")
+async def admin_delete_app(slug: str, _: None = Depends(_require_admin)):
+    with _db() as c:
+        row = c.execute("SELECT file_type FROM app_releases WHERE slug=? AND is_active=1", (slug,)).fetchone()
+        if not row:
+            raise HTTPException(404, "App not found")
+        c.execute("UPDATE app_releases SET is_active=0 WHERE slug=?", (slug,))
+    # Try removing file (non-fatal)
+    try:
+        fpath = Path("/app/data/releases") / f"{slug}.{row['file_type']}"
+        if fpath.exists():
+            fpath.unlink()
+    except Exception:
+        pass
+    return {"ok": True}
+
+
+@app.get("/admin/users")
+async def admin_list_users(_: None = Depends(_require_admin)):
+    """List all registered users."""
+    with _db() as c:
+        # Add is_banned column if missing
+        try:
+            c.execute("ALTER TABLE users_v2 ADD COLUMN is_banned INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        rows = c.execute("""
+            SELECT id, email, nickname, credits, total_scans,
+                   is_verified, is_banned, created_at
+            FROM users_v2
+            ORDER BY created_at DESC
+            LIMIT 1000
+        """).fetchall()
+    return {"users": [dict(r) for r in rows]}
+
+
+@app.post("/admin/users/credits")
+async def admin_adjust_credits(body: dict, _: None = Depends(_require_admin)):
+    email = body.get("email", "").strip()
+    delta = body.get("delta", 0)
+    if not email:
+        raise HTTPException(400, "email required")
+    try:
+        delta = int(delta)
+    except (ValueError, TypeError):
+        raise HTTPException(400, "delta must be integer")
+    with _db() as c:
+        row = c.execute("SELECT id, credits FROM users_v2 WHERE email=?", (email,)).fetchone()
+        if not row:
+            raise HTTPException(404, "User not found")
+        new_credits = max(0, row["credits"] + delta)
+        c.execute("UPDATE users_v2 SET credits=?, updated_at=datetime('now') WHERE email=?", (new_credits, email))
+    return {"ok": True, "new_credits": new_credits}
+
+
+@app.post("/admin/users/ban")
+async def admin_toggle_ban(body: dict, _: None = Depends(_require_admin)):
+    email = body.get("email", "").strip()
+    ban   = bool(body.get("ban", True))
+    if not email:
+        raise HTTPException(400, "email required")
+    with _db() as c:
+        try:
+            c.execute("ALTER TABLE users_v2 ADD COLUMN is_banned INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        c.execute("UPDATE users_v2 SET is_banned=? WHERE email=?", (1 if ban else 0, email))
+    return {"ok": True}
+
+
+@app.get("/admin/datastats")
+async def admin_datastats(_: None = Depends(_require_admin)):
+    """Aggregated download / review / like stats."""
+    with _db() as c:
+        total_dl      = c.execute("SELECT COALESCE(SUM(download_count),0) FROM app_releases WHERE is_active=1").fetchone()[0]
+        total_reviews = c.execute("SELECT COUNT(*) FROM app_reviews").fetchone()[0]
+        total_likes   = c.execute("SELECT COUNT(*) FROM app_likes").fetchone()[0]
+        pub_apps      = c.execute("SELECT COUNT(*) FROM app_releases WHERE is_active=1 AND is_public=1").fetchone()[0]
+        top_apps = c.execute("""
+            SELECT a.slug, COALESCE(NULLIF(a.display_name,''), a.app_name) AS name,
+                   a.platform, a.download_count, a.icon_b64,
+                   (SELECT COUNT(*) FROM app_reviews r WHERE r.slug=a.slug) AS review_count,
+                   (SELECT COUNT(*) FROM app_likes   l WHERE l.slug=a.slug) AS like_count
+            FROM app_releases a
+            WHERE a.is_active=1
+            ORDER BY a.download_count DESC
+            LIMIT 10
+        """).fetchall()
+        recent_reviews = c.execute("""
+            SELECT rv.id, rv.slug, rv.rating, rv.comment, rv.created_at,
+                   u.email,
+                   COALESCE(NULLIF(a.display_name,''), a.app_name) AS app_name
+            FROM app_reviews rv
+            LEFT JOIN users_v2 u ON u.id = rv.user_id
+            LEFT JOIN app_releases a ON a.slug = rv.slug
+            ORDER BY rv.created_at DESC
+            LIMIT 50
+        """).fetchall()
+    def _icon_url(row):
+        b64 = row.get("icon_b64") or ""
+        if not b64: return ""
+        ext = "jpeg" if b64.startswith("/9j/") else "png"
+        return f"data:image/{ext};base64,{b64[:4096]}"
+    top = []
+    for r in top_apps:
+        d = dict(r)
+        d["icon_url"] = _icon_url(d)
+        d.pop("icon_b64", None)
+        top.append(d)
+    return {
+        "total_downloads":  total_dl,
+        "total_reviews":    total_reviews,
+        "total_likes":      total_likes,
+        "published_apps":   pub_apps,
+        "top_apps":         top,
+        "recent_reviews":   [dict(r) for r in recent_reviews],
+    }
+
+
+@app.delete("/admin/reviews/{review_id}")
+async def admin_delete_review(review_id: int, _: None = Depends(_require_admin)):
+    with _db() as c:
+        c.execute("DELETE FROM app_reviews WHERE id=?", (review_id,))
+    return {"ok": True}
 
 
 @app.post("/admin/releases/{slug}/reextract")
