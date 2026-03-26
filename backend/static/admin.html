@@ -1,800 +1,1095 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>管理后台 · AI 移动安全扫描器</title>
-  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-  <script>(()=>{const t=localStorage.getItem('appsec-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})()</script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Scanner — Admin</title>
+<script>
+(()=>{
+  const t = localStorage.getItem('appsec-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sidebar-w:240px;
+  --sidebar-bg:#0f172a;
+  --sidebar-hover:rgba(255,255,255,.06);
+  --sidebar-active:#3b82f6;
+  --sidebar-text:rgba(255,255,255,.65);
+  --sidebar-text-active:#fff;
+  --topbar-h:60px;
+  --topbar-bg:#fff;
+  --topbar-border:#e2e8f0;
+  --body-bg:#f1f5f9;
+  --card-bg:#fff;
+  --card-border:#e2e8f0;
+  --text-main:#0f172a;
+  --text-sub:#64748b;
+  --input-bg:#f8fafc;
+  --input-border:#cbd5e1;
+  --badge-active-bg:#dcfce7;--badge-active-c:#16a34a;
+  --badge-used-bg:#fef9c3;--badge-used-c:#a16207;
+  --badge-expired-bg:#fee2e2;--badge-expired-c:#dc2626;
+  --badge-revoked-bg:#f1f5f9;--badge-revoked-c:#64748b;
+}
+[data-theme=dark]{
+  --topbar-bg:#1e293b;--topbar-border:#334155;
+  --body-bg:#0f172a;
+  --card-bg:#1e293b;--card-border:#334155;
+  --text-main:#f1f5f9;--text-sub:#94a3b8;
+  --input-bg:#0f172a;--input-border:#334155;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:var(--body-bg);color:var(--text-main)}
 
-    /* ── Login ───────────────────────────────────── */
-    .login-wrap { display: flex; align-items: center; justify-content: center;
-                  min-height: 100vh; padding: 20px; }
-    .login-card { background: white; border-radius: 16px; padding: 40px 36px;
-                  width: 100%; max-width: 380px;
-                  box-shadow: 0 8px 32px rgba(0,0,0,.1); }
-    .login-logo  { display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
-    .login-title { text-align: center; font-size: 1.25em; font-weight: 800; margin-bottom: 2px; }
-    .login-sub   { text-align: center; font-size: .84em; color: #64748b; margin-bottom: 28px; }
+/* ── Layout ── */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--sidebar-bg);display:flex;flex-direction:column;height:100vh;overflow-y:auto;flex-shrink:0;transition:width .2s}
+#sidebar.collapsed{width:60px;min-width:60px}
+#main-wrap{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+#topbar{height:var(--topbar-h);min-height:var(--topbar-h);background:var(--topbar-bg);border-bottom:1px solid var(--topbar-border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+#content-area{flex:1;overflow-y:auto;padding:24px}
 
-    /* ── Form shared ────────────────────────────── */
-    .field { margin-bottom: 14px; }
-    .field label { display: block; font-size: .78em; font-weight: 700; color: #475569;
-                   margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
-    .field input, .field select, .field textarea {
-      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 8px;
-      padding: 9px 12px; font-size: .92em; outline: none;
-      transition: border-color .15s; background: white; color: #1e293b; }
-    .field input:focus, .field select:focus { border-color: #2563eb; }
-    .field-hint { font-size: .74em; color: #94a3b8; margin-top: 4px; }
-    .err-msg { color: #dc2626; font-size: .82em; margin-top: 8px; min-height: 18px; }
+/* ── Sidebar ── */
+.sb-logo{padding:20px 16px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0}
+.sb-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-logo-text{color:#fff;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden}
+.sb-logo-text small{display:block;color:rgba(255,255,255,.45);font-size:10px;font-weight:400;margin-top:1px}
+.sb-section{padding:12px 8px 4px;font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.3);text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:1px 6px;border-radius:8px;cursor:pointer;color:var(--sidebar-text);transition:background .15s,color .15s;white-space:nowrap;overflow:hidden;text-decoration:none}
+.sb-item:hover{background:var(--sidebar-hover);color:#fff}
+.sb-item.active{background:var(--sidebar-active);color:var(--sidebar-text-active)}
+.sb-item .sb-icon{width:18px;height:18px;flex-shrink:0;opacity:.8}
+.sb-item.active .sb-icon{opacity:1}
+.sb-label{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden}
+.sb-bottom{margin-top:auto;border-top:1px solid rgba(255,255,255,.07);padding:10px 6px}
 
-    /* ── Buttons ────────────────────────────────── */
-    .btn { display: inline-flex; align-items: center; justify-content: center;
-           padding: 9px 18px; background: #2563eb; color: white; border: none;
-           border-radius: 8px; font-size: .9em; font-weight: 600; cursor: pointer;
-           transition: background .15s; white-space: nowrap; }
-    .btn:hover   { background: #1d4ed8; }
-    .btn:disabled { background: #93c5fd; cursor: not-allowed; }
-    .btn-full  { width: 100%; }
-    .btn-sm    { padding: 5px 12px; font-size: .8em; }
-    .btn-ghost { background: transparent; color: #64748b; border: 1.5px solid #e2e8f0; }
-    .btn-ghost:hover { background: #f8fafc; }
-    .btn-outline { background: transparent; color: #2563eb; border: 1.5px solid #2563eb; }
-    .btn-outline:hover { background: #eff6ff; }
-    .btn-danger { background: #ef4444; }
-    .btn-danger:hover { background: #dc2626; }
+/* ── Topbar ── */
+#topbar .topbar-left{display:flex;align-items:center;gap:10px}
+#topbar .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text-main)}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+.icon-btn{width:34px;height:34px;border:none;background:transparent;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-sub);transition:background .15s}
+.icon-btn:hover{background:var(--input-bg)}
+.lang-toggle{border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-main);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
+.lang-toggle:hover{background:var(--input-bg)}
 
-    /* ── Top nav ────────────────────────────────── */
-    nav.topnav { background: rgba(5,11,24,.6); color: white; display: flex; align-items: center;
-                 padding: 0 24px; height: 54px; gap: 16px;
-                 position: sticky; top: 0; z-index: 100;
-                 backdrop-filter: blur(28px) saturate(180%);
-                 -webkit-backdrop-filter: blur(28px) saturate(180%);
-                 border-bottom: 1px solid rgba(255,255,255,.07);
-                 box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 8px 32px rgba(0,0,0,.18); }
-    [data-theme=light] nav.topnav { background: rgba(255,255,255,.65)!important; color: #0f172a!important;
-                 border-bottom-color: rgba(0,0,0,.06)!important;
-                 box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.06)!important; }
-    [data-theme=light] nav.topnav .nav-badge { background: rgba(0,0,0,.07); color: #475569; }
-    [data-theme=light] nav.topnav .nav-logout { background: rgba(0,0,0,.06); color: #334155; border: 1px solid rgba(0,0,0,.08); }
-    [data-theme=light] nav.topnav .nav-logout:hover { background: rgba(0,0,0,.1); }
-    .nav-brand { font-weight: 800; font-size: 1em; flex: 1;
-                 display: flex; align-items: center; gap: 8px; }
-    .nav-badge { background: rgba(255,255,255,.12); border-radius: 4px;
-                 padding: 2px 8px; font-size: .72em; font-weight: 600;
-                 color: rgba(255,255,255,.7); }
-    .nav-logout { padding: 5px 14px; background: rgba(255,255,255,.1); border: none;
-                  color: rgba(255,255,255,.85); border-radius: 6px; cursor: pointer;
-                  font-size: .82em; transition: background .15s; }
-    .nav-logout:hover { background: rgba(255,255,255,.2); }
+/* ── Pages ── */
+.page{display:none}
+.page.active{display:block}
+.page-header{margin-bottom:20px}
+.page-header h2{font-size:20px;font-weight:700;color:var(--text-main)}
+.page-header p{font-size:13px;color:var(--text-sub);margin-top:4px}
 
-    /* ── Tabs ────────────────────────────────────── */
-    .tabs-bar { background: white; border-bottom: 1px solid #e2e8f0;
-                padding: 0 24px; display: flex; gap: 0; overflow-x: auto; }
-    .tab-btn { padding: 14px 20px; font-size: .88em; font-weight: 500; color: #64748b;
-               cursor: pointer; border: none; background: none;
-               border-bottom: 2.5px solid transparent; margin-bottom: -1px;
-               transition: all .15s; white-space: nowrap; }
-    .tab-btn:hover  { color: #2563eb; }
-    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+/* ── Cards ── */
+.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--text-main);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title .ct-icon{width:20px;height:20px;background:rgba(59,130,246,.12);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:12px}
 
-    /* ── Main content ───────────────────────────── */
-    .content { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
-    .hidden  { display: none !important; }
+/* ── Stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:18px 20px}
+.stat-label{font-size:12px;color:var(--text-sub);margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:700;color:var(--text-main);line-height:1}
+.stat-hint{font-size:11px;color:var(--text-sub);margin-top:4px}
+.stat-icon{float:right;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:-2px}
 
-    /* ── Stat cards ─────────────────────────────── */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-                  gap: 14px; margin-bottom: 20px; }
-    .stat-card  { background: white; border-radius: 12px; padding: 20px 22px;
-                  box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-    .stat-label { font-size: .72em; font-weight: 700; color: #94a3b8;
-                  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
-    .stat-val   { font-size: 2em; font-weight: 800; color: #1e293b; line-height: 1; }
-    .stat-sub   { font-size: .74em; color: #64748b; margin-top: 4px; }
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--card-border)}
+table{width:100%;border-collapse:collapse}
+th{background:#f8fafc;text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--text-sub);white-space:nowrap;border-bottom:1px solid var(--card-border)}
+[data-theme=dark] th{background:#0f172a}
+td{padding:11px 14px;font-size:13px;color:var(--text-main);border-bottom:1px solid var(--card-border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(59,130,246,.03)}
 
-    /* ── Cards ───────────────────────────────────── */
-    .card       { background: white; border-radius: 12px; padding: 24px;
-                  box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-    .card-title { font-size: 1em; font-weight: 700; margin-bottom: 20px;
-                  display: flex; align-items: center; justify-content: space-between; }
-    .card-title span { font-size: .78em; font-weight: 400; color: #64748b; }
+/* ── Forms ── */
+.form-row{margin-bottom:14px}
+label.form-label{display:block;font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:5px}
+input.form-input,select.form-input,textarea.form-input{width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;color:var(--text-main);font-size:13px;outline:none;transition:border-color .15s}
+input.form-input:focus,select.form-input:focus,textarea.form-input:focus{border-color:#3b82f6}
+.form-hint{font-size:11px;color:var(--text-sub);margin-top:4px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-err{font-size:12px;color:#dc2626;margin-top:6px;min-height:16px}
 
-    /* ── Generate layout ────────────────────────── */
-    .gen-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 720px) { .gen-layout { grid-template-columns: 1fr; } }
-    .form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
-    .form-grid .full { grid-column: 1 / -1; }
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,background .15s}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover:not(:disabled){background:#2563eb}
+.btn-secondary{background:var(--input-bg);color:var(--text-main);border:1px solid var(--input-border)}.btn-secondary:hover:not(:disabled){background:var(--card-border)}
+.btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover:not(:disabled){background:#fecaca}
+.btn-success{background:#dcfce7;color:#16a34a}.btn-success:hover:not(:disabled){background:#bbf7d0}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
 
-    /* ── Result area ────────────────────────────── */
-    .result-area { background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px;
-                   padding: 14px; min-height: 120px; max-height: 340px; overflow-y: auto; }
-    .result-empty { color: #94a3b8; font-size: .88em; text-align: center; padding: 28px 0; }
-    .code-item  { display: flex; align-items: center; gap: 8px; padding: 6px 0;
-                  border-bottom: 1px solid #e2e8f0; }
-    .code-item:last-child { border-bottom: none; }
-    .code-text  { font-family: 'Courier New', monospace; font-weight: 700;
-                  font-size: .93em; color: #1e293b; flex: 1; letter-spacing: .06em; }
-    .copy-btn   { padding: 3px 10px; cursor: pointer; background: #e2e8f0; border: none;
-                  border-radius: 4px; color: #475569; font-size: .75em; }
-    .copy-btn:hover  { background: #cbd5e1; }
-    .copy-btn.copied { background: #dcfce7; color: #16a34a; }
-    .result-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-active{background:var(--badge-active-bg);color:var(--badge-active-c)}
+.badge-used{background:var(--badge-used-bg);color:var(--badge-used-c)}
+.badge-expired{background:var(--badge-expired-bg);color:var(--badge-expired-c)}
+.badge-revoked{background:var(--badge-revoked-bg);color:var(--badge-revoked-c)}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-purple{background:#ede9fe;color:#6d28d9}
+[data-theme=dark] .badge-active{background:rgba(22,163,74,.2);color:#4ade80}
+[data-theme=dark] .badge-used{background:rgba(161,98,7,.2);color:#fbbf24}
+[data-theme=dark] .badge-expired{background:rgba(220,38,38,.2);color:#f87171}
+[data-theme=dark] .badge-revoked{background:rgba(100,116,139,.15);color:#94a3b8}
+[data-theme=dark] .badge-blue{background:rgba(29,78,216,.2);color:#60a5fa}
+[data-theme=dark] .badge-purple{background:rgba(109,40,217,.2);color:#a78bfa}
 
-    /* ── Table ───────────────────────────────────── */
-    .table-toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
-    .search-input  { flex: 1; min-width: 180px; border: 1.5px solid #e2e8f0;
-                     border-radius: 8px; padding: 7px 12px; font-size: .87em; outline: none; }
-    .search-input:focus { border-color: #2563eb; }
-    .filter-sel    { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 7px 10px;
-                     font-size: .87em; outline: none; cursor: pointer; background: white; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: .84em; }
-    th    { text-align: left; padding: 9px 12px; background: #f8fafc;
-            font-weight: 700; font-size: .74em; text-transform: uppercase;
-            letter-spacing: .05em; color: #64748b; border-bottom: 1px solid #e2e8f0;
-            white-space: nowrap; }
-    td    { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fafbfc; }
-    .code-cell { font-family: 'Courier New', monospace; font-weight: 700;
-                 letter-spacing: .05em; font-size: .9em; color: #1e293b; }
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar .spacer{flex:1}
+.search-input{padding:7px 12px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;min-width:200px}
+.search-input:focus{border-color:#3b82f6}
+select.filter-sel{padding:7px 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;cursor:pointer}
 
-    /* ── Status badges ───────────────────────────── */
-    .badge         { display: inline-block; padding: 2px 8px; border-radius: 4px;
-                     font-size: .74em; font-weight: 700; }
-    .badge-active  { background: #dcfce7; color: #15803d; }
-    .badge-used    { background: #fef3c7; color: #b45309; }
-    .badge-expired { background: #fee2e2; color: #dc2626; }
-    .badge-revoked { background: #f1f5f9; color: #94a3b8; }
+/* ── Pagination ── */
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:14px;font-size:13px;color:var(--text-sub)}
+.pg-btn{padding:5px 12px;border:1px solid var(--card-border);border-radius:6px;background:var(--card-bg);color:var(--text-main);cursor:pointer;font-size:12px}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
 
-    /* ── Pagination ─────────────────────────────── */
-    .pagination { display: flex; align-items: center; gap: 8px; margin-top: 14px;
-                  justify-content: flex-end; font-size: .84em; color: #64748b;
-                  flex-wrap: wrap; }
-    .page-btn { padding: 5px 12px; border: 1.5px solid #e2e8f0; border-radius: 6px;
-                cursor: pointer; background: white; font-size: .84em; }
-    .page-btn:hover    { background: #f1f5f9; }
-    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+/* ── Divider ── */
+.divider{height:1px;background:var(--card-border);margin:16px 0}
 
-    /* ── Toast ──────────────────────────────────── */
-    .toast { position: fixed; top: 50%; left: 50%;
-             transform: translate(-50%, -50%) scale(.95);
-             background: rgba(15,23,42,.92); border: 1px solid rgba(255,255,255,.1);
-             color: #f1f5f9; backdrop-filter: blur(16px) saturate(180%);
-             -webkit-backdrop-filter: blur(16px) saturate(180%);
-             padding: 12px 28px; border-radius: 40px; font-size: .87em; font-weight: 600;
-             box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.2);
-             z-index: 9999; pointer-events: none; white-space: nowrap;
-             opacity: 0; transition: opacity .25s, transform .25s; }
-    .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    [data-theme=light] .toast { background: rgba(255,255,255,.92); border-color: rgba(0,0,0,.1);
-             color: #0f172a; box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.07); }
+/* ── Account row ── */
+.acct-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--card-border)}
+.acct-row:last-child{border-bottom:none}
+.acct-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.acct-info{flex:1;min-width:0}
+.acct-name{font-size:13px;font-weight:600;color:var(--text-main)}
+.acct-meta{font-size:11px;color:var(--text-sub);margin-top:2px}
+.badge-super{background:#ede9fe;color:#6d28d9;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:6px}
+[data-theme=dark] .badge-super{background:rgba(109,40,217,.25);color:#a78bfa}
 
-    /* ── Misc ───────────────────────────────────── */
-    .refresh-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+/* ── Code result area ── */
+.result-area{background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:12px;min-height:80px;font-family:monospace;font-size:12px;color:var(--text-main);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto}
+.result-placeholder{color:var(--text-sub);font-size:12px;font-family:inherit}
 
-    /* ── Nav user ───────────────────────────────── */
-    .nav-user { display: flex; align-items: center; gap: 9px; margin-right: 6px; }
-    .nav-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .8em; font-weight: 800; color: white; flex-shrink: 0;
-      text-transform: uppercase; letter-spacing: .02em;
-    }
-    .nav-uname { font-size: .84em; color: rgba(255,255,255,.85);
-                 max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ── Toast ── */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.1);color:#f1f5f9;backdrop-filter:blur(16px);padding:10px 24px;border-radius:40px;font-size:13px;font-weight:500;opacity:0;transition:opacity .22s,transform .22s;z-index:9999;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+[data-theme=light] .toast{background:rgba(15,23,42,.88);color:#f1f5f9}
 
-    /* ── Settings layout ────────────────────────── */
-    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 780px) { .settings-grid { grid-template-columns: 1fr; } }
-    .settings-grid .full-col { grid-column: 1 / -1; }
+/* ── Login overlay ── */
+#login-screen{position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:36px 32px;width:340px;max-width:90vw}
+.login-box h2{font-size:20px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.login-box p{font-size:13px;color:#94a3b8;margin-bottom:24px}
+.login-box .form-label{color:#94a3b8}
+.login-box .form-input{background:#0f172a;border-color:#334155;color:#f1f5f9}
+.login-box .form-input:focus{border-color:#3b82f6}
+.login-err{font-size:12px;color:#f87171;min-height:16px;margin-top:-8px;margin-bottom:10px}
 
-    /* ── Account table ──────────────────────────── */
-    .acct-row { display: flex; align-items: center; gap: 10px; padding: 10px 0;
-                border-bottom: 1px solid #f1f5f9; }
-    .acct-row:last-child { border-bottom: none; }
-    .acct-avatar { width: 36px; height: 36px; border-radius: 50%;
-                   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-                   display: flex; align-items: center; justify-content: center;
-                   font-size: .8em; font-weight: 800; color: white;
-                   text-transform: uppercase; flex-shrink: 0; }
-    .acct-info { flex: 1; min-width: 0; }
-    .acct-name { font-weight: 700; font-size: .9em; }
-    .acct-meta { font-size: .74em; color: #94a3b8; margin-top: 2px; }
-    .badge-super { background: #fef3c7; color: #b45309; padding: 1px 7px;
-                   border-radius: 4px; font-size: .7em; font-weight: 700; margin-left: 6px; }
+/* ── Help docs ── */
+.doc-section{margin-bottom:24px}
+.doc-section h3{font-size:15px;font-weight:700;color:var(--text-main);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.doc-section p,.doc-section li{font-size:13px;color:var(--text-sub);line-height:1.7}
+.doc-section ul,.doc-section ol{padding-left:18px}
+.doc-section code{background:var(--input-bg);border:1px solid var(--card-border);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:12px;color:var(--text-main)}
 
-    /* ── Theme toggle ────────────────────────────── */
-    .theme-btn { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 8px;
-                 width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center;
-                 justify-content: center; color: rgba(255,255,255,.7); transition: all .2s; flex-shrink: 0; }
-    .theme-btn:hover { background: rgba(255,255,255,.2); color: white; }
+/* ── Charts placeholder ── */
+.chart-placeholder{height:140px;background:var(--input-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-sub);font-size:13px;border:1px dashed var(--card-border)}
 
-    /* ── Dark mode ───────────────────────────────── */
-    [data-theme=dark] body { background: #0f172a; color: #e2e8f0; }
-    [data-theme=dark] .login-card { background: #1e293b; box-shadow: 0 8px 32px rgba(0,0,0,.5); }
-    [data-theme=dark] .login-title { color: #f1f5f9; }
-    [data-theme=dark] .login-sub { color: #64748b; }
-    [data-theme=dark] .field label { color: #94a3b8; }
-    [data-theme=dark] .field input, [data-theme=dark] .field select, [data-theme=dark] .field textarea {
-      background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: #e2e8f0; }
-    [data-theme=dark] .field input:focus, [data-theme=dark] .field select:focus { border-color: #3b82f6; }
-    [data-theme=dark] .field-hint { color: #475569; }
-    [data-theme=dark] .err-msg { color: #f87171; }
-    [data-theme=dark] .btn-ghost { background: transparent; color: #94a3b8; border-color: rgba(255,255,255,.15); }
-    [data-theme=dark] .btn-ghost:hover { background: rgba(255,255,255,.06); }
-    [data-theme=dark] .btn-outline { background: transparent; color: #60a5fa; border-color: rgba(59,130,246,.5); }
-    [data-theme=dark] .btn-outline:hover { background: rgba(59,130,246,.1); }
-    [data-theme=dark] .tabs-bar { background: #1e293b; border-bottom-color: rgba(255,255,255,.08); }
-    [data-theme=dark] .tab-btn { color: #64748b; }
-    [data-theme=dark] .tab-btn:hover { color: #60a5fa; }
-    [data-theme=dark] .tab-btn.active { color: #60a5fa; border-bottom-color: #60a5fa; }
-    [data-theme=dark] .stat-card { background: #1e293b; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
-    [data-theme=dark] .stat-label { color: #64748b; }
-    [data-theme=dark] .stat-val { color: #f1f5f9; }
-    [data-theme=dark] .stat-sub { color: #475569; }
-    [data-theme=dark] .card { background: #1e293b; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
-    [data-theme=dark] .card-title { color: #f1f5f9; }
-    [data-theme=dark] .card-title span { color: #64748b; }
-    [data-theme=dark] .result-area { background: #0f172a; border-color: rgba(255,255,255,.12); }
-    [data-theme=dark] .result-empty { color: #475569; }
-    [data-theme=dark] .code-item { border-bottom-color: rgba(255,255,255,.08); }
-    [data-theme=dark] .code-text { color: #e2e8f0; }
-    [data-theme=dark] .copy-btn { background: rgba(255,255,255,.1); color: #94a3b8; }
-    [data-theme=dark] .copy-btn:hover { background: rgba(255,255,255,.16); }
-    [data-theme=dark] .copy-btn.copied { background: rgba(16,185,129,.2); color: #34d399; }
-    [data-theme=dark] .search-input { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: #e2e8f0; }
-    [data-theme=dark] .search-input:focus { border-color: #3b82f6; }
-    [data-theme=dark] .filter-sel { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: #e2e8f0; }
-    [data-theme=dark] th { background: rgba(255,255,255,.04); color: #64748b; border-bottom-color: rgba(255,255,255,.08); }
-    [data-theme=dark] td { border-bottom-color: rgba(255,255,255,.06); color: #e2e8f0; }
-    [data-theme=dark] tr:hover td { background: rgba(255,255,255,.03); }
-    [data-theme=dark] .code-cell { color: #e2e8f0; }
-    [data-theme=dark] .page-btn { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: #94a3b8; }
-    [data-theme=dark] .page-btn:hover { background: rgba(255,255,255,.1); }
-    [data-theme=dark] .acct-row { border-bottom-color: rgba(255,255,255,.06); }
-    [data-theme=dark] .theme-btn { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
-    [data-theme=light] .theme-btn { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.12); color: #64748b; }
-    [data-theme=light] .theme-btn:hover { background: rgba(0,0,0,.08); color: #1e293b; }
-
-    /* ── Lang toggle ─────────────────────────────── */
-    .lang-toggle { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 8px;
-                   height: 30px; padding: 0 10px; cursor: pointer; font-size: .78em; font-weight: 700;
-                   color: rgba(255,255,255,.8); transition: all .2s; flex-shrink: 0; white-space: nowrap; }
-    .lang-toggle:hover { background: rgba(255,255,255,.2); }
-    [data-theme=light] .lang-toggle { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.12); color: #64748b; }
-    [data-theme=light] .lang-toggle:hover { background: rgba(0,0,0,.08); }
-  </style>
+/* ── Responsive ── */
+@media(max-width:768px){
+  #sidebar{position:fixed;left:-240px;z-index:200;transition:left .2s}
+  #sidebar.mobile-open{left:0}
+  .form-grid,.form-grid-3{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════ LOGIN ══ -->
-<div class="login-wrap" id="login-screen">
-  <div class="login-card">
-    <div class="login-logo"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><defs><linearGradient id="alg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs><rect width="32" height="32" rx="7" fill="url(#alg)"/><path d="M16 5.5 L25 9.5 L25 18 C25 23.5 21.5 27.5 16 29 C10.5 27.5 7 23.5 7 18 L7 9.5 Z" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/><rect x="10" y="17" width="12" height="1.5" rx="0.75" fill="#22d3ee"/></svg></div>
-    <div class="login-title" data-i18n="loginTitle">管理后台</div>
-    <div class="login-sub">AI 移动安全扫描器</div>
-    <div class="field">
-      <label data-i18n="loginLabelUser">用户名</label>
-      <input type="text" id="login-user" autocomplete="username" value="admin">
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>🛡️ AI Scanner</h2>
+    <p id="login-subtitle">管理后台登录</p>
+    <div class="form-row">
+      <label class="form-label" id="login-label-user">用户名</label>
+      <input id="login-user" class="form-input" type="text" autocomplete="username" placeholder="admin" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
-    <div class="field">
-      <label data-i18n="loginLabelPass">密码</label>
-      <input type="password" id="login-pass" autocomplete="current-password"
-             placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="form-row">
+      <label class="form-label" id="login-label-pass">密码</label>
+      <input id="login-pass" class="form-input" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <div class="err-msg" id="login-err"></div>
-    <button class="btn btn-full" id="login-btn" style="margin-top:6px" onclick="doLogin()" data-i18n="btnLogin">
-      登录
-    </button>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn btn-primary" style="width:100%" id="login-btn" onclick="doLogin()">登录</button>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ PANEL ══ -->
-<div id="admin-panel" class="hidden">
+<!-- App shell -->
+<div id="app" style="display:none">
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🛡️</div>
+      <div class="sb-logo-text">AI Scanner<small id="sb-badge">管理后台</small></div>
+    </div>
 
-  <!-- Top nav -->
-  <nav class="topnav">
-    <div class="nav-brand" style="display:flex;align-items:center;gap:7px">
-      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px"><path d="M10 2 L17.5 6 L17.5 12 C17.5 16 14 19 10 20 C6 19 2.5 16 2.5 12 L2.5 6 Z" fill="#6366f1"/><rect x="5.5" y="11.5" width="9" height="1.2" rx="0.6" fill="#22d3ee"/></svg>
-      AI Scanner
-      <span class="nav-badge" data-i18n="adminBadge">管理后台</span>
+    <div class="sb-section">主要</div>
+    <a class="sb-item active" onclick="switchPage('dashboard')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="sb-label">仪表盘</span>
+    </a>
+    <a class="sb-item" onclick="switchPage('finance')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span class="sb-label">资金管理</span>
+    </a>
+    <a class="sb-item" onclick="switchPage('apps')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/></svg>
+      <span class="sb-label">应用管理</span>
+    </a>
+    <a class="sb-item" onclick="switchPage('users')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="sb-label">用户管理</span>
+    </a>
+
+    <div class="sb-section">运营</div>
+    <a class="sb-item" onclick="switchPage('codes')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>
+      <span class="sb-label">兑换码</span>
+    </a>
+    <a class="sb-item" onclick="switchPage('datastats')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sb-label">数据统计</span>
+    </a>
+
+    <div class="sb-section">系统</div>
+    <a class="sb-item" onclick="switchPage('settings')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      <span class="sb-label">账号设置</span>
+    </a>
+    <a class="sb-item" onclick="switchPage('helpdocs')" href="#">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="sb-label">帮助文档</span>
+    </a>
+
+    <div class="sb-bottom">
+      <a class="sb-item" onclick="doLogout()" href="#">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="sb-label" id="sb-logout">退出登录</span>
+      </a>
     </div>
-    <div class="nav-user">
-      <div class="nav-avatar" id="nav-avatar">A</div>
-      <span class="nav-uname" id="nav-uname">admin</span>
-    </div>
-    <button class="nav-logout" data-i18n="logout" onclick="doLogout()">退出登录</button>
-    <button class="theme-btn" id="theme-btn-admin" onclick="_toggleTheme()" title="切换主题" style="margin-left:8px"></button>
-    <button class="lang-toggle" id="lang-btn-admin" onclick="toggleLangPage()" style="margin-left:4px">EN</button>
   </nav>
 
-  <!-- Tab bar -->
-  <div class="tabs-bar">
-    <button class="tab-btn active" onclick="switchTab('stats',   this)"><i data-lucide="bar-chart-2" style="width:14px;height:14px"></i> <span data-i18n="tabStats">概览</span></button>
-    <button class="tab-btn"        onclick="switchTab('generate', this)"><i data-lucide="key-round"  style="width:14px;height:14px"></i> <span data-i18n="tabGenerate">生成兑换码</span></button>
-    <button class="tab-btn"        onclick="switchTab('codes',   this)"><i data-lucide="list"        style="width:14px;height:14px"></i> <span data-i18n="tabCodes">兑换码管理</span></button>
-    <button class="tab-btn"        onclick="switchTab('settings', this)"><i data-lucide="settings"   style="width:14px;height:14px"></i> <span data-i18n="tabSettings">账号设置</span></button>
-  </div>
-
-  <div class="content">
-
-    <!-- ═══════════ TAB: Stats ══════════════════════ -->
-    <div id="tab-stats">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="statUsers">注册用户</div>
-          <div class="stat-val" id="s-users">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="statScans">总扫描次数</div>
-          <div class="stat-val" id="s-scans">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="statActiveCodes">有效兑换码</div>
-          <div class="stat-val" id="s-active">—</div>
-          <div class="stat-sub" data-i18n="statActiveCodesHint">可继续兑换</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="statTotalUses">累计兑换次数</div>
-          <div class="stat-val" id="s-uses">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="statTotalCodes">总码数</div>
-          <div class="stat-val" id="s-total">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" data-i18n="statRevoked">已撤销</div>
-          <div class="stat-val" id="s-revoked">—</div>
-        </div>
+  <!-- Main -->
+  <div id="main-wrap">
+    <!-- Topbar -->
+    <div id="topbar">
+      <div class="topbar-left">
+        <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="topbar-title" id="page-title">仪表盘</span>
       </div>
-      <div class="refresh-row">
-        <button class="btn btn-sm btn-ghost" onclick="loadStats()">🔄 <span data-i18n="btnRefresh">刷新数据</span></button>
+      <div class="topbar-right">
+        <button class="lang-toggle" onclick="toggleLangPage()">EN</button>
+        <button class="icon-btn" onclick="_toggleTheme()" title="Toggle theme">
+          <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <div class="avatar" id="user-avatar" title="">A</div>
       </div>
     </div>
 
-    <!-- ═══════════ TAB: Generate ════════════════════ -->
-    <div id="tab-generate" class="hidden">
-      <div class="gen-layout">
+    <!-- Content -->
+    <div id="content-area">
 
-        <!-- Form -->
-        <div class="card">
-          <div class="card-title" data-i18n="cardGenerate">生成兑换码</div>
-          <div class="form-grid">
-            <div class="field">
-              <label data-i18n="labelCredits">Credits 数量</label>
-              <input type="number" id="g-credits" value="10" min="1" max="10000">
-              <div class="field-hint" data-i18n="hintCredits">每码赠送的扫描次数</div>
-            </div>
-            <div class="field">
-              <label data-i18n="labelCount">生成数量</label>
-              <input type="number" id="g-count" value="1" min="1" max="500">
-              <div class="field-hint" data-i18n="hintCount">最多 500 个 / 次</div>
-            </div>
-            <div class="field">
-              <label data-i18n="labelMaxUses">每码可用次数</label>
-              <input type="number" id="g-maxuses" value="1" min="1" max="100000">
-              <div class="field-hint" data-i18n="hintMaxUses">1 = 一次性；> 1 = 多人共享</div>
-            </div>
-            <div class="field">
-              <label data-i18n="labelExpires">有效天数</label>
-              <input type="number" id="g-expires" value="0" min="0">
-              <div class="field-hint" data-i18n="hintExpires">0 = 永不过期</div>
-            </div>
-            <div class="field full">
-              <label data-i18n="labelNote">备注</label>
-              <input type="text" id="g-note" placeholder="可选，如：新用户福利、内测专属…">
-            </div>
-          </div>
-          <div style="margin-top:18px">
-            <button class="btn btn-full" id="gen-btn" onclick="doGenerate()" data-i18n="btnGenerate">生成兑换码</button>
-          </div>
-          <div class="err-msg" id="gen-err"></div>
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <h2>仪表盘</h2>
+          <p>系统运营数据概览</p>
         </div>
-
-        <!-- Result -->
-        <div class="card">
-          <div class="card-title">
-            <span data-i18n="cardResult">生成结果</span>
-            <span id="gen-meta"></span>
-          </div>
-          <div class="result-area" id="result-area">
-            <div class="result-empty" data-i18n="resultEmpty">生成的兑换码将显示在这里</div>
-          </div>
-          <div class="result-actions" id="result-actions" style="display:none">
-            <button class="btn btn-sm btn-outline" onclick="copyAll()"><i data-lucide="copy" style="width:12px;height:12px"></i> <span data-i18n="btnCopyAll">复制全部</span></button>
-            <button class="btn btn-sm btn-ghost"   onclick="exportTxt()"><i data-lucide="download" style="width:12px;height:12px"></i> <span data-i18n="btnExportTxt">导出 TXT</span></button>
-          </div>
+        <div class="stat-grid" id="stats-grid">
+          <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;color:#3b82f6">👤</div><div class="stat-label">注册用户</div><div class="stat-value" id="st-users">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;color:#16a34a">🔍</div><div class="stat-label">总扫描次数</div><div class="stat-value" id="st-scans">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#ede9fe;color:#7c3aed">🎫</div><div class="stat-label">有效兑换码</div><div class="stat-value" id="st-active-codes">—</div><div class="stat-hint" id="st-active-codes-hint">可继续兑换</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#fef9c3;color:#a16207">📊</div><div class="stat-label">累计兑换次数</div><div class="stat-value" id="st-uses">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;color:#dc2626">📱</div><div class="stat-label">应用总数</div><div class="stat-value" id="st-apps">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#f0fdf4;color:#15803d">💰</div><div class="stat-label">订单总数</div><div class="stat-value" id="st-orders">—</div></div>
         </div>
-
-      </div>
-    </div><!-- tab-generate -->
-
-    <!-- ═══════════ TAB: Code list ════════════════════ -->
-    <div id="tab-codes" class="hidden">
-      <div class="card">
-        <div class="table-toolbar">
-          <input class="search-input" id="code-search"
-                 placeholder="搜索兑换码、备注…" oninput="filterCodes()">
-          <select class="filter-sel" id="code-status" onchange="filterCodes()">
-            <option value="all" data-i18n-opt="filterAll">全部状态</option>
-            <option value="active" data-i18n-opt="filterActive">✅ 有效</option>
-            <option value="used" data-i18n-opt="filterUsed">🟡 已用完</option>
-            <option value="expired" data-i18n-opt="filterExpired">🔴 已过期</option>
-            <option value="revoked" data-i18n-opt="filterRevoked">⬛ 已撤销</option>
-          </select>
-          <button class="btn btn-sm btn-ghost" onclick="loadCodes()">🔄 <span data-i18n="btnRefreshShort">刷新</span></button>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th data-i18n="thCode">兑换码</th>
-                <th data-i18n="thCredits">Credits</th>
-                <th data-i18n="thUsage">使用情况</th>
-                <th data-i18n="thStatus">状态</th>
-                <th data-i18n="thExpiry">有效期</th>
-                <th data-i18n="thNote">备注</th>
-                <th data-i18n="thCreated">创建时间</th>
-                <th data-i18n="thActions">操作</th>
-              </tr>
-            </thead>
-            <tbody id="codes-tbody">
-              <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:32px">
-                请切换到此标签页加载数据
-              </td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination">
-          <span id="page-info"></span>
-          <button class="page-btn" id="prev-btn" onclick="changePage(-1)" disabled>‹ <span data-i18n="btnPrev">上一页</span></button>
-          <button class="page-btn" id="next-btn" onclick="changePage(1)"  disabled><span data-i18n="btnNext">下一页</span> ›</button>
-        </div>
-      </div>
-    </div><!-- tab-codes -->
-
-    <!-- ═══════════ TAB: Settings ══════════════════════ -->
-    <div id="tab-settings" class="hidden">
-      <div class="settings-grid">
-
-        <!-- Change password -->
-        <div class="card">
-          <div class="card-title" style="display:flex;align-items:center;gap:7px"><i data-lucide="key-round" style="width:16px;height:16px;color:#2563eb"></i> <span data-i18n="cardChangePassword">修改密码</span></div>
-          <div class="field">
-            <label data-i18n="labelOldPassword">当前密码</label>
-            <input type="password" id="cp-old" placeholder="••••••" autocomplete="current-password">
-          </div>
-          <div class="field">
-            <label data-i18n="labelNewPassword">新密码</label>
-            <input type="password" id="cp-new" placeholder="至少 6 位" autocomplete="new-password">
-          </div>
-          <div class="field">
-            <label data-i18n="labelConfirmPassword">确认新密码</label>
-            <input type="password" id="cp-confirm" placeholder="再次输入新密码" autocomplete="new-password"
-                   onkeydown="if(event.key==='Enter')doChangePassword()">
-          </div>
-          <div class="err-msg" id="cp-err"></div>
-          <button class="btn btn-full" id="cp-btn" onclick="doChangePassword()" style="margin-top:4px" data-i18n="btnChangePassword">
-            修改密码
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <button class="btn btn-primary" onclick="loadStats()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.05-5.56"/></svg>
+            <span id="btn-refresh-stats">刷新数据</span>
           </button>
         </div>
-
-        <!-- Add admin -->
         <div class="card">
-          <div class="card-title" data-i18n="cardAddAdmin">➕ 添加管理员</div>
-          <div class="field">
-            <label data-i18n="labelUsername">用户名</label>
-            <input type="text" id="na-user" placeholder="至少 2 个字符" autocomplete="off">
-          </div>
-          <div class="field">
-            <label data-i18n="labelPassword">密码</label>
-            <input type="password" id="na-pass" placeholder="至少 6 位" autocomplete="new-password">
-          </div>
-          <div class="field">
-            <label data-i18n="labelConfirmPwd">确认密码</label>
-            <input type="password" id="na-confirm" placeholder="再次输入密码" autocomplete="new-password"
-                   onkeydown="if(event.key==='Enter')doAddAdmin()">
-          </div>
-          <div class="err-msg" id="na-err"></div>
-          <button class="btn btn-full" id="na-btn" onclick="doAddAdmin()" style="margin-top:4px" data-i18n="btnAddAdmin">
-            添加管理员
-          </button>
-        </div>
-
-        <!-- Admin list -->
-        <div class="card full-col">
-          <div class="card-title">
-            <span data-i18n="cardAdminList">👥 管理员列表</span>
-            <button class="btn btn-sm btn-ghost" onclick="loadAdmins()">🔄 <span data-i18n="btnRefreshShort">刷新</span></button>
-          </div>
-          <div id="acct-list">
-            <div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">加载中…</div>
+          <div class="card-title">兑换码汇总</div>
+          <div class="stat-grid" style="margin-bottom:0">
+            <div class="stat-card"><div class="stat-label">总码数</div><div class="stat-value" id="st-total-codes">—</div></div>
+            <div class="stat-card"><div class="stat-label">已撤销</div><div class="stat-value" id="st-revoked">—</div></div>
           </div>
         </div>
-
       </div>
-    </div><!-- tab-settings -->
 
-  </div><!-- .content -->
-</div><!-- #admin-panel -->
+      <!-- Finance -->
+      <div class="page" id="page-finance">
+        <div class="page-header"><h2>资金管理</h2><p>支付订单与收入统计</p></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;color:#16a34a">💰</div><div class="stat-label">总收入 (USDT)</div><div class="stat-value" id="fn-total-revenue">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;color:#3b82f6">📋</div><div class="stat-label">总订单数</div><div class="stat-value" id="fn-total-orders">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;color:#16a34a">✅</div><div class="stat-label">成功订单</div><div class="stat-value" id="fn-paid-orders">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#fef9c3;color:#a16207">⏳</div><div class="stat-label">待付款</div><div class="stat-value" id="fn-pending-orders">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">订单列表</div>
+          <div class="toolbar">
+            <input class="search-input" id="order-search" placeholder="搜索用户邮箱或订单号..." oninput="filterOrders()">
+            <select class="filter-sel" id="order-status-filter" onchange="filterOrders()">
+              <option value="">全部状态</option>
+              <option value="paid">已支付</option>
+              <option value="pending">待付款</option>
+              <option value="expired">已过期</option>
+              <option value="failed">失败</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" onclick="loadOrders()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.05-5.56"/></svg>
+              刷新
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>订单号</th><th>用户</th><th>套餐</th><th>金额 (USDT)</th><th>Credits</th><th>状态</th><th>创建时间</th>
+              </tr></thead>
+              <tbody id="orders-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="orders-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Apps -->
+      <div class="page" id="page-apps">
+        <div class="page-header"><h2>应用管理</h2><p>所有已发布应用的增删改查</p></div>
+        <div class="card">
+          <div class="toolbar">
+            <input class="search-input" id="apps-search" placeholder="搜索应用名称..." oninput="filterApps()">
+            <select class="filter-sel" id="apps-platform-filter" onchange="filterApps()">
+              <option value="">全部平台</option>
+              <option value="Android">Android</option>
+              <option value="iOS">iOS</option>
+              <option value="Windows">Windows</option>
+              <option value="macOS">macOS</option>
+            </select>
+            <select class="filter-sel" id="apps-status-filter" onchange="filterApps()">
+              <option value="">全部状态</option>
+              <option value="1">已上架</option>
+              <option value="0">已下架</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" onclick="loadApps()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.05-5.56"/></svg>
+              刷新
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>应用</th><th>平台</th><th>版本</th><th>分类</th><th>下载</th><th>状态</th><th>发布者</th><th>操作</th>
+              </tr></thead>
+              <tbody id="apps-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="apps-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Users -->
+      <div class="page" id="page-users">
+        <div class="page-header"><h2>用户管理</h2><p>注册用户列表与权限管理</p></div>
+        <div class="card">
+          <div class="toolbar">
+            <input class="search-input" id="users-search" placeholder="搜索邮箱或用户名..." oninput="filterUsers()">
+            <select class="filter-sel" id="users-status-filter" onchange="filterUsers()">
+              <option value="">全部状态</option>
+              <option value="active">正常</option>
+              <option value="banned">已封禁</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" onclick="loadUsers()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.05-5.56"/></svg>
+              刷新
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>用户</th><th>邮箱</th><th>Credits</th><th>扫描次数</th><th>状态</th><th>注册时间</th><th>操作</th>
+              </tr></thead>
+              <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="users-pagination"></div>
+        </div>
+        <!-- Adjust credits modal -->
+        <div id="credits-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center">
+          <div class="card" style="width:340px;margin:0">
+            <div class="card-title">调整 Credits</div>
+            <div class="form-row"><label class="form-label">用户</label><input id="cm-user" class="form-input" readonly></div>
+            <div class="form-row"><label class="form-label">调整量（正数增加，负数减少）</label><input id="cm-delta" class="form-input" type="number" placeholder="如: 50 或 -10"></div>
+            <div class="form-err" id="cm-err"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn btn-secondary" onclick="closeCreditsModal()">取消</button>
+              <button class="btn btn-primary" id="cm-btn" onclick="doAdjustCredits()">确认</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Codes -->
+      <div class="page" id="page-codes">
+        <div class="page-header"><h2>兑换码</h2><p>生成与管理用户兑换码</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- Generate -->
+          <div class="card">
+            <div class="card-title">生成兑换码</div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label class="form-label">Credits 数量</label>
+                <input id="gen-credits" class="form-input" type="number" value="10" min="1">
+                <div class="form-hint">每码赠送的扫描次数</div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">生成数量</label>
+                <input id="gen-count" class="form-input" type="number" value="1" min="1" max="500">
+                <div class="form-hint">最多 500 个 / 次</div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">每码可用次数</label>
+                <input id="gen-maxuses" class="form-input" type="number" value="1" min="1">
+                <div class="form-hint">1 = 一次性；> 1 = 多人共享</div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">有效天数</label>
+                <input id="gen-expires" class="form-input" type="number" value="0" min="0">
+                <div class="form-hint">0 = 永不过期</div>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">备注</label>
+              <input id="gen-note" class="form-input" type="text" placeholder="可选备注">
+            </div>
+            <button class="btn btn-primary" id="gen-btn" onclick="doGenerate()" style="width:100%">生成兑换码</button>
+          </div>
+          <!-- Result -->
+          <div class="card">
+            <div class="card-title">生成结果</div>
+            <div class="result-area" id="gen-result"><span class="result-placeholder">生成的兑换码将显示在这里</span></div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-secondary btn-sm" onclick="copyAllCodes()">复制全部</button>
+              <button class="btn btn-secondary btn-sm" onclick="exportTxt()">导出 TXT</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code list -->
+        <div class="card" style="margin-top:0">
+          <div class="card-title">兑换码管理</div>
+          <div class="toolbar">
+            <input class="search-input" id="code-search" placeholder="搜索兑换码..." oninput="filterCodes()">
+            <select class="filter-sel" id="code-status-filter" onchange="filterCodes()">
+              <option value="">全部状态</option>
+              <option value="active">有效</option>
+              <option value="used">已使用</option>
+              <option value="expired">已过期</option>
+              <option value="revoked">已撤销</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" onclick="loadCodes()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.05-5.56"/></svg>
+              刷新
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>兑换码</th><th>Credits</th><th>使用情况</th><th>状态</th><th>有效期</th><th>备注</th><th>创建时间</th><th>操作</th>
+              </tr></thead>
+              <tbody id="codes-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="codes-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Data Stats -->
+      <div class="page" id="page-datastats">
+        <div class="page-header"><h2>数据统计</h2><p>下载、评论、喜爱数据</p></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;color:#3b82f6">⬇️</div><div class="stat-label">总下载次数</div><div class="stat-value" id="ds-downloads">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#ede9fe;color:#7c3aed">💬</div><div class="stat-label">总评论数</div><div class="stat-value" id="ds-reviews">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;color:#dc2626">❤️</div><div class="stat-label">总喜爱数</div><div class="stat-value" id="ds-likes">—</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;color:#16a34a">📱</div><div class="stat-label">已发布应用</div><div class="stat-value" id="ds-pub-apps">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">下载量 Top 10 应用</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>应用</th><th>平台</th><th>下载次数</th><th>评论数</th><th>喜爱数</th></tr></thead>
+              <tbody id="ds-top-apps"><tr><td colspan="6" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">最新评论</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>用户</th><th>应用</th><th>评分</th><th>内容</th><th>时间</th><th>操作</th></tr></thead>
+              <tbody id="ds-reviews-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="page" id="page-settings">
+        <div class="page-header"><h2>账号设置</h2><p>修改密码与管理员账号</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+          <!-- Change password -->
+          <div class="card">
+            <div class="card-title">修改密码</div>
+            <div class="form-row"><label class="form-label">当前密码</label><input id="cp-old" class="form-input" type="password" autocomplete="current-password"></div>
+            <div class="form-row"><label class="form-label">新密码</label><input id="cp-new" class="form-input" type="password" autocomplete="new-password"></div>
+            <div class="form-row"><label class="form-label">确认新密码</label><input id="cp-confirm" class="form-input" type="password" autocomplete="new-password"></div>
+            <div class="form-err" id="cp-err"></div>
+            <button class="btn btn-primary" id="cp-btn" onclick="doChangePassword()">修改密码</button>
+          </div>
+          <!-- Add admin -->
+          <div>
+            <div class="card">
+              <div class="card-title">➕ 添加管理员</div>
+              <div class="form-row"><label class="form-label">用户名</label><input id="na-user" class="form-input" type="text" autocomplete="off"></div>
+              <div class="form-row"><label class="form-label">密码</label><input id="na-pass" class="form-input" type="password" autocomplete="new-password"></div>
+              <div class="form-row"><label class="form-label">确认密码</label><input id="na-confirm" class="form-input" type="password" autocomplete="new-password"></div>
+              <div class="form-err" id="na-err"></div>
+              <button class="btn btn-primary" id="na-btn" onclick="doAddAdmin()">添加管理员</button>
+            </div>
+            <div class="card">
+              <div class="card-title">👥 管理员列表</div>
+              <div id="acct-list"><div style="color:var(--text-sub);font-size:13px;padding:12px 0;text-align:center">加载中...</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Docs -->
+      <div class="page" id="page-helpdocs">
+        <div class="page-header"><h2>帮助文档</h2><p>系统使用说明与常见问题</p></div>
+        <div class="card">
+          <div class="doc-section">
+            <h3>🚀 快速开始</h3>
+            <p>欢迎使用 AI Scanner 管理后台。以下是主要功能模块说明：</p>
+            <ul style="margin-top:8px">
+              <li><strong>仪表盘</strong>：查看系统核心数据，包括用户数、扫描次数、兑换码状态等。</li>
+              <li><strong>资金管理</strong>：查看所有支付订单，统计 USDT 收入情况。</li>
+              <li><strong>应用管理</strong>：管理已上架应用，支持搜索、筛选、上下架操作。</li>
+              <li><strong>用户管理</strong>：查看注册用户列表，调整用户 Credits 余额。</li>
+              <li><strong>兑换码</strong>：批量生成兑换码，查看使用记录，撤销无效码。</li>
+              <li><strong>数据统计</strong>：查看应用下载、评论、喜爱的汇总统计。</li>
+              <li><strong>账号设置</strong>：修改当前管理员密码，管理其他管理员账号。</li>
+            </ul>
+          </div>
+          <div class="divider"></div>
+          <div class="doc-section">
+            <h3>🎫 兑换码说明</h3>
+            <ul>
+              <li>兑换码格式：<code>XXXX-XXXX-XXXX</code>（12位，使用无歧义字符）</li>
+              <li><strong>一次性码</strong>：每码可用次数设为 <code>1</code>，一人兑换后失效。</li>
+              <li><strong>共享码</strong>：每码可用次数 <code>&gt;1</code>，可多人使用同一码。</li>
+              <li><strong>有效期</strong>：设为 <code>0</code> 表示永不过期；否则为从生成起的天数。</li>
+              <li>已撤销的兑换码无法再被使用，操作不可逆。</li>
+            </ul>
+          </div>
+          <div class="divider"></div>
+          <div class="doc-section">
+            <h3>💳 支付说明</h3>
+            <ul>
+              <li>当前支持的支付方式：<strong>USDT (TRC20)</strong> via Cryptomus。</li>
+              <li>订单状态：<code>paid</code> = 已完成，<code>pending</code> = 待付款，<code>expired</code> = 已过期。</li>
+              <li>支付成功后系统自动为用户增加对应 Credits。</li>
+            </ul>
+          </div>
+          <div class="divider"></div>
+          <div class="doc-section">
+            <h3>⚙️ 系统维护</h3>
+            <ul>
+              <li>科技资讯每天凌晨 3:00 自动从 RSS 源拉取并存入数据库。</li>
+              <li>超过 30 天的资讯会自动清理。</li>
+              <li>如需手动触发：在服务器执行 <code>docker exec ai-scanner-backend-1 python3 /app/fetch_news.py</code></li>
+            </ul>
+          </div>
+          <div class="divider"></div>
+          <div class="doc-section">
+            <h3>❓ 常见问题</h3>
+            <ol>
+              <li style="margin-bottom:8px"><strong>用户反馈兑换码无效？</strong><br>在"兑换码管理"中搜索该码，检查是否已过期或被撤销，查看使用次数是否已满。</li>
+              <li style="margin-bottom:8px"><strong>如何给用户补偿 Credits？</strong><br>在"用户管理"中找到该用户，点击"调整 Credits"，输入正数进行补充。</li>
+              <li style="margin-bottom:8px"><strong>如何下架某个违规应用？</strong><br>在"应用管理"中找到该应用，点击"下架"按钮即可从市场隐藏。</li>
+              <li><strong>忘记管理员密码？</strong><br>联系超级管理员通过数据库重置，或使用 API 端点直接操作。</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-wrap -->
+</div><!-- /app -->
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── State ─────────────────────────────────────────────────
-let adminToken  = localStorage.getItem('admin_token') || '';
-let adminName   = localStorage.getItem('admin_name')  || 'admin';
-let allCodes    = [];
-let filtered    = [];
-const PAGE      = 20;
-let page        = 0;
-let lastCodes   = [];
+// ── Auth state ─────────────────────────────────────────────
+let adminToken = localStorage.getItem('admin_token') || '';
+let adminName  = localStorage.getItem('admin_name')  || '';
+let _sidebarCollapsed = false;
 
-// ── Boot ──────────────────────────────────────────────────
-(function init() {
-  if (adminToken) {
-    setNavUser(adminName);
-    showPanel(); loadStats(); loadMe();
-  }
-})();
+// ── API helper ─────────────────────────────────────────────
+async function api(path, opts={}) {
+  const headers = { ...(opts.headers || {}) };
+  if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+  const r = await fetch(path, { ...opts, headers });
+  if (r.status === 403) { handleUnauth(); throw new Error('403'); }
+  return r.json();
+}
 
-// ── Auth ──────────────────────────────────────────────────
+function handleUnauth() {
+  adminToken = ''; adminName = '';
+  localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_name');
+  showLogin();
+}
+
+// ── Login / Logout ─────────────────────────────────────────
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  const av = document.getElementById('user-avatar');
+  av.textContent = (adminName || 'A')[0].toUpperCase();
+  av.title = adminName;
+  loadStats();
+}
+
 async function doLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
   const err  = document.getElementById('login-err');
   const btn  = document.getElementById('login-btn');
-  if (!user || !pass) { err.textContent = '请输入用户名和密码'; return; }
   err.textContent = '';
+  if (!user || !pass) { err.textContent = '请填写用户名和密码'; return; }
   btn.disabled = true; btn.textContent = '登录中…';
   try {
-    const r = await fetch('/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, password: pass })
-    });
-    const d = await r.json();
-    if (d.ok && d.token) {
-      adminToken = d.token;
+    const q = new URLSearchParams({ username: user, password: pass });
+    const d = await fetch(`/admin/login?${q}`, { method: 'POST' });
+    const data = await d.json();
+    if (data.token) {
+      adminToken = data.token; adminName = data.username || user;
       localStorage.setItem('admin_token', adminToken);
-      showPanel(); loadStats(); loadMe();
+      localStorage.setItem('admin_name', adminName);
+      toast('✅ ' + LA().loginSuccess);
+      showApp();
     } else {
-      err.textContent = d.error || '登录失败';
+      err.textContent = data.error || LA().loginFail;
     }
-  } catch (_) { err.textContent = '网络错误，请重试'; }
-  btn.disabled = false; btn.textContent = '登录';
+  } catch(e) { err.textContent = '网络错误'; }
+  btn.disabled = false; btn.textContent = LA().btnLogin;
 }
 
-function showPanel() {
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('admin-panel').classList.remove('hidden');
-}
-
-function doLogout() {
-  adminToken = ''; adminName = 'admin';
+async function doLogout() {
+  adminToken = ''; adminName = '';
   localStorage.removeItem('admin_token');
   localStorage.removeItem('admin_name');
-  allCodes = []; filtered = []; lastCodes = [];
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('admin-panel').classList.add('hidden');
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-err').textContent = '';
+  showLogin();
 }
 
-function setNavUser(name) {
-  adminName = name;
-  localStorage.setItem('admin_name', name);
-  const initial = (name || 'A')[0].toUpperCase();
-  setText('nav-avatar', initial);
-  setText('nav-uname', name);
-}
+// ── Navigation ─────────────────────────────────────────────
+const PAGE_TITLES = {
+  dashboard: '仪表盘', finance: '资金管理', apps: '应用管理',
+  users: '用户管理', codes: '兑换码', datastats: '数据统计',
+  settings: '账号设置', helpdocs: '帮助文档'
+};
+let _currentPage = 'dashboard';
 
-async function loadMe() {
-  try {
-    const d = await api('/admin/me');
-    if (d.username) setNavUser(d.username);
-  } catch (_) {}
-}
-
-// ── Tab switching ──────────────────────────────────────────
-function switchTab(name, btn) {
-  ['stats', 'generate', 'codes', 'settings'].forEach(t =>
-    document.getElementById('tab-' + t).classList.add('hidden')
-  );
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.remove('hidden');
-  btn.classList.add('active');
-  if (name === 'stats')    loadStats();
-  if (name === 'codes')    loadCodes();
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  // find by onclick attr
+  document.querySelectorAll('.sb-item').forEach(i => {
+    if (i.getAttribute('onclick') && i.getAttribute('onclick').includes(`'${name}'`))
+      i.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = PAGE_TITLES[name] || name;
+  _currentPage = name;
+  // lazy load
+  if (name === 'finance' && !_ordersLoaded) loadOrders();
+  if (name === 'apps'    && !_appsLoaded)   loadApps();
+  if (name === 'users'   && !_usersLoaded)  loadUsers();
+  if (name === 'codes'   && !_codesLoaded)  loadCodes();
+  if (name === 'datastats' && !_dsLoaded)   loadDataStats();
   if (name === 'settings') loadAdmins();
 }
 
-// ── API helper ────────────────────────────────────────────
-async function api(path, opts = {}) {
-  opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${adminToken}` };
-  const r = await fetch(path, opts);
-  if (r.status === 403) { toast('会话已过期，请重新登录'); doLogout(); throw new Error('403'); }
-  return r.json();
+function toggleSidebar() {
+  _sidebarCollapsed = !_sidebarCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed', _sidebarCollapsed);
 }
 
-// ── Stats ─────────────────────────────────────────────────
+// ── Dashboard stats ────────────────────────────────────────
 async function loadStats() {
   try {
     const d = await api('/admin/stats');
-    setText('s-users',   fmt(d.users));
-    setText('s-scans',   fmt(d.total_scans));
-    setText('s-active',  fmt(d.codes_active));
-    setText('s-uses',    fmt(d.code_uses_total));
-    setText('s-total',   fmt(d.codes_total));
-    setText('s-revoked', fmt(d.codes_revoked));
-  } catch (_) {}
+    document.getElementById('st-users').textContent   = fmt(d.total_users);
+    document.getElementById('st-scans').textContent   = fmt(d.total_scans);
+    document.getElementById('st-active-codes').textContent = fmt(d.active_codes);
+    document.getElementById('st-uses').textContent    = fmt(d.total_uses);
+    document.getElementById('st-total-codes').textContent  = fmt(d.total_codes);
+    document.getElementById('st-revoked').textContent = fmt(d.revoked_codes);
+    // try apps & orders if available
+    if (d.total_apps != null)   document.getElementById('st-apps').textContent   = fmt(d.total_apps);
+    if (d.total_orders != null) document.getElementById('st-orders').textContent = fmt(d.total_orders);
+  } catch(e) { if (e.message !== '403') console.error(e); }
 }
 
-// ── Generate codes ────────────────────────────────────────
-async function doGenerate() {
-  const credits  = parseInt(document.getElementById('g-credits').value)  || 10;
-  const count    = parseInt(document.getElementById('g-count').value)    || 1;
-  const maxUses  = parseInt(document.getElementById('g-maxuses').value)  || 1;
-  const expires  = parseInt(document.getElementById('g-expires').value)  || 0;
-  const note     = document.getElementById('g-note').value.trim();
-  const btn      = document.getElementById('gen-btn');
-  const err      = document.getElementById('gen-err');
+// ── Finance ────────────────────────────────────────────────
+let allOrders = [], _ordersLoaded = false, _ordersPage = 1;
+const ORDERS_PER_PAGE = 20;
+
+async function loadOrders() {
+  _ordersLoaded = true;
+  document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr>';
+  try {
+    const d = await api('/admin/orders');
+    allOrders = d.orders || [];
+    // compute summary
+    const paid = allOrders.filter(o => o.status === 'paid');
+    const pending = allOrders.filter(o => o.status === 'pending');
+    const revenue = paid.reduce((s,o) => s + parseFloat(o.amount || 0), 0);
+    document.getElementById('fn-total-revenue').textContent  = revenue.toFixed(2);
+    document.getElementById('fn-total-orders').textContent   = allOrders.length;
+    document.getElementById('fn-paid-orders').textContent    = paid.length;
+    document.getElementById('fn-pending-orders').textContent = pending.length;
+    _ordersPage = 1; filterOrders();
+  } catch(e) {
+    if (e.message !== '403')
+      document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:20px">加载失败</td></tr>';
+  }
+}
+
+function filterOrders() {
+  const q = (document.getElementById('order-search').value || '').toLowerCase();
+  const sf = document.getElementById('order-status-filter').value;
+  const rows = allOrders.filter(o => {
+    const matchQ = !q || (o.order_id||'').toLowerCase().includes(q) || (o.email||'').toLowerCase().includes(q);
+    const matchS = !sf || o.status === sf;
+    return matchQ && matchS;
+  });
+  renderTablePage(rows, _ordersPage, ORDERS_PER_PAGE, 'orders-tbody', 'orders-pagination',
+    r => `<tr>
+      <td><code style="font-size:11px">${(r.order_id||'').slice(0,16)}…</code></td>
+      <td>${r.email || '—'}</td>
+      <td><span class="badge badge-blue">${r.package || '—'}</span></td>
+      <td>${parseFloat(r.amount||0).toFixed(2)}</td>
+      <td>${r.credits || '—'}</td>
+      <td>${orderBadge(r.status)}</td>
+      <td>${(r.created_at||'').slice(0,10)}</td>
+    </tr>`,
+    p => { _ordersPage = p; filterOrders(); }
+  );
+}
+
+function orderBadge(s) {
+  const m = {paid:'badge-active',pending:'badge-used',expired:'badge-expired',failed:'badge-revoked'};
+  const lbl = {paid:'已支付',pending:'待付款',expired:'已过期',failed:'失败'};
+  return `<span class="badge ${m[s]||'badge-revoked'}">${lbl[s]||s}</span>`;
+}
+
+// ── Apps ──────────────────────────────────────────────────
+let allApps = [], _appsLoaded = false, _appsPage = 1;
+const APPS_PER_PAGE = 15;
+
+async function loadApps() {
+  _appsLoaded = true;
+  document.getElementById('apps-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr>';
+  try {
+    const d = await api('/admin/apps');
+    allApps = d.apps || [];
+    _appsPage = 1; filterApps();
+  } catch(e) {
+    if (e.message !== '403')
+      document.getElementById('apps-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#dc2626;padding:20px">加载失败</td></tr>';
+  }
+}
+
+function filterApps() {
+  const q  = (document.getElementById('apps-search').value || '').toLowerCase();
+  const pf = document.getElementById('apps-platform-filter').value;
+  const sf = document.getElementById('apps-status-filter').value;
+  const rows = allApps.filter(a => {
+    const matchQ  = !q  || (a.name||'').toLowerCase().includes(q) || (a.slug||'').toLowerCase().includes(q);
+    const matchP  = !pf || a.platform === pf;
+    const matchS  = sf === '' || String(a.is_public) === sf;
+    return matchQ && matchP && matchS;
+  });
+  renderTablePage(rows, _appsPage, APPS_PER_PAGE, 'apps-tbody', 'apps-pagination',
+    a => `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${a.icon_url ? `<img src="${a.icon_url}" style="width:28px;height:28px;border-radius:6px;object-fit:cover">` : '<div style="width:28px;height:28px;border-radius:6px;background:var(--input-bg)"></div>'}
+          <div>
+            <div style="font-weight:600;font-size:13px">${a.name||'—'}</div>
+            <div style="font-size:11px;color:var(--text-sub)">${a.slug||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-blue">${a.platform||'—'}</span></td>
+      <td>${a.version||'—'}</td>
+      <td>${a.category||'—'}</td>
+      <td>${fmt(a.download_count)}</td>
+      <td>${a.is_public ? '<span class="badge badge-active">已上架</span>' : '<span class="badge badge-revoked">已下架</span>'}</td>
+      <td style="font-size:12px">${a.owner_email||'—'}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-xs" onclick="window.open('/dist/${a.slug}','_blank')">查看</button>
+          <button class="btn ${a.is_public?'btn-danger':'btn-success'} btn-xs" onclick="toggleAppPublic('${a.slug}',${a.is_public},this)">${a.is_public?'下架':'上架'}</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteApp('${a.slug}',this)">删除</button>
+        </div>
+      </td>
+    </tr>`,
+    p => { _appsPage = p; filterApps(); }
+  );
+}
+
+async function toggleAppPublic(slug, curPublic, btn) {
+  const prev = btn.innerHTML; btn.disabled = true; btn.textContent = '…';
+  try {
+    const endpoint = curPublic ? `/admin/apps/${slug}/unpublish` : `/admin/apps/${slug}/publish`;
+    const d = await api(endpoint, { method: 'POST' });
+    if (d.ok) { toast('✅ 操作成功'); loadApps(); }
+    else      { toast(d.error || '操作失败'); btn.innerHTML = prev; btn.disabled = false; }
+  } catch(e) { btn.innerHTML = prev; btn.disabled = false; if(e.message!=='403') toast('网络错误'); }
+}
+
+async function deleteApp(slug, btn) {
+  if (!confirm(`确认删除应用 ${slug}？此操作不可恢复。`)) return;
+  const prev = btn.innerHTML; btn.disabled = true; btn.textContent = '…';
+  try {
+    const d = await api(`/admin/apps/${slug}`, { method: 'DELETE' });
+    if (d.ok) { toast('已删除'); loadApps(); }
+    else { toast(d.error || '删除失败'); btn.innerHTML = prev; btn.disabled = false; }
+  } catch(e) { btn.innerHTML = prev; btn.disabled = false; if(e.message!=='403') toast('网络错误'); }
+}
+
+// ── Users ──────────────────────────────────────────────────
+let allUsers = [], _usersLoaded = false, _usersPage = 1;
+const USERS_PER_PAGE = 20;
+let _creditsTargetUser = null;
+
+async function loadUsers() {
+  _usersLoaded = true;
+  document.getElementById('users-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr>';
+  try {
+    const d = await api('/admin/users');
+    allUsers = d.users || [];
+    _usersPage = 1; filterUsers();
+  } catch(e) {
+    if (e.message !== '403')
+      document.getElementById('users-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:20px">加载失败</td></tr>';
+  }
+}
+
+function filterUsers() {
+  const q  = (document.getElementById('users-search').value || '').toLowerCase();
+  const sf = document.getElementById('users-status-filter').value;
+  const rows = allUsers.filter(u => {
+    const matchQ = !q || (u.email||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q);
+    const matchS = !sf || (sf==='active' ? !u.is_banned : u.is_banned);
+    return matchQ && matchS;
+  });
+  renderTablePage(rows, _usersPage, USERS_PER_PAGE, 'users-tbody', 'users-pagination',
+    u => `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:28px;height:28px;font-size:12px">${(u.email||'U')[0].toUpperCase()}</div>
+          <span style="font-weight:500">${u.username||u.email||'—'}</span>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--text-sub)">${u.email||'—'}</td>
+      <td><strong>${fmt(u.credits)}</strong></td>
+      <td>${fmt(u.scan_count)}</td>
+      <td>${u.is_banned ? '<span class="badge badge-expired">已封禁</span>' : '<span class="badge badge-active">正常</span>'}</td>
+      <td style="font-size:12px">${(u.created_at||'').slice(0,10)}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-xs" onclick="openCreditsModal('${u.email}')">调整 Credits</button>
+          <button class="btn ${u.is_banned?'btn-success':'btn-danger'} btn-xs" onclick="toggleBan('${u.email}',${u.is_banned?1:0},this)">${u.is_banned?'解封':'封禁'}</button>
+        </div>
+      </td>
+    </tr>`,
+    p => { _usersPage = p; filterUsers(); }
+  );
+}
+
+function openCreditsModal(email) {
+  _creditsTargetUser = email;
+  document.getElementById('cm-user').value = email;
+  document.getElementById('cm-delta').value = '';
+  document.getElementById('cm-err').textContent = '';
+  const m = document.getElementById('credits-modal');
+  m.style.display = 'flex';
+}
+function closeCreditsModal() {
+  document.getElementById('credits-modal').style.display = 'none';
+}
+async function doAdjustCredits() {
+  const delta = parseInt(document.getElementById('cm-delta').value);
+  const err = document.getElementById('cm-err');
+  const btn = document.getElementById('cm-btn');
   err.textContent = '';
+  if (isNaN(delta) || delta === 0) { err.textContent = '请输入有效调整量'; return; }
+  btn.disabled = true; btn.textContent = '处理中…';
+  try {
+    const d = await api('/admin/users/credits', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: _creditsTargetUser, delta })
+    });
+    if (d.ok) {
+      toast(`✅ 已为 ${_creditsTargetUser} 调整 ${delta > 0 ? '+' : ''}${delta} Credits`);
+      closeCreditsModal();
+      loadUsers();
+    } else { err.textContent = d.error || '操作失败'; }
+  } catch(e) { if(e.message!=='403') err.textContent = '网络错误'; }
+  btn.disabled = false; btn.textContent = '确认';
+}
 
-  if (credits < 1 || credits > 10000) { err.textContent = 'Credits 须在 1–10000 之间'; return; }
-  if (count   < 1 || count   > 500)   { err.textContent = '数量须在 1–500 之间'; return; }
+async function toggleBan(email, curBanned, btn) {
+  if (!confirm(`确认${curBanned ? '解封' : '封禁'}用户 ${email}？`)) return;
+  const prev = btn.innerHTML; btn.disabled = true; btn.textContent = '…';
+  try {
+    const d = await api('/admin/users/ban', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, ban: !curBanned })
+    });
+    if (d.ok) { toast('✅ 操作成功'); loadUsers(); }
+    else { toast(d.error || '操作失败'); btn.innerHTML = prev; btn.disabled = false; }
+  } catch(e) { btn.innerHTML = prev; btn.disabled = false; if(e.message!=='403') toast('网络错误'); }
+}
 
+// ── Codes ─────────────────────────────────────────────────
+let allCodes = [], _codesLoaded = false, _codesPage = 1;
+const CODES_PER_PAGE = 15;
+
+async function doGenerate() {
+  const credits  = parseInt(document.getElementById('gen-credits').value)  || 10;
+  const count    = parseInt(document.getElementById('gen-count').value)    || 1;
+  const maxuses  = parseInt(document.getElementById('gen-maxuses').value)  || 1;
+  const expires  = parseInt(document.getElementById('gen-expires').value)  || 0;
+  const note     = document.getElementById('gen-note').value.trim();
+  const btn      = document.getElementById('gen-btn');
   btn.disabled = true; btn.textContent = '生成中…';
   try {
-    const q = new URLSearchParams({ credits, count, max_uses: maxUses, expires_days: expires, note });
+    const q = new URLSearchParams({ credits, count, max_uses: maxuses, expires_days: expires, note });
     const d = await api(`/admin/generate-codes?${q}`, { method: 'POST' });
-    if (d.codes) {
-      lastCodes = d.codes;
-      renderResult(d);
-      toast(`✅ ${LA().generateSuccess} (${d.count})`);
-    } else {
-      err.textContent = d.error || LA().generateFail;
-    }
-  } catch (e) { if (e.message !== '403') err.textContent = '网络错误，请重试'; }
+    if (d.ok && d.codes) {
+      toast(`✅ ${LA().generateSuccess} (${d.codes.length})`);
+      renderResult(d.codes);
+      _codesLoaded = false;
+      if (_currentPage === 'codes') loadCodes();
+    } else { toast(d.error || LA().generateFail); }
+  } catch(e) { if(e.message!=='403') toast('网络错误'); }
   btn.disabled = false; btn.textContent = LA().btnGenerate;
 }
 
-function renderResult(d) {
-  const area    = document.getElementById('result-area');
-  const meta    = document.getElementById('gen-meta');
-  const actions = document.getElementById('result-actions');
-  const parts   = [];
-  if (d.credits_each)              parts.push(`${d.credits_each} Credits`);
-  if (d.max_uses > 1)              parts.push(`${d.max_uses} ${LA().usersPerCode || 'users/code'}`);
-  if (d.expires_at)                parts.push(`${LA().expiresOn || 'Expires'} ${d.expires_at.slice(0,10)}`);
-  else                             parts.push(LA().never);
-  meta.textContent = parts.join('　·　');
-
-  area.innerHTML = d.codes.map(c => `
-    <div class="code-item">
-      <span class="code-text">${c}</span>
-      <button class="copy-btn" onclick="copySingle(this,'${c}')">${LA().btnCopy}</button>
-    </div>`).join('');
-  actions.style.display = 'flex';
+function renderResult(codes) {
+  const el = document.getElementById('gen-result');
+  if (!codes || !codes.length) { el.innerHTML = '<span class="result-placeholder">暂无结果</span>'; return; }
+  el.textContent = codes.map(fmtCode).join('\n');
 }
 
-function copySingle(btn, code) {
-  navigator.clipboard.writeText(code).then(() => {
-    btn.textContent = LA().copySuccess; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = LA().btnCopy; btn.classList.remove('copied'); }, 1500);
-  });
-}
-
-function copyAll() {
-  navigator.clipboard.writeText(lastCodes.join('\n'))
-    .then(() => toast(`${LA().copySuccess} (${lastCodes.length})`));
+function copyAllCodes() {
+  const txt = document.getElementById('gen-result').textContent || '';
+  if (!txt.trim() || txt.includes('将显示')) { toast('没有可复制的内容'); return; }
+  navigator.clipboard.writeText(txt).then(() => toast('✅ ' + LA().copySuccess));
 }
 
 function exportTxt() {
-  const blob = new Blob([lastCodes.join('\n')], { type: 'text/plain' });
-  const a    = Object.assign(document.createElement('a'), {
-    href:     URL.createObjectURL(blob),
-    download: `codes_${new Date().toISOString().slice(0,10)}.txt`,
-  });
+  const txt = document.getElementById('gen-result').textContent || '';
+  if (!txt.trim() || txt.includes('将显示')) { toast('没有可导出的内容'); return; }
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt);
+  a.download = 'codes_' + Date.now() + '.txt';
   a.click();
 }
 
-// ── Code list ─────────────────────────────────────────────
 async function loadCodes() {
-  const tbody = document.getElementById('codes-tbody');
-  tbody.innerHTML = `<tr><td colspan="8"
-    style="text-align:center;color:#94a3b8;padding:32px">${LA().loading}</td></tr>`;
+  _codesLoaded = true;
+  document.getElementById('codes-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-sub);padding:30px">加载中...</td></tr>';
   try {
-    const d = await api('/admin/codes?limit=500');
+    const d = await api('/admin/codes');
     allCodes = d.codes || [];
-    filterCodes();
-  } catch (e) {
-    if (e.message !== '403')
-      tbody.innerHTML = `<tr><td colspan="8"
-        style="text-align:center;color:#dc2626;padding:32px">加载失败，请刷新重试</td></tr>`;
+    _codesPage = 1; filterCodes();
+  } catch(e) {
+    if(e.message!=='403')
+      document.getElementById('codes-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#dc2626;padding:20px">加载失败</td></tr>';
   }
-}
-
-function codeStatus(r) {
-  if (r.is_revoked) return 'revoked';
-  if (r.expires_at && r.expires_at < new Date().toISOString()) return 'expired';
-  if (r.uses_count >= r.max_uses) return 'used';
-  return 'active';
 }
 
 function filterCodes() {
-  const q  = (document.getElementById('code-search').value || '').toUpperCase();
-  const st = document.getElementById('code-status').value;
-  filtered = allCodes.filter(r => {
-    if (st !== 'all' && codeStatus(r) !== st) return false;
-    if (q && !r.code.includes(q) && !(r.note || '').toUpperCase().includes(q)) return false;
-    return true;
+  const q  = (document.getElementById('code-search').value || '').toLowerCase();
+  const sf = document.getElementById('code-status-filter').value;
+  const now = new Date();
+  const rows = allCodes.filter(r => {
+    const matchQ = !q || fmtCode(r.code).toLowerCase().includes(q) || (r.note||'').toLowerCase().includes(q);
+    if (!sf) return matchQ;
+    const expired  = r.expires_at && new Date(r.expires_at) < now;
+    const usedUp   = r.max_uses > 0 && r.uses_count >= r.max_uses;
+    if (sf === 'active')  return matchQ && !r.is_revoked && !expired && !usedUp;
+    if (sf === 'used')    return matchQ && !r.is_revoked && usedUp;
+    if (sf === 'expired') return matchQ && !r.is_revoked && expired && !usedUp;
+    if (sf === 'revoked') return matchQ && r.is_revoked;
+    return matchQ;
   });
-  page = 0;
-  renderPage();
-}
-
-function renderPage() {
-  const tbody  = document.getElementById('codes-tbody');
-  const start  = page * PAGE;
-  const slice  = filtered.slice(start, start + PAGE);
-  const total  = filtered.length;
-  const LABEL  = { active: LA().statusActive, used: LA().statusUsedUp, expired: LA().statusExpired, revoked: LA().statusRevoked };
-  const CLS    = { active: 'badge-active', used: 'badge-used',
-                   expired: 'badge-expired', revoked: 'badge-revoked' };
-
-  if (!slice.length) {
-    tbody.innerHTML = `<tr><td colspan="8"
-      style="text-align:center;color:#94a3b8;padding:32px">${LA().noData}</td></tr>`;
-  } else {
-    tbody.innerHTML = slice.map(r => {
-      const st      = codeStatus(r);
-      const expiry  = r.expires_at ? r.expires_at.slice(0, 10) : LA().statusPermanent;
-      const created = r.created_at ? r.created_at.slice(0, 16).replace('T', ' ') : '—';
-      const note    = r.note || '—';
-      const canRevoke = st === 'active';
+  renderTablePage(rows, _codesPage, CODES_PER_PAGE, 'codes-tbody', 'codes-pagination',
+    r => {
+      const now2 = new Date();
+      const expired = r.expires_at && new Date(r.expires_at) < now2;
+      const usedUp  = r.max_uses > 0 && r.uses_count >= r.max_uses;
+      let badgeCls = 'badge-active', badgeTxt = LA().statusActive;
+      if (r.is_revoked)   { badgeCls = 'badge-revoked'; badgeTxt = LA().statusRevoked; }
+      else if (expired)   { badgeCls = 'badge-expired'; badgeTxt = LA().statusExpired; }
+      else if (usedUp)    { badgeCls = 'badge-used';    badgeTxt = LA().statusUsedUp; }
+      const expiry = r.expires_at ? r.expires_at.slice(0,10) : LA().never;
+      const maxU   = r.max_uses > 0 ? r.max_uses : LA().unlimited;
       return `<tr>
+        <td><code style="font-size:12px;letter-spacing:.03em">${fmtCode(r.code)}</code></td>
+        <td><strong>${r.credits}</strong></td>
+        <td>${r.uses_count} / ${maxU}</td>
+        <td><span class="badge ${badgeCls}">${badgeTxt}</span></td>
+        <td style="font-size:12px">${expiry}</td>
+        <td style="font-size:12px;color:var(--text-sub);max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.note||'—'}</td>
+        <td style="font-size:12px">${(r.created_at||'').slice(0,10)}</td>
         <td>
-          <span class="code-cell">${fmtCode(r.code)}</span>
-          <button class="copy-btn" style="margin-left:6px"
-                  onclick="copyCode('${r.code}')">${LA().btnCopy}</button>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-secondary btn-xs" onclick="navigator.clipboard.writeText('${fmtCode(r.code)}').then(()=>toast('✅ ${LA().copySuccess}'))">复制</button>
+            ${!r.is_revoked ? `<button class="btn btn-danger btn-xs" onclick="revokeCode('${r.code}',this)">撤销</button>` : ''}
+          </div>
         </td>
-        <td>${r.credits}</td>
-        <td>${r.uses_count} / ${r.max_uses}</td>
-        <td><span class="badge ${CLS[st]}">${LABEL[st]}</span></td>
-        <td>${expiry}</td>
-        <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-            title="${note}">${note}</td>
-        <td>${created}</td>
-        <td>${canRevoke
-          ? `<button class="btn btn-sm btn-danger" onclick="revokeCode('${r.code}',this)">${LA().btnRevoke}</button>`
-          : '<span style="color:#cbd5e1">—</span>'
-        }</td>
       </tr>`;
-    }).join('');
-  }
-
-  setText('page-info', total
-    ? `第 ${start + 1}–${Math.min(start + PAGE, total)} 条，共 ${total} 条`
-    : '无结果');
-  document.getElementById('prev-btn').disabled = page === 0;
-  document.getElementById('next-btn').disabled = start + PAGE >= total;
-}
-
-function changePage(d) { page += d; renderPage(); }
-
-function copyCode(code) {
-  navigator.clipboard.writeText(fmtCode(code)).then(() => toast(LA().copySuccess));
+    },
+    p => { _codesPage = p; filterCodes(); }
+  );
 }
 
 async function revokeCode(code, btn) {
@@ -807,43 +1102,95 @@ async function revokeCode(code, btn) {
       const row = allCodes.find(r => r.code === code);
       if (row) row.is_revoked = 1;
       filterCodes();
+    } else { btn.disabled = false; btn.textContent = LA().btnRevoke; toast(d.error || LA().revokeFail); }
+  } catch(e) { btn.disabled = false; btn.textContent = LA().btnRevoke; if(e.message!=='403') toast('网络错误'); }
+}
+
+// ── Data Stats ─────────────────────────────────────────────
+let _dsLoaded = false;
+
+async function loadDataStats() {
+  _dsLoaded = true;
+  try {
+    const d = await api('/admin/datastats');
+    document.getElementById('ds-downloads').textContent = fmt(d.total_downloads);
+    document.getElementById('ds-reviews').textContent   = fmt(d.total_reviews);
+    document.getElementById('ds-likes').textContent     = fmt(d.total_likes);
+    document.getElementById('ds-pub-apps').textContent  = fmt(d.published_apps);
+    // Top apps
+    const topTbody = document.getElementById('ds-top-apps');
+    const topApps = d.top_apps || [];
+    if (!topApps.length) {
+      topTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-sub);padding:20px">暂无数据</td></tr>';
     } else {
-      btn.disabled = false; btn.textContent = LA().btnRevoke;
-      toast(d.error || LA().revokeFail);
+      topTbody.innerHTML = topApps.slice(0,10).map((a,i) => `<tr>
+        <td><span style="font-weight:700;color:${i<3?'#3b82f6':'var(--text-sub)'}">${i+1}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${a.icon_url ? `<img src="${a.icon_url}" style="width:24px;height:24px;border-radius:5px">` : ''}
+            <span style="font-weight:500">${a.name||'—'}</span>
+          </div>
+        </td>
+        <td><span class="badge badge-blue">${a.platform||'—'}</span></td>
+        <td><strong>${fmt(a.download_count)}</strong></td>
+        <td>${fmt(a.review_count)}</td>
+        <td>${fmt(a.like_count)}</td>
+      </tr>`).join('');
     }
-  } catch (e) {
-    btn.disabled = false; btn.textContent = LA().btnRevoke;
-    if (e.message !== '403') toast('网络错误');
+    // Latest reviews
+    const rvTbody = document.getElementById('ds-reviews-tbody');
+    const reviews = d.recent_reviews || [];
+    if (!reviews.length) {
+      rvTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-sub);padding:20px">暂无评论</td></tr>';
+    } else {
+      rvTbody.innerHTML = reviews.slice(0,20).map(r => `<tr>
+        <td style="font-size:12px">${r.email||'—'}</td>
+        <td style="font-size:12px">${r.app_name||'—'}</td>
+        <td>${'⭐'.repeat(Math.min(5,r.rating||0))||'—'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${r.content||'—'}</td>
+        <td style="font-size:12px">${(r.created_at||'').slice(0,10)}</td>
+        <td>
+          <button class="btn btn-danger btn-xs" onclick="deleteReview(${r.id},this)">删除</button>
+        </td>
+      </tr>`).join('');
+    }
+  } catch(e) {
+    if (e.message !== '403') console.error(e);
   }
 }
 
-// ── Account settings ──────────────────────────────────────
+async function deleteReview(id, btn) {
+  if (!confirm('确认删除此评论？')) return;
+  const prev = btn.innerHTML; btn.disabled = true; btn.textContent = '…';
+  try {
+    const d = await api(`/admin/reviews/${id}`, { method: 'DELETE' });
+    if (d.ok) { toast('已删除'); loadDataStats(); }
+    else { toast(d.error || '删除失败'); btn.innerHTML = prev; btn.disabled = false; }
+  } catch(e) { btn.innerHTML = prev; btn.disabled = false; if(e.message!=='403') toast('网络错误'); }
+}
+
+// ── Settings ───────────────────────────────────────────────
 async function doChangePassword() {
-  const oldPw  = document.getElementById('cp-old').value;
-  const newPw  = document.getElementById('cp-new').value;
+  const oldPw   = document.getElementById('cp-old').value;
+  const newPw   = document.getElementById('cp-new').value;
   const confirm = document.getElementById('cp-confirm').value;
-  const err    = document.getElementById('cp-err');
-  const btn    = document.getElementById('cp-btn');
+  const err     = document.getElementById('cp-err');
+  const btn     = document.getElementById('cp-btn');
   err.textContent = '';
-  if (!oldPw || !newPw)     { err.textContent = '请填写所有字段'; return; }
-  if (newPw.length < 6)     { err.textContent = '新密码至少 6 位'; return; }
-  if (newPw !== confirm)    { err.textContent = '两次输入的新密码不一致'; return; }
+  if (!oldPw || !newPw)  { err.textContent = '请填写所有字段'; return; }
+  if (newPw.length < 6)  { err.textContent = '新密码至少 6 位'; return; }
+  if (newPw !== confirm) { err.textContent = '两次输入的新密码不一致'; return; }
   btn.disabled = true; btn.textContent = '修改中…';
   try {
     const d = await api('/admin/change-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ current_password: oldPw, new_password: newPw })
     });
     if (d.ok) {
-      toast(`✅ ${LA().pwdChangeSuccess}`);
-      document.getElementById('cp-old').value = '';
-      document.getElementById('cp-new').value = '';
-      document.getElementById('cp-confirm').value = '';
-    } else {
-      err.textContent = d.error || LA().pwdChangeFail;
-    }
-  } catch (e) { if (e.message !== '403') err.textContent = '网络错误'; }
+      toast('✅ ' + LA().pwdChangeSuccess);
+      ['cp-old','cp-new','cp-confirm'].forEach(id => document.getElementById(id).value = '');
+    } else { err.textContent = d.error || LA().pwdChangeFail; }
+  } catch(e) { if(e.message!=='403') err.textContent = '网络错误'; }
   btn.disabled = false; btn.textContent = LA().btnChangePassword;
 }
 
@@ -854,62 +1201,53 @@ async function doAddAdmin() {
   const err     = document.getElementById('na-err');
   const btn     = document.getElementById('na-btn');
   err.textContent = '';
-  if (!user || !pass)       { err.textContent = '请填写所有字段'; return; }
-  if (user.length < 2)      { err.textContent = '用户名至少 2 个字符'; return; }
-  if (pass.length < 6)      { err.textContent = '密码至少 6 位'; return; }
-  if (pass !== confirm)     { err.textContent = '两次输入的密码不一致'; return; }
+  if (!user || !pass)    { err.textContent = '请填写所有字段'; return; }
+  if (user.length < 2)   { err.textContent = '用户名至少 2 个字符'; return; }
+  if (pass.length < 6)   { err.textContent = '密码至少 6 位'; return; }
+  if (pass !== confirm)  { err.textContent = '两次输入的密码不一致'; return; }
   btn.disabled = true; btn.textContent = '添加中…';
   try {
     const q = new URLSearchParams({ username: user, password: pass });
     const d = await api(`/admin/accounts?${q}`, { method: 'POST' });
     if (d.ok) {
       toast(`✅ 管理员 ${user} 已添加`);
-      document.getElementById('na-user').value = '';
-      document.getElementById('na-pass').value = '';
-      document.getElementById('na-confirm').value = '';
+      ['na-user','na-pass','na-confirm'].forEach(id => document.getElementById(id).value = '');
       loadAdmins();
-    } else {
-      err.textContent = d.error || '添加失败';
-    }
-  } catch (e) { if (e.message !== '403') err.textContent = '网络错误'; }
+    } else { err.textContent = d.error || '添加失败'; }
+  } catch(e) { if(e.message!=='403') err.textContent = '网络错误'; }
   btn.disabled = false; btn.textContent = '添加管理员';
 }
 
 async function loadAdmins() {
   const container = document.getElementById('acct-list');
-  container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">' + LA().loading + '</div>';
+  container.innerHTML = '<div style="color:var(--text-sub);font-size:13px;padding:12px 0;text-align:center">' + LA().loading + '</div>';
   try {
     const d = await api('/admin/accounts');
     const accounts = d.accounts || [];
     if (!accounts.length) {
-      container.innerHTML = '<div style="color:#94a3b8;font-size:.87em;padding:16px 0;text-align:center">' + LA().noData + '</div>';
+      container.innerHTML = '<div style="color:var(--text-sub);font-size:13px;padding:12px 0;text-align:center">' + LA().noData + '</div>';
       return;
     }
     container.innerHTML = accounts.map(a => {
       const initial  = (a.username || 'A')[0].toUpperCase();
       const isSelf   = a.username === adminName;
-      const created  = (a.created_at || '').slice(0, 10);
-      const metaParts = [`创建于 ${created || '—'}`];
-      if (a.is_super) metaParts.push('超级管理员');
-      if (isSelf)     metaParts.push('(当前账号)');
+      const created  = (a.created_at || '').slice(0,10);
+      const parts    = [`创建于 ${created || '—'}`];
+      if (a.is_super) parts.push('超级管理员');
+      if (isSelf)     parts.push('(当前账号)');
       const canDelete = !a.is_super && !isSelf;
       return `<div class="acct-row">
         <div class="acct-avatar">${initial}</div>
         <div class="acct-info">
-          <div class="acct-name">
-            ${a.username}
-            ${a.is_super ? '<span class="badge-super">超级</span>' : ''}
-          </div>
-          <div class="acct-meta">${metaParts.join(' · ')}</div>
+          <div class="acct-name">${a.username}${a.is_super ? '<span class="badge-super">超级</span>' : ''}</div>
+          <div class="acct-meta">${parts.join(' · ')}</div>
         </div>
-        ${canDelete
-          ? `<button class="btn btn-sm btn-danger" onclick="deleteAdmin('${a.username}',this)">删除</button>`
-          : '<span style="color:#e2e8f0;font-size:.8em">—</span>'}
+        ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteAdmin('${a.username}',this)">删除</button>` : '<span style="font-size:.8em;color:var(--text-sub)">—</span>'}
       </div>`;
     }).join('');
-  } catch (e) {
-    if (e.message !== '403')
-      container.innerHTML = '<div style="color:#dc2626;font-size:.87em;padding:16px 0;text-align:center">加载失败</div>';
+  } catch(e) {
+    if(e.message!=='403')
+      container.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:12px 0;text-align:center">加载失败</div>';
   }
 }
 
@@ -919,27 +1257,37 @@ async function deleteAdmin(username, btn) {
   try {
     const d = await api(`/admin/accounts/${encodeURIComponent(username)}`, { method: 'DELETE' });
     if (d.ok) { toast(`已删除账号 ${username}`); loadAdmins(); }
-    else      { btn.disabled = false; btn.textContent = '删除'; toast(d.error || '删除失败'); }
-  } catch (e) {
-    btn.disabled = false; btn.textContent = '删除';
-    if (e.message !== '403') toast('网络错误');
+    else { btn.disabled = false; btn.textContent = '删除'; toast(d.error || '删除失败'); }
+  } catch(e) { btn.disabled = false; btn.textContent = '删除'; if(e.message!=='403') toast('网络错误'); }
+}
+
+// ── Pagination helper ──────────────────────────────────────
+function renderTablePage(rows, page, perPage, tbodyId, pgId, rowFn, onPage) {
+  const tbody = document.getElementById(tbodyId);
+  const pgEl  = document.getElementById(pgId);
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / perPage));
+  page = Math.min(page, pages);
+  const slice = rows.slice((page-1)*perPage, page*perPage);
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="20" style="text-align:center;color:var(--text-sub);padding:30px">${LA().noData}</td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(rowFn).join('');
   }
+  pgEl.innerHTML = pages <= 1 ? '' : `
+    <span style="margin-right:4px">${(page-1)*perPage+1}–${Math.min(page*perPage,total)} / ${total}</span>
+    <button class="pg-btn" ${page<=1?'disabled':''} onclick="(${onPage})(${page-1})">上一页</button>
+    <button class="pg-btn" ${page>=pages?'disabled':''} onclick="(${onPage})(${page+1})">下一页</button>
+  `;
 }
 
 // ── Utilities ─────────────────────────────────────────────
 function fmtCode(code) {
-  // Display XXXX-XXXX-XXXX; legacy 12-char no-dash codes get dashes added
   const c = code.replace(/-/g, '');
   if (c.length === 12) return `${c.slice(0,4)}-${c.slice(4,8)}-${c.slice(8)}`;
   return code;
 }
-
 function fmt(n) { return n == null ? '—' : Number(n).toLocaleString('zh-CN'); }
-
-function setText(id, v) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = v;
-}
 
 let _toastTimer;
 function toast(msg) {
@@ -948,246 +1296,74 @@ function toast(msg) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
-if (window.lucide) lucide.createIcons();
 
-// ── i18n ─────────────────────────────────────────
+// ── i18n ─────────────────────────────────────────────────
 const LANG_ADMIN = {
   zh: {
-    // Login
-    loginTitle: '管理后台',
-    loginLabelUser: '用户名',
-    loginLabelPass: '密码',
-    btnLogin: '登录',
-    // Nav
-    adminBadge: '管理后台',
-    logout: '退出登录',
-    langBtn: 'EN',
-    // Tabs
-    tabStats: '概览',
-    tabGenerate: '生成兑换码',
-    tabCodes: '兑换码管理',
-    tabSettings: '账号设置',
-    // Stats
-    statUsers: '注册用户',
-    statScans: '总扫描次数',
-    statActiveCodes: '有效兑换码',
-    statActiveCodesHint: '可继续兑换',
-    statTotalUses: '累计兑换次数',
-    statTotalCodes: '总码数',
-    statRevoked: '已撤销',
-    btnRefresh: '刷新数据',
-    // Generate
-    cardGenerate: '生成兑换码',
-    labelCredits: 'Credits 数量',
-    hintCredits: '每码赠送的扫描次数',
-    labelCount: '生成数量',
-    hintCount: '最多 500 个 / 次',
-    labelMaxUses: '每码可用次数',
-    hintMaxUses: '1 = 一次性；> 1 = 多人共享',
-    labelExpires: '有效天数',
-    hintExpires: '0 = 永不过期',
-    labelNote: '备注',
-    btnGenerate: '生成兑换码',
-    cardResult: '生成结果',
-    resultEmpty: '生成的兑换码将显示在这里',
-    btnCopyAll: '复制全部',
-    btnExportTxt: '导出 TXT',
-    // Codes table
-    btnRefreshShort: '刷新',
-    thCode: '兑换码',
-    thCredits: 'Credits',
-    thUsage: '使用情况',
-    thStatus: '状态',
-    thExpiry: '有效期',
-    thNote: '备注',
-    thCreated: '创建时间',
-    thActions: '操作',
-    btnPrev: '上一页',
-    btnNext: '下一页',
-    // Settings
-    cardChangePassword: '修改密码',
-    labelOldPassword: '当前密码',
-    labelNewPassword: '新密码',
-    labelConfirmPassword: '确认新密码',
-    btnChangePassword: '修改密码',
-    cardAddAdmin: '➕ 添加管理员',
-    labelUsername: '用户名',
-    labelPassword: '密码',
-    labelConfirmPwd: '确认密码',
-    btnAddAdmin: '添加管理员',
-    cardAdminList: '👥 管理员列表',
-    btnCopy: '复制',
-    btnRevoke: '撤销',
-    usersPerCode: '人/码',
-    expiresOn: '到期',
-    // Status labels
-    statusPermanent: '永久',
-    statusActive: '有效',
-    statusUsedUp: '已用完',
-    statusExpired: '已过期',
-    statusRevoked: '已撤销',
-    // Table content
-    noData: '暂无数据',
-    loading: '加载中...',
-    never: '永不过期',
-    unlimited: '不限',
-    // Toast messages
-    generateSuccess: '生成成功',
-    generateFail: '生成失败',
-    revokeSuccess: '已撤销',
-    revokeFail: '撤销失败',
-    copySuccess: '已复制',
-    loginSuccess: '登录成功',
-    loginFail: '用户名或密码错误',
-    pwdChangeSuccess: '密码修改成功',
-    pwdChangeFail: '密码修改失败',
-    saveSuccess: '保存成功',
-    saveFail: '保存失败',
-    // Search/filter
-    searchCodePh: '搜索兑换码...',
-    filterAll: '全部状态',
-    filterActive: '有效',
-    filterUsed: '已使用',
-    filterExpired: '已过期',
-    filterRevoked: '已撤销',
+    loginTitle:'管理后台',loginSubtitle:'管理后台登录',loginLabelUser:'用户名',loginLabelPass:'密码',btnLogin:'登录',
+    adminBadge:'管理后台',logout:'退出登录',
+    btnChangePassword:'修改密码',btnAddAdmin:'添加管理员',
+    btnGenerate:'生成兑换码',btnRevoke:'撤销',btnCopy:'复制',btnRefresh:'刷新数据',
+    statusActive:'有效',statusUsedUp:'已用完',statusExpired:'已过期',statusRevoked:'已撤销',statusPermanent:'永久',
+    noData:'暂无数据',loading:'加载中...',never:'永不过期',unlimited:'不限',
+    generateSuccess:'生成成功',generateFail:'生成失败',revokeSuccess:'已撤销',revokeFail:'撤销失败',
+    copySuccess:'已复制',loginSuccess:'登录成功',loginFail:'用户名或密码错误',
+    pwdChangeSuccess:'密码修改成功',pwdChangeFail:'密码修改失败',
   },
   en: {
-    // Login
-    loginTitle: 'Admin Panel',
-    loginLabelUser: 'Username',
-    loginLabelPass: 'Password',
-    btnLogin: 'Sign In',
-    // Nav
-    adminBadge: 'Admin Panel',
-    logout: 'Sign Out',
-    langBtn: '中文',
-    // Tabs
-    tabStats: 'Overview',
-    tabGenerate: 'Generate Codes',
-    tabCodes: 'Code Manager',
-    tabSettings: 'Settings',
-    // Stats
-    statUsers: 'Users',
-    statScans: 'Total Scans',
-    statActiveCodes: 'Active Codes',
-    statActiveCodesHint: 'Still redeemable',
-    statTotalUses: 'Total Redemptions',
-    statTotalCodes: 'Total Codes',
-    statRevoked: 'Revoked',
-    btnRefresh: 'Refresh',
-    // Generate
-    cardGenerate: 'Generate Codes',
-    labelCredits: 'Credits Amount',
-    hintCredits: 'Scans granted per code',
-    labelCount: 'Quantity',
-    hintCount: 'Max 500 per batch',
-    labelMaxUses: 'Uses per Code',
-    hintMaxUses: '1 = one-time; > 1 = shared promo',
-    labelExpires: 'Valid Days',
-    hintExpires: '0 = never expires',
-    labelNote: 'Note',
-    btnGenerate: 'Generate Codes',
-    cardResult: 'Result',
-    resultEmpty: 'Generated codes will appear here',
-    btnCopyAll: 'Copy All',
-    btnExportTxt: 'Export TXT',
-    // Codes table
-    btnRefreshShort: 'Refresh',
-    thCode: 'Code',
-    thCredits: 'Credits',
-    thUsage: 'Usage',
-    thStatus: 'Status',
-    thExpiry: 'Expiry',
-    thNote: 'Note',
-    thCreated: 'Created',
-    thActions: 'Actions',
-    btnPrev: 'Prev',
-    btnNext: 'Next',
-    // Settings
-    cardChangePassword: 'Change Password',
-    labelOldPassword: 'Current Password',
-    labelNewPassword: 'New Password',
-    labelConfirmPassword: 'Confirm New Password',
-    btnChangePassword: 'Change Password',
-    cardAddAdmin: '➕ Add Admin',
-    labelUsername: 'Username',
-    labelPassword: 'Password',
-    labelConfirmPwd: 'Confirm Password',
-    btnAddAdmin: 'Add Admin',
-    cardAdminList: '👥 Admin List',
-    btnCopy: 'Copy',
-    btnRevoke: 'Revoke',
-    usersPerCode: 'users/code',
-    expiresOn: 'Expires',
-    // Status labels
-    statusPermanent: 'Permanent',
-    statusActive: 'Active',
-    statusUsedUp: 'Used up',
-    statusExpired: 'Expired',
-    statusRevoked: 'Revoked',
-    // Table content
-    noData: 'No data',
-    loading: 'Loading...',
-    never: 'Never expires',
-    unlimited: 'Unlimited',
-    // Toast messages
-    generateSuccess: 'Generated successfully',
-    generateFail: 'Generation failed',
-    revokeSuccess: 'Revoked',
-    revokeFail: 'Revoke failed',
-    copySuccess: 'Copied',
-    loginSuccess: 'Login successful',
-    loginFail: 'Invalid username or password',
-    pwdChangeSuccess: 'Password changed',
-    pwdChangeFail: 'Password change failed',
-    saveSuccess: 'Saved',
-    saveFail: 'Save failed',
-    // Search/filter
-    searchCodePh: 'Search codes...',
-    filterAll: 'All status',
-    filterActive: 'Active',
-    filterUsed: 'Used',
-    filterExpired: 'Expired',
-    filterRevoked: 'Revoked',
-  },
+    loginTitle:'Admin Panel',loginSubtitle:'Admin Login',loginLabelUser:'Username',loginLabelPass:'Password',btnLogin:'Sign In',
+    adminBadge:'Admin Panel',logout:'Sign Out',
+    btnChangePassword:'Change Password',btnAddAdmin:'Add Admin',
+    btnGenerate:'Generate Codes',btnRevoke:'Revoke',btnCopy:'Copy',btnRefresh:'Refresh',
+    statusActive:'Active',statusUsedUp:'Used up',statusExpired:'Expired',statusRevoked:'Revoked',statusPermanent:'Permanent',
+    noData:'No data',loading:'Loading...',never:'Never expires',unlimited:'Unlimited',
+    generateSuccess:'Generated',generateFail:'Failed',revokeSuccess:'Revoked',revokeFail:'Revoke failed',
+    copySuccess:'Copied',loginSuccess:'Login successful',loginFail:'Invalid credentials',
+    pwdChangeSuccess:'Password changed',pwdChangeFail:'Change failed',
+  }
 };
 let _langAdmin = localStorage.getItem('lang') || 'zh';
 function LA() { return LANG_ADMIN[_langAdmin] || LANG_ADMIN.zh; }
-function applyI18nAdmin() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const k = el.getAttribute('data-i18n');
-    if (LA()[k] !== undefined) el.textContent = LA()[k];
-  });
-  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
-    const k = el.getAttribute('data-i18n-opt');
-    if (LA()[k] !== undefined) {
-      // Preserve leading emoji prefix if present
-      const cur = el.textContent;
-      const emojiMatch = cur.match(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}⬛✅🟡🔴]\s*/u);
-      el.textContent = (emojiMatch ? emojiMatch[0] : '') + LA()[k];
-    }
-  });
-  const searchEl = document.getElementById('code-search');
-  if (searchEl) searchEl.placeholder = LA().searchCodePh || searchEl.placeholder;
-  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LA().langBtn);
-}
 function toggleLangPage() {
   _langAdmin = _langAdmin === 'zh' ? 'en' : 'zh';
   localStorage.setItem('lang', _langAdmin);
   document.documentElement.lang = _langAdmin === 'zh' ? 'zh-CN' : 'en';
   applyI18nAdmin();
 }
+function applyI18nAdmin() {
+  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = _langAdmin === 'zh' ? 'EN' : '中文');
+  // login
+  const ls = document.getElementById('login-subtitle'); if(ls) ls.textContent = LA().loginSubtitle;
+  const ll = document.getElementById('login-label-user'); if(ll) ll.textContent = LA().loginLabelUser;
+  const lp = document.getElementById('login-label-pass'); if(lp) lp.textContent = LA().loginLabelPass;
+  const lb = document.getElementById('login-btn'); if(lb) lb.textContent = LA().btnLogin;
+  // sidebar badge
+  const sb = document.getElementById('sb-badge'); if(sb) sb.textContent = LA().adminBadge;
+  const so = document.getElementById('sb-logout'); if(so) so.textContent = LA().logout;
+}
 applyI18nAdmin();
-const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
+// ── Theme ─────────────────────────────────────────────────
 function _toggleTheme() {
-  const c = document.documentElement.getAttribute('data-theme') || 'dark';
+  const c = document.documentElement.getAttribute('data-theme') || 'light';
   const n = c === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', n);
   localStorage.setItem('appsec-theme', n);
-  document.querySelectorAll('.theme-btn').forEach(b => b.innerHTML = n === 'dark' ? _moonSvg : _sunSvg);
+  _updateThemeIcon(n);
 }
-(()=>{const t = document.documentElement.getAttribute('data-theme') || 'dark'; document.querySelectorAll('.theme-btn').forEach(b => b.innerHTML = t === 'dark' ? _moonSvg : _sunSvg);})();
+function _updateThemeIcon(t) {
+  const icon = document.getElementById('theme-icon');
+  if (!icon) return;
+  if (t === 'dark') {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  } else {
+    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  }
+}
+(()=>{ const t = document.documentElement.getAttribute('data-theme') || 'light'; _updateThemeIcon(t); })();
+
+// ── Init ──────────────────────────────────────────────────
+if (adminToken) { showApp(); } else { showLogin(); }
 </script>
 </body>
 </html>
