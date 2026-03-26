@@ -4896,6 +4896,7 @@ window.addEventListener('scroll',()=>{{
   const lb=document.getElementById('load-btn');
   if(lb&&lb.getBoundingClientRect().top<window.innerHeight+200)_load();
 }});"""
+    js = js.replace('{{', '{').replace('}}', '}')
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
