@@ -4507,251 +4507,395 @@ async def market_page():
 def _news_html() -> str:  # noqa: PLR0915
     site = os.getenv("SITE_URL", "https://maclechen.top")
     css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#060d1c;--border:rgba(255,255,255,.07);--text:#f1f5f9;--muted:#64748b;--muted2:#475569;--pr:#6366f1;--pr2:#8b5cf6;--card:rgba(13,20,38,.85)}
-[data-theme=light]{--bg:#f8fafc;--border:rgba(0,0,0,.09);--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--card:rgba(255,255,255,.9)}
-[data-theme=light] body{background:#f8fafc}
-[data-theme=light] header{background:rgba(255,255,255,.65)!important;backdrop-filter:blur(28px) saturate(200%)!important;-webkit-backdrop-filter:blur(28px) saturate(200%)!important;border-bottom-color:rgba(0,0,0,.06)!important;box-shadow:0 1px 0 rgba(0,0,0,.04),0 8px 32px rgba(0,0,0,.06)!important}
-[data-theme=light] .chip:not(.on){background:white;color:#475569;border-color:rgba(0,0,0,.1)}
-[data-theme=light] .chip:hover:not(.on){background:#f1f5f9!important;color:#0f172a!important}
-[data-theme=light] .ncard{background:white;border-color:rgba(0,0,0,.09)}
-[data-theme=light] .ncard:hover{box-shadow:0 8px 28px rgba(0,0,0,.1)!important;border-color:rgba(0,0,0,.14)!important}
-[data-theme=light] .ncard-sk{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.07)}
-[data-theme=light] .sort-sel{background:white;border-color:rgba(0,0,0,.12);color:#1e293b}
-[data-theme=light] .theme-btn{color:#475569!important;border-color:rgba(0,0,0,.12)!important}
-[data-theme=light] .theme-btn:hover{background:rgba(0,0,0,.05)!important}
-.theme-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
-.theme-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
-.lang-toggle{background:transparent;border:1px solid var(--border);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:.78em;font-weight:700;color:var(--muted);transition:all .2s;flex-shrink:0}
-.lang-toggle:hover{background:rgba(255,255,255,.06);color:var(--text)}
-[data-theme=light] .lang-toggle{border-color:rgba(0,0,0,.1);color:#64748b}
-[data-theme=light] .lang-toggle:hover{background:rgba(0,0,0,.05);color:#0f172a}
+:root{
+  --bg:#060d1c;--border:rgba(255,255,255,.07);--text:#f1f5f9;--muted:#64748b;--muted2:#94a3b8;
+  --pr:#06b6d4;--card:rgba(13,20,38,.9);--card2:rgba(17,25,45,.95);
+  --sk-base:rgba(255,255,255,.04);--sk-shine:rgba(255,255,255,.09);
+  --tabs-bg:rgba(6,13,28,.96);--search-bg:rgba(255,255,255,.07);--search-border:rgba(255,255,255,.12);
+  --cat-bg:rgba(255,255,255,.07);--cat-border:rgba(255,255,255,.1);
+}
+[data-theme=light]{
+  --bg:#f1f5f9;--border:rgba(0,0,0,.09);--text:#0f172a;--muted:#64748b;--muted2:#475569;
+  --card:#fff;--card2:#f8fafc;
+  --sk-base:rgba(0,0,0,.05);--sk-shine:rgba(0,0,0,.09);
+  --tabs-bg:rgba(255,255,255,.96);--search-bg:rgba(255,255,255,.9);--search-border:rgba(0,0,0,.13);
+  --cat-bg:rgba(0,0,0,.05);--cat-border:rgba(0,0,0,.09);
+}
+html,body{height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a{text-decoration:none;color:inherit}
+
+/* ── Header ── */
 header{position:sticky;top:0;z-index:100;background:rgba(6,13,28,.55);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.07);box-shadow:0 1px 0 rgba(255,255,255,.04),0 8px 32px rgba(0,0,0,.18);padding:0 20px;height:58px;display:flex;align-items:center;gap:10px}
+[data-theme=light] header{background:rgba(255,255,255,.72)!important;backdrop-filter:blur(28px) saturate(200%)!important;-webkit-backdrop-filter:blur(28px) saturate(200%)!important;border-bottom-color:rgba(0,0,0,.07)!important;box-shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06)!important}
 .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.95em;white-space:nowrap;flex-shrink:0}
 .logo img{width:24px;height:24px}
-.bread{display:flex;align-items:center;gap:6px;font-size:.82em;color:var(--muted);flex:1;min-width:0}
-.bread-sep{opacity:.4}
+.bread{display:flex;align-items:center;gap:6px;font-size:.8em;color:var(--muted);flex:1;min-width:0}
+.bread-sep{opacity:.4;flex-shrink:0}
+.bread-link{color:var(--muted);transition:color .15s;white-space:nowrap;flex-shrink:0}
+.bread-link:hover{color:var(--text)}
 .bread-cur{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.h-back{display:inline-flex;align-items:center;gap:5px;font-size:.78em;color:var(--muted);transition:color .15s;flex-shrink:0;padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
-.h-back:hover{color:var(--text);border-color:rgba(255,255,255,.15)}
-.hero{background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(6,182,212,.11) 0%,transparent 60%);padding:52px 20px 40px;text-align:center}
-.hero-icon{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 36px rgba(6,182,212,.35)}
-.hero-title{font-size:2.3em;font-weight:900;letter-spacing:-.03em;background:linear-gradient(135deg,#67e8f9 0%,#a5b4fc 50%,#6ee7b7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
-.hero-sub{color:var(--muted);font-size:.88em;margin-bottom:30px}
-.search-wrap{max-width:500px;margin:0 auto;position:relative}
-.search-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:30px;padding:13px 48px;color:var(--text);font-size:.92em;outline:none;transition:border-color .25s,background .25s,box-shadow .25s}
-.search-input:focus{border-color:rgba(6,182,212,.5);background:rgba(255,255,255,.1);box-shadow:0 4px 28px rgba(6,182,212,.15)}
+.h-back{display:inline-flex;align-items:center;gap:5px;font-size:.77em;color:var(--muted);transition:color .15s,border-color .15s;flex-shrink:0;padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
+.h-back:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+[data-theme=light] .h-back{background:rgba(0,0,0,.03)}
+[data-theme=light] .h-back:hover{border-color:rgba(0,0,0,.18)}
+.icon-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
+.icon-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+[data-theme=light] .icon-btn{border-color:rgba(0,0,0,.12);color:#64748b}
+[data-theme=light] .icon-btn:hover{background:rgba(0,0,0,.04);color:#0f172a}
+.lang-toggle{background:transparent;border:1px solid var(--border);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:.77em;font-weight:700;color:var(--muted);transition:all .2s;flex-shrink:0;white-space:nowrap}
+.lang-toggle:hover{background:rgba(255,255,255,.06);color:var(--text)}
+[data-theme=light] .lang-toggle{border-color:rgba(0,0,0,.12);color:#64748b}
+[data-theme=light] .lang-toggle:hover{background:rgba(0,0,0,.04);color:#0f172a}
+
+/* ── Hero ── */
+.hero{background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(6,182,212,.12) 0%,transparent 60%);padding:50px 20px 38px;text-align:center}
+[data-theme=light] .hero{background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(6,182,212,.07) 0%,transparent 60%)}
+.hero-icon{width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 32px rgba(6,182,212,.3)}
+.hero-title{font-size:2.2em;font-weight:900;letter-spacing:-.03em;background:linear-gradient(135deg,#67e8f9 0%,#a5b4fc 55%,#6ee7b7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+[data-theme=light] .hero-title{background:linear-gradient(135deg,#0891b2 0%,#4f46e5 55%,#059669 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{color:var(--muted);font-size:.87em;margin-bottom:28px;line-height:1.6}
+.search-wrap{max-width:520px;margin:0 auto;position:relative}
+.search-input{width:100%;background:var(--search-bg);border:1.5px solid var(--search-border);border-radius:30px;padding:12px 48px;color:var(--text);font-size:.91em;outline:none;transition:border-color .25s,background .25s,box-shadow .25s}
+.search-input:focus{border-color:rgba(6,182,212,.5);box-shadow:0 4px 24px rgba(6,182,212,.14)}
+[data-theme=light] .search-input:focus{border-color:rgba(6,182,212,.4);box-shadow:0 4px 20px rgba(6,182,212,.1)}
 .search-input::placeholder{color:var(--muted)}
-.search-icon{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;display:flex;align-items:center}
-.search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:var(--muted);cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .15s}
-.search-clear:hover{background:rgba(255,255,255,.2)}
-.tabs-bar{position:sticky;top:58px;z-index:90;background:rgba(6,13,28,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-.tabs{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex-shrink:0;padding:13px 18px;font-size:.82em;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .18s;white-space:nowrap;background:none;border-left:none;border-right:none;border-top:none;display:flex;align-items:center;gap:6px}
+.search-icon{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;display:flex}
+.search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:var(--muted);cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .15s}
+.search-clear:hover{background:rgba(255,255,255,.22)}
+[data-theme=light] .search-clear{background:rgba(0,0,0,.08)}
+[data-theme=light] .search-clear:hover{background:rgba(0,0,0,.14)}
+
+/* ── Tabs bar ── */
+.tabs-bar{position:sticky;top:58px;z-index:90;background:var(--tabs-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.tabs-inner{max-width:1200px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs-inner::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:12px 16px;font-size:.81em;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .18s,border-color .18s;white-space:nowrap;background:none;border-left:none;border-right:none;border-top:none;display:flex;align-items:center;gap:5px}
 .tab.on{color:#22d3ee;border-bottom-color:#22d3ee}
+[data-theme=light] .tab.on{color:#0891b2;border-bottom-color:#0891b2}
 .tab:hover:not(.on){color:var(--text)}
-.tab-count{font-size:.68em;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.08);font-weight:700;line-height:1.4}
-.tab-count.on{background:rgba(6,182,212,.2);color:#22d3ee}
-.toolbar{max-width:1200px;margin:0 auto;padding:12px 20px 2px;display:flex;align-items:center;gap:8px}
-#results-info{font-size:.75em;color:var(--muted)}
-.grid{max-width:1200px;margin:0 auto;padding:14px 20px 32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;align-items:start}
-@media(max-width:540px){.grid{grid-template-columns:1fr;gap:11px;padding:12px 14px 28px}}
-.ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit}
-.ncard:hover{transform:translateY(-4px);box-shadow:0 18px 52px rgba(0,0,0,.65);border-color:rgba(255,255,255,.15)}
+.tabs-right{margin-left:auto;display:flex;align-items:center;gap:6px;padding:6px 0;flex-shrink:0}
+.view-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.view-btn.on,.view-btn:hover{background:rgba(6,182,212,.12);border-color:rgba(6,182,212,.3);color:#22d3ee}
+[data-theme=light] .view-btn.on,[data-theme=light] .view-btn:hover{background:rgba(8,145,178,.1);border-color:rgba(8,145,178,.3);color:#0891b2}
+
+/* ── Toolbar ── */
+.toolbar{max-width:1200px;margin:0 auto;padding:10px 20px 0;display:flex;align-items:center;gap:8px;min-height:36px}
+#results-info{font-size:.74em;color:var(--muted);flex:1}
+
+/* ── Grid ── */
+#grid{max-width:1200px;margin:0 auto;padding:14px 20px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;align-items:start}
+#grid.view-list{grid-template-columns:1fr;gap:12px}
+@media(max-width:600px){#grid{grid-template-columns:1fr;gap:10px;padding:10px 14px 24px}}
+
+/* ── Card (grid) ── */
+.ncard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;text-decoration:none;color:inherit;animation:cardIn .28s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.ncard:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.55);border-color:rgba(255,255,255,.14)}
+[data-theme=light] .ncard{background:#fff;border-color:rgba(0,0,0,.09)}
+[data-theme=light] .ncard:hover{box-shadow:0 8px 32px rgba(0,0,0,.1);border-color:rgba(0,0,0,.15);transform:translateY(-2px)}
+
+/* Grid image */
 .ncard-media{width:100%;aspect-ratio:16/9;overflow:hidden;flex-shrink:0;position:relative;background:#0d1426}
-.ncard-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
-.ncard:hover .ncard-media img{transform:scale(1.05)}
-.ncard-media-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.ncard-body{padding:14px 15px;display:flex;flex-direction:column;gap:7px;flex:1}
-.ncard-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.ncard-src{font-size:.64em;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-.ncard-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);flex-shrink:0}
-.ncard-cat{display:inline-flex;padding:1px 7px;border-radius:7px;font-size:.6em;font-weight:700;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--muted2)}
-.ncard-time{font-size:.62em;color:var(--muted);margin-left:auto;flex-shrink:0}
-.ncard-title{font-size:.88em;font-weight:700;line-height:1.48;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
-.ncard-summary{font-size:.72em;color:var(--muted2);line-height:1.58;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:9px;border-top:1px solid var(--border);margin-top:auto}
-.ncard-read{font-size:.71em;font-weight:700;display:inline-flex;align-items:center;gap:3px;transition:gap .15s}
-.ncard:hover .ncard-read{gap:6px}
-.ncard-sk{background:var(--card);border:1px solid var(--border);border-radius:14px;height:280px;animation:pulse 1.6s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
-.load-wrap{display:flex;justify-content:center;padding:8px 20px 60px}
-.load-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 36px;border-radius:28px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);color:#22d3ee;font-size:.84em;font-weight:700;cursor:pointer;transition:all .2s}
-.load-btn:hover{background:rgba(6,182,212,.2);box-shadow:0 4px 20px rgba(6,182,212,.18)}
-.load-btn.spin{opacity:.6;pointer-events:none}
-.empty{text-align:center;padding:90px 20px;max-width:380px;margin:0 auto}
-.empty-ico{margin-bottom:18px;opacity:.25}
-.empty-t{font-size:1.05em;font-weight:700;color:var(--muted2);margin-bottom:8px}
-.empty-s{font-size:.83em;color:var(--muted);line-height:1.7}
-footer{text-align:center;padding:24px;font-size:.73em;color:#1e293b;border-top:1px solid var(--border)}
-footer a{color:#3b82f6}"""
-    js = """const _NC={
-  '科技':  {grad:'linear-gradient(90deg,#06b6d4,#3b82f6)',   color:'#22d3ee'},
-  '软件':  {grad:'linear-gradient(90deg,#a78bfa,#7c3aed)',   color:'#a78bfa'},
-  'Tech':  {grad:'linear-gradient(90deg,#60a5fa,#1d4ed8)',   color:'#60a5fa'},
-  'Dev':   {grad:'linear-gradient(90deg,#4ade80,#15803d)',   color:'#4ade80'},
-  'Security':{grad:'linear-gradient(90deg,#f87171,#b91c1c)', color:'#f87171'},
-};
-const _DNC={grad:'linear-gradient(90deg,#6366f1,#8b5cf6)',color:'#a5b4fc'};
-function _nc(c){return _NC[c]||_DNC;}
-function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-function relTime(dt){
-  if(!dt)return '';
-  const d=new Date(dt.replace(' ','T'));
-  if(isNaN(d))return '';
-  const s=(Date.now()-d.getTime())/1000;
-  if(s<120)return '刚刚';
-  if(s<3600)return Math.floor(s/60)+'分钟前';
-  if(s<86400)return Math.floor(s/3600)+'小时前';
-  if(s<604800)return Math.floor(s/86400)+'天前';
-  return d.toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
+[data-theme=light] .ncard-media{background:#e2e8f0}
+.ncard-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s}
+.ncard:hover .ncard-media img{transform:scale(1.06)}
+.ncard-media-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+
+/* Grid body */
+.ncard-body{padding:13px 14px;display:flex;flex-direction:column;gap:7px;flex:1}
+.ncard-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ncard-src{font-size:.63em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;flex-shrink:0}
+.ncard-dot{width:2.5px;height:2.5px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.ncard-cat{display:inline-flex;padding:1px 7px;border-radius:7px;font-size:.59em;font-weight:700;background:var(--cat-bg);border:1px solid var(--cat-border);color:var(--muted2);flex-shrink:0}
+.ncard-time{font-size:.61em;color:var(--muted);margin-left:auto;flex-shrink:0}
+.ncard-title{font-size:.87em;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ncard-summary{font-size:.72em;color:var(--muted2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ncard-footer{display:flex;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:auto}
+.ncard-read{font-size:.7em;font-weight:700;display:inline-flex;align-items:center;gap:4px;transition:gap .15s}
+.ncard:hover .ncard-read{gap:7px}
+
+/* ── List card ── */
+#grid.view-list .ncard{flex-direction:row;height:120px}
+#grid.view-list .ncard-media{width:160px;min-width:160px;aspect-ratio:unset;height:100%}
+#grid.view-list .ncard-body{padding:12px 14px}
+#grid.view-list .ncard-title{-webkit-line-clamp:2;font-size:.86em}
+#grid.view-list .ncard-summary{-webkit-line-clamp:1;font-size:.7em}
+@media(max-width:540px){
+  #grid.view-list .ncard{height:auto;flex-direction:column}
+  #grid.view-list .ncard-media{width:100%;height:auto;aspect-ratio:16/9;min-width:unset}
 }
+
+/* ── Skeleton ── */
+.ncard-sk{background:var(--sk-base);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:shimmer 1.8s linear infinite}
+.ncard-sk .sk-img{width:100%;aspect-ratio:16/9;background:var(--sk-base)}
+.ncard-sk .sk-body{padding:13px 14px;display:flex;flex-direction:column;gap:8px}
+.ncard-sk .sk-line{height:11px;border-radius:6px;background:var(--sk-base)}
+.ncard-sk .sk-line.w80{width:80%}
+.ncard-sk .sk-line.w60{width:60%}
+.ncard-sk .sk-line.w40{width:40%}
+@keyframes shimmer{0%,100%{opacity:.5}50%{opacity:1}}
+#grid.view-list .ncard-sk{flex-direction:row;height:120px}
+#grid.view-list .ncard-sk .sk-img{width:160px;min-width:160px;aspect-ratio:unset;height:100%}
+
+/* ── Load more ── */
+.load-wrap{display:flex;justify-content:center;padding:8px 20px 64px}
+.load-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 36px;border-radius:28px;background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.25);color:#22d3ee;font-size:.83em;font-weight:700;cursor:pointer;transition:all .2s}
+.load-btn:hover{background:rgba(6,182,212,.16);box-shadow:0 4px 20px rgba(6,182,212,.15)}
+.load-btn.spin{opacity:.55;pointer-events:none}
+.load-btn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+[data-theme=light] .load-btn{background:rgba(8,145,178,.06);border-color:rgba(8,145,178,.2);color:#0891b2}
+[data-theme=light] .load-btn:hover{background:rgba(8,145,178,.12)}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:80px 20px;max-width:360px;margin:0 auto}
+.empty-ico{margin-bottom:16px;opacity:.2}
+.empty-t{font-size:1em;font-weight:700;color:var(--muted2);margin-bottom:6px}
+.empty-s{font-size:.81em;color:var(--muted);line-height:1.75}
+
+/* ── Footer ── */
+footer{text-align:center;padding:24px;font-size:.72em;color:var(--muted);border-top:1px solid var(--border)}
+footer a{color:var(--pr);transition:opacity .15s}
+footer a:hover{opacity:.8}"""
+    js = """
+// ── Category colors ──────────────────────────────────────
+const _NC={{
+  '科技':    {{grad:'linear-gradient(135deg,#0ea5e9,#2563eb)',    color:'#38bdf8'}},
+  '软件':    {{grad:'linear-gradient(135deg,#a78bfa,#7c3aed)',    color:'#c4b5fd'}},
+  'Tech':   {{grad:'linear-gradient(135deg,#60a5fa,#1d4ed8)',    color:'#93c5fd'}},
+  'Dev':    {{grad:'linear-gradient(135deg,#34d399,#059669)',    color:'#6ee7b7'}},
+  'Security':{{grad:'linear-gradient(135deg,#f87171,#b91c1c)',   color:'#fca5a5'}},
+}};
+const _DNC={{grad:'linear-gradient(135deg,#818cf8,#4f46e5)',color:'#a5b4fc'}};
+function _nc(c){{return _NC[c]||_DNC;}}
+function esc(s){{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}}
+
+// ── Relative time (i18n) ─────────────────────────────────
+function relTime(dt){{
+  if(!dt)return '';
+  const d=new Date((dt||'').replace(' ','T'));
+  if(isNaN(d.getTime()))return '';
+  const s=Math.floor((Date.now()-d.getTime())/1000);
+  const zh=_langNews==='zh';
+  if(s<120)  return zh?'刚刚':'Just now';
+  if(s<3600) return zh?Math.floor(s/60)+'分钟前':Math.floor(s/60)+'m ago';
+  if(s<86400)return zh?Math.floor(s/3600)+'小时前':Math.floor(s/3600)+'h ago';
+  if(s<604800)return zh?Math.floor(s/86400)+'天前':Math.floor(s/86400)+'d ago';
+  return d.toLocaleDateString(_langNews==='zh'?'zh-CN':'en-US',{{month:'short',day:'numeric'}});
+}}
+
+// ── Placeholder SVG ──────────────────────────────────────
+const _phSvg='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
+const _arrowSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
+
+// ── State ────────────────────────────────────────────────
 const LIMIT=24;
 let _cat='',_q='',_offset=0,_hasMore=true,_loading=false;
-const _arrowSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
-function setTab(cat,el){
+let _view='grid'; // 'grid'|'list'
+
+// ── Render cards ─────────────────────────────────────────
+function renderCards(articles){{
+  const g=document.getElementById('grid');
+  articles.forEach((a,idx)=>{{
+    const nc=_nc(a.category);
+    const seed=a.id||(_offset+idx);
+    const imgUrl=a.image_url||'';
+    const card=document.createElement('a');
+    card.className='ncard';
+    card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
+    card.style.animationDelay=(idx*30)+'ms';
+    card.innerHTML=`
+      <div class="ncard-media" data-grad="${{esc(nc.grad)}}">
+        ${{imgUrl?`<img src="${{esc(imgUrl)}}" alt="" loading="lazy">`:`<div class="ncard-media-ph" style="background:${{nc.grad}}"><div style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.6">${{_phSvg}}<span style="font-size:.6em;color:#fff;font-weight:700;letter-spacing:.06em;text-transform:uppercase">${{esc(a.category||a.source||'')}}</span></div></div>`}}
+      </div>
+      <div class="ncard-body">
+        <div class="ncard-meta">
+          <span class="ncard-src" style="color:${{nc.color}}">${{esc(a.source||'资讯')}}</span>
+          <div class="ncard-dot"></div>
+          <span class="ncard-cat">${{esc(a.category||'')}}</span>
+          <span class="ncard-time">${{relTime(a.published_at||a.created_at)}}</span>
+        </div>
+        <div class="ncard-title">${{esc(a.title||'')}}</div>
+        ${{a.summary?`<div class="ncard-summary">${{esc(a.summary)}}</div>`:''}}
+        <div class="ncard-footer">
+          <span class="ncard-read" style="color:${{nc.color}}">${{LN().readMore}} ${{_arrowSvg}}</span>
+        </div>
+      </div>`;
+    if(imgUrl){{
+      const img=card.querySelector('img');
+      img.addEventListener('error',()=>{{
+        const m=img.parentNode;
+        m.innerHTML=`<div class="ncard-media-ph" style="background:${{nc.grad}}"><div style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.6">${{_phSvg}}<span style="font-size:.6em;color:#fff;font-weight:700;letter-spacing:.06em;text-transform:uppercase">${{esc(a.category||a.source||'')}}</span></div></div>`;
+      }});
+    }}
+    g.appendChild(card);
+  }});
+}}
+
+// ── Skeleton ─────────────────────────────────────────────
+function showSk(n){{
+  const g=document.getElementById('grid');
+  for(let i=0;i<n;i++){{
+    const d=document.createElement('div');d.className='ncard-sk';
+    d.innerHTML='<div class="sk-img"></div><div class="sk-body"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line w40"></div></div>';
+    g.appendChild(d);
+  }}
+}}
+function rmSk(){{document.querySelectorAll('.ncard-sk').forEach(e=>e.remove());}}
+
+// ── Tabs / search ─────────────────────────────────────────
+function setTab(cat,el){{
   _cat=cat;_offset=0;_hasMore=true;
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('grid').innerHTML='';
   document.getElementById('load-btn').style.display='';
   _load(true);
-}
+}}
 let _st;
-function onSearchInput(){clearTimeout(_st);_st=setTimeout(()=>{
-  _q=document.getElementById('si').value.trim();
-  document.getElementById('sc').style.display=_q?'flex':'none';
-  _offset=0;_hasMore=true;
-  document.getElementById('grid').innerHTML='';
-  document.getElementById('load-btn').style.display='';
-  _load(true);
-},380);}
-function clearSearch(){
+function onSearchInput(){{
+  clearTimeout(_st);_st=setTimeout(()=>{{
+    _q=document.getElementById('si').value.trim();
+    document.getElementById('sc').style.display=_q?'flex':'none';
+    _offset=0;_hasMore=true;
+    document.getElementById('grid').innerHTML='';
+    document.getElementById('load-btn').style.display='';
+    _load(true);
+  }},380);
+}}
+function clearSearch(){{
   document.getElementById('si').value='';
   document.getElementById('sc').style.display='none';
   _q='';_offset=0;_hasMore=true;
   document.getElementById('grid').innerHTML='';
   document.getElementById('load-btn').style.display='';
   _load(true);
-}
-function renderCards(articles){
+}}
+
+// ── View toggle ───────────────────────────────────────────
+function setView(v){{
+  _view=v;
+  localStorage.setItem('news-view',v);
   const g=document.getElementById('grid');
-  const _ph='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="44" height="44"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
-  articles.forEach((a,idx)=>{
-    const nc=_nc(a.category);
-    const seed=a.id||(_offset+idx);
-    const fallbackImg=`https://picsum.photos/seed/${seed}/400/225`;
-    const imgUrl=a.image_url||fallbackImg;
-    const card=document.createElement('a');
-    card.className='ncard';card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
-    card.innerHTML=`
-      <div class="ncard-media"><img src="${esc(imgUrl)}" alt="" loading="lazy"></div>
-      <div class="ncard-body">
-        <div class="ncard-top">
-          <span class="ncard-src" style="color:${nc.color}">${esc(a.source||'资讯')}</span>
-          <div class="ncard-dot"></div>
-          <span class="ncard-cat">${esc(a.category||'')}</span>
-          <span class="ncard-time">${relTime(a.created_at)}</span>
-        </div>
-        <div class="ncard-title">${esc(a.title||'')}</div>
-        ${a.summary?`<div class="ncard-summary">${esc(a.summary)}</div>`:''}
-        <div class="ncard-footer">
-          <div class="ncard-read" style="color:${nc.color}">${LN().readMore} ${_arrowSvg}</div>
-        </div>
-      </div>`;
-    const img=card.querySelector('img');
-    if(img) img.addEventListener('error',()=>{
-      if(img.src!==fallbackImg){img.src=fallbackImg;return;}
-      const m=img.parentNode;m.style.background=nc.grad;
-      m.innerHTML=`<div class="ncard-media-ph">${_ph}</div>`;
-    });
-    g.appendChild(card);
-  });
-}
-function showSk(n){const g=document.getElementById('grid');for(let i=0;i<n;i++){const d=document.createElement('div');d.className='ncard-sk';g.appendChild(d);}}
-function rmSk(){document.querySelectorAll('.ncard-sk').forEach(e=>e.remove());}
-async function _load(reset=false){
+  g.className=v==='list'?'view-list':'';
+  g.id='grid';
+  document.getElementById('vbtn-grid').classList.toggle('on',v==='grid');
+  document.getElementById('vbtn-list').classList.toggle('on',v==='list');
+}}
+
+// ── Load ─────────────────────────────────────────────────
+async function _load(reset=false){{
   if(_loading||!_hasMore)return;
   _loading=true;
   const btn=document.getElementById('load-btn');
   if(btn)btn.classList.add('spin');
   document.getElementById('empty').hidden=true;
-  if(reset)showSk(12);
-  try{
-    const p=new URLSearchParams({limit:LIMIT,offset:_offset,category:_cat,q:_q});
-    const r=await fetch('/market/news?'+p,{cache:'no-store'});
+  if(reset)showSk(_view==='list'?6:12);
+  try{{
+    const p=new URLSearchParams({{limit:LIMIT,offset:_offset,category:_cat,q:_q}});
+    const r=await fetch('/market/news?'+p,{{cache:'no-store'}});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     rmSk();
     const arts=d.news||[];
-    if(arts.length<LIMIT){_hasMore=false;if(btn)btn.style.display='none';}
-    else{if(btn)btn.style.display='';}
-    if(!arts.length&&_offset===0){document.getElementById('empty').hidden=false;}
-    else{renderCards(arts);}
+    if(arts.length<LIMIT){{_hasMore=false;if(btn)btn.style.display='none';}}
+    else{{if(btn)btn.style.display='';}}
+    if(!arts.length&&_offset===0){{document.getElementById('empty').hidden=false;}}
+    else{{renderCards(arts);}}
     _offset+=arts.length;
-    document.getElementById('results-info').textContent=_offset>0?LN().loaded(_offset):'';
-  }catch(e){rmSk();console.error('[news]',e);}
+    const ri=document.getElementById('results-info');
+    if(ri)ri.textContent=_offset>0?LN().loaded(_offset):'';
+  }}catch(e){{rmSk();console.error('[news]',e);}}
   _loading=false;
   if(btn)btn.classList.remove('spin');
-}
+}}
+
+// ── Theme ─────────────────────────────────────────────────
 const _sunSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
 const _moonSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-function _toggleTheme(){{const c=document.documentElement.getAttribute('data-theme')||'dark';const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('appsec-theme',n);document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvg:_sunSvg);}}
+function _toggleTheme(){{
+  const c=document.documentElement.getAttribute('data-theme')||'dark';
+  const n=c==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('appsec-theme',n);
+  document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=n==='dark'?_moonSvg:_sunSvg);
+}}
 (()=>{{const t=document.documentElement.getAttribute('data-theme')||'dark';document.querySelectorAll('.theme-btn').forEach(b=>b.innerHTML=t==='dark'?_moonSvg:_sunSvg);}})();
-// ── i18n ────────────────────────────────────────
-const LANG_NEWS = {{
-  zh: {{
-    title: '科技资讯',
-    heroSub: '汇聚全球科技、软件、开发最新动态',
-    searchPh: '搜索资讯…',
-    backToMarket: '返回市场',
-    tabAll: '全部',
-    loadMore: '加载更多',
-    loading: '加载中…',
-    noNews: '暂无资讯',
-    readMore: '阅读原文',
-    loaded: n => `已加载 ${{n}} 条资讯`,
-    langBtn: 'EN',
+
+// ── i18n ─────────────────────────────────────────────────
+const LANG_NEWS={{
+  zh:{{
+    title:'科技资讯',heroSub:'汇聚全球科技、软件、开发最新动态，每天凌晨 3:00 自动更新',
+    searchPh:'搜索资讯标题、来源…',backToMarket:'返回市场',
+    tabAll:'全部',tabTech:'科技',tabSoftware:'软件',
+    loadMore:'加载更多',noNews:'暂无资讯',emptyHint:'换个分类或关键词试试',
+    readMore:'阅读原文',loaded:n=>`已加载 ${{n}} 条资讯`,
+    breadMarket:'应用市场',breadNews:'科技资讯',
+    footerText:'资讯每天凌晨 3:00 自动更新',
+    langBtn:'EN',
+    viewGrid:'网格视图',viewList:'列表视图',
   }},
-  en: {{
-    title: 'Tech News',
-    heroSub: 'Latest updates from global tech, software, and dev communities',
-    searchPh: 'Search news…',
-    backToMarket: 'Back to Market',
-    tabAll: 'All',
-    loadMore: 'Load More',
-    loading: 'Loading…',
-    noNews: 'No news yet',
-    readMore: 'Read More',
-    loaded: n => `Loaded ${{n}} articles`,
-    langBtn: '中文',
+  en:{{
+    title:'Tech News',heroSub:'Latest updates from global tech, software & dev communities, auto-updated daily at 3AM',
+    searchPh:'Search news title, source…',backToMarket:'Back to Market',
+    tabAll:'All',tabTech:'Tech CN',tabSoftware:'Software CN',
+    loadMore:'Load More',noNews:'No news yet',emptyHint:'Try a different category or keyword',
+    readMore:'Read More',loaded:n=>`Loaded ${{n}} articles`,
+    breadMarket:'App Market',breadNews:'Tech News',
+    footerText:'Auto-updated daily at 3:00 AM',
+    langBtn:'中文',
+    viewGrid:'Grid view',viewList:'List view',
   }},
 }};
-let _langNews = localStorage.getItem('lang') || 'zh';
-function LN() {{ return LANG_NEWS[_langNews] || LANG_NEWS.zh; }}
-function applyI18nNews() {{
-  document.querySelectorAll('[data-i18n]').forEach(el => {{
-    const k = el.getAttribute('data-i18n');
-    if (LN()[k] !== undefined) el.textContent = LN()[k];
+let _langNews=localStorage.getItem('lang')||'zh';
+function LN(){{return LANG_NEWS[_langNews]||LANG_NEWS.zh;}}
+function applyI18nNews(){{
+  document.querySelectorAll('[data-i18n]').forEach(el=>{{
+    const k=el.getAttribute('data-i18n');
+    if(LN()[k]!==undefined)el.textContent=LN()[k];
   }});
-  document.querySelectorAll('[data-i18n-ph]').forEach(el => {{
-    const k = el.getAttribute('data-i18n-ph');
-    if (LN()[k] !== undefined) el.placeholder = LN()[k];
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{{
+    const k=el.getAttribute('data-i18n-ph');
+    if(LN()[k]!==undefined)el.placeholder=LN()[k];
   }});
-  document.querySelectorAll('.lang-toggle').forEach(b => b.textContent = LN().langBtn);
+  document.querySelectorAll('.lang-toggle').forEach(b=>b.textContent=LN().langBtn);
+  // update breadcrumb
+  const bm=document.getElementById('bread-market');if(bm)bm.textContent=LN().breadMarket;
+  const bn=document.getElementById('bread-news');if(bn)bn.textContent=LN().breadNews;
+  // update back btn text
+  const bb=document.getElementById('back-btn-text');if(bb)bb.textContent=LN().backToMarket;
+  // update footer
+  const ft=document.getElementById('footer-text');if(ft)ft.textContent=LN().footerText;
+  // update view btn titles
+  const vg=document.getElementById('vbtn-grid');if(vg)vg.title=LN().viewGrid;
+  const vl=document.getElementById('vbtn-list');if(vl)vl.title=LN().viewList;
+  // re-render relative times
+  document.querySelectorAll('.ncard-time[data-dt]').forEach(el=>{{
+    el.textContent=relTime(el.getAttribute('data-dt'));
+  }});
 }}
-function toggleLangPage() {{
-  _langNews = _langNews === 'zh' ? 'en' : 'zh';
-  localStorage.setItem('lang', _langNews);
+function toggleLangPage(){{
+  _langNews=_langNews==='zh'?'en':'zh';
+  localStorage.setItem('lang',_langNews);
+  document.documentElement.lang=_langNews==='zh'?'zh-CN':'en';
   applyI18nNews();
-  document.getElementById('grid').innerHTML = '';
-  _offset = 0; _hasMore = true;
+  // reload grid
+  document.getElementById('grid').innerHTML='';
+  _offset=0;_hasMore=true;
   _load(true);
 }}
+// ── Init ─────────────────────────────────────────────────
+_view=localStorage.getItem('news-view')||'grid';
 applyI18nNews();
-_load(true);"""
+setView(_view);
+_load(true);
+// Infinite scroll
+window.addEventListener('scroll',()=>{{
+  if(_loading||!_hasMore)return;
+  const lb=document.getElementById('load-btn');
+  if(lb&&lb.getBoundingClientRect().top<window.innerHeight+200)_load();
+}});"""
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -4764,78 +4908,102 @@ _load(true);"""
   <style>{css}</style>
 </head>
 <body>
+
 <header>
   <a class="logo" href="{site}">
-    <img src="/favicon.svg" alt="logo">
-    AppSec AI
+    <img src="/favicon.svg" alt="logo">AppSec AI
   </a>
   <div class="bread">
     <span class="bread-sep">/</span>
-    <a href="/market" style="color:var(--muted);transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">应用市场</a>
+    <a id="bread-market" class="bread-link" href="/market">应用市场</a>
     <span class="bread-sep">/</span>
-    <span class="bread-cur">科技资讯</span>
+    <span id="bread-news" class="bread-cur">科技资讯</span>
   </div>
   <a class="h-back" href="/market">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
-    <span data-i18n="backToMarket">返回市场</span>
+    <span id="back-btn-text">返回市场</span>
   </a>
-  <button class="theme-btn" id="theme-btn-news" onclick="_toggleTheme()" title="切换主题"></button>
-  <button class="lang-toggle" id="lang-btn-news" onclick="toggleLangPage()">EN</button>
+  <button class="icon-btn theme-btn" onclick="_toggleTheme()" title="切换主题"></button>
+  <button class="lang-toggle" onclick="toggleLangPage()">EN</button>
 </header>
 
 <div class="hero">
   <div class="hero-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
   </div>
   <h1 class="hero-title" data-i18n="title">科技资讯</h1>
-  <p class="hero-sub" data-i18n="heroSub">每日汇聚全球最新科技 · 软件 · 开发动态，自动更新</p>
+  <p class="hero-sub" data-i18n="heroSub">汇聚全球科技、软件、开发最新动态，每天凌晨 3:00 自动更新</p>
   <div class="search-wrap">
-    <div class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-    <input id="si" class="search-input" type="search" placeholder="搜索资讯标题、摘要…" data-i18n-ph="searchPh" oninput="onSearchInput()" onkeydown="if(event.key==='Escape')clearSearch()">
-    <button id="sc" class="search-clear" onclick="clearSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="search-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <input id="si" class="search-input" type="search" data-i18n-ph="searchPh"
+      placeholder="搜索资讯标题、来源…" oninput="onSearchInput()" onkeydown="if(event.key==='Escape')clearSearch()">
+    <button id="sc" class="search-clear" onclick="clearSearch()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>
 </div>
 
 <div class="tabs-bar">
-  <div class="tabs">
+  <div class="tabs-inner">
     <button class="tab on" onclick="setTab('',this)"><span data-i18n="tabAll">全部</span></button>
     <button class="tab" onclick="setTab('科技',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       科技
     </button>
     <button class="tab" onclick="setTab('软件',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       软件
     </button>
     <button class="tab" onclick="setTab('Tech',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Tech
     </button>
     <button class="tab" onclick="setTab('Dev',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
       Dev
     </button>
     <button class="tab" onclick="setTab('Security',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Security
     </button>
+    <div class="tabs-right">
+      <button id="vbtn-grid" class="view-btn on" onclick="setView('grid')" title="网格视图">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </button>
+      <button id="vbtn-list" class="view-btn" onclick="setView('list')" title="列表视图">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
   </div>
 </div>
 
 <div class="toolbar"><span id="results-info"></span></div>
-<div id="grid" class="grid"></div>
+
+<div id="grid"></div>
+
 <div id="empty" class="empty" hidden>
-  <div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="56" height="56"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg></div>
+  <div class="empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="52" height="52"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>
+  </div>
   <div class="empty-t" data-i18n="noNews">暂无资讯</div>
-  <div class="empty-s">没有找到匹配的内容<br>换个分类或关键词试试</div>
+  <div class="empty-s" data-i18n="emptyHint">换个分类或关键词试试</div>
 </div>
+
 <div class="load-wrap">
   <button id="load-btn" class="load-btn" onclick="_load()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.42"/></svg>
     <span data-i18n="loadMore">加载更多</span>
   </button>
 </div>
-<footer>Powered by <a href="{site}" target="_blank">AppSec AI</a> — 资讯每天凌晨 3:00 自动更新</footer>
+
+<footer>
+  Powered by <a href="{site}" target="_blank">AppSec AI</a>
+  &nbsp;·&nbsp;
+  <span id="footer-text">资讯每天凌晨 3:00 自动更新</span>
+</footer>
+
 <script>{js}</script>
 </body>
 </html>"""
