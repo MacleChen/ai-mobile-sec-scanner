@@ -1077,6 +1077,60 @@ async def admin_delete_review(review_id: int, _: None = Depends(_require_admin))
     return {"ok": True}
 
 
+@app.post("/admin/news/backfill-images")
+async def admin_news_backfill(limit: int = 50, _: None = Depends(_require_admin)):
+    """Trigger og:image backfill for news articles missing images (runs in background thread)."""
+    import threading, re as _re, urllib.request as _ur
+
+    _OG_PAT = [
+        _re.compile(r'<meta[^>]+property=["\']og:image(?::secure_url)?["\'][^>]+content=["\']([^"\']{10,})["\']', _re.I),
+        _re.compile(r'<meta[^>]+content=["\']([^"\']{10,})["\'][^>]+property=["\']og:image["\']', _re.I),
+        _re.compile(r'<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']{10,})["\']', _re.I),
+    ]
+    _UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/122 Safari/537.36"
+
+    def _og(url: str) -> str:
+        if not url or not url.startswith("http"):
+            return ""
+        try:
+            req = _ur.Request(url, headers={"User-Agent": _UA, "Accept": "text/html,*/*"})
+            with _ur.urlopen(req, timeout=7) as r:
+                text = r.read(65536).decode("utf-8", errors="ignore")
+            for p in _OG_PAT:
+                m = p.search(text)
+                if m:
+                    img = m.group(1).strip()
+                    if img.startswith("http"):
+                        return img[:500]
+        except Exception:
+            pass
+        return ""
+
+    def _run():
+        with _db() as c:
+            rows = c.execute(
+                "SELECT id, url FROM news_articles WHERE (image_url IS NULL OR image_url='') LIMIT ?",
+                (limit,)
+            ).fetchall()
+        updated = 0
+        for row in rows:
+            img = _og(row["url"])
+            if img:
+                with _db() as c:
+                    c.execute("UPDATE news_articles SET image_url=? WHERE id=?", (img, row["id"]))
+                updated += 1
+            import time as _t; _t.sleep(0.3)
+        print(f"[backfill] done {updated}/{len(rows)}", flush=True)
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    with _db() as c:
+        no_img = c.execute(
+            "SELECT COUNT(*) FROM news_articles WHERE (image_url IS NULL OR image_url='')"
+        ).fetchone()[0]
+    return {"ok": True, "queued": min(limit, no_img), "total_missing": no_img}
+
+
 @app.post("/admin/releases/{slug}/reextract")
 async def admin_reextract_release(slug: str, _: None = Depends(_require_admin)):
     """Force re-extract icon/display_name/version for a specific release."""
@@ -4685,8 +4739,61 @@ function relTime(dt){{
   return d.toLocaleDateString(_langNews==='zh'?'zh-CN':'en-US',{{month:'short',day:'numeric'}});
 }}
 
+// ── Default images per category (curated Unsplash photo IDs) ────
+const _DEFAULT_IMGS = {{
+  '科技':    [
+    'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&q=75', // AI robot
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=75', // circuit board
+    'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=600&q=75', // laptop glow
+    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=75', // space tech
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=75', // developer
+  ],
+  '软件':    [
+    'https://images.unsplash.com/photo-1537432376769-00f5c2f4c8d2?w=600&q=75', // UI design
+    'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=75', // code dark
+    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&q=75', // macbook code
+    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=75', // coding
+    'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=600&q=75', // code screen
+  ],
+  'Tech':   [
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=75', // circuit board
+    'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&q=75', // AI
+    'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=600&q=75', // laptop glow
+    'https://images.unsplash.com/photo-1607798748738-b15c40d33d57?w=600&q=75', // server room
+    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=75', // space
+  ],
+  'Dev':    [
+    'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&q=75', // code monitor
+    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=75', // matrix code
+    'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=75', // code dark
+    'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=600&q=75', // code screen
+    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=75', // coding
+  ],
+  'Security': [
+    'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&q=75', // cybersecurity
+    'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=75', // cyber blue
+    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=75', // matrix
+    'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=600&q=75', // lock/security
+    'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=600&q=75', // hacker dark
+  ],
+}};
+const _DEFAULT_FALLBACK = [
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=75',
+  'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&q=75',
+  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=600&q=75',
+  'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&q=75',
+  'https://images.unsplash.com/photo-1607798748738-b15c40d33d57?w=600&q=75',
+  'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&q=75',
+  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=75',
+  'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=75',
+];
+function _defaultImg(a) {{
+  const pool = _DEFAULT_IMGS[a.category] || _DEFAULT_FALLBACK;
+  const seed = (a.id || 0) + (a.title ? a.title.charCodeAt(0) : 0);
+  return pool[seed % pool.length];
+}}
+
 // ── Placeholder SVG ──────────────────────────────────────
-const _phSvg='<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>';
 const _arrowSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
 
 // ── State ────────────────────────────────────────────────
@@ -4699,15 +4806,15 @@ function renderCards(articles){{
   const g=document.getElementById('grid');
   articles.forEach((a,idx)=>{{
     const nc=_nc(a.category);
-    const seed=a.id||(_offset+idx);
-    const imgUrl=a.image_url||'';
+    // Use DB image → default category image (never blank)
+    const imgUrl = a.image_url || _defaultImg(a);
     const card=document.createElement('a');
     card.className='ncard';
     card.href=a.url||'#';card.target='_blank';card.rel='noopener noreferrer';
     card.style.animationDelay=(idx*30)+'ms';
     card.innerHTML=`
-      <div class="ncard-media" data-grad="${{esc(nc.grad)}}">
-        ${{imgUrl?`<img src="${{esc(imgUrl)}}" alt="" loading="lazy">`:`<div class="ncard-media-ph" style="background:${{nc.grad}}"><div style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.6">${{_phSvg}}<span style="font-size:.6em;color:#fff;font-weight:700;letter-spacing:.06em;text-transform:uppercase">${{esc(a.category||a.source||'')}}</span></div></div>`}}
+      <div class="ncard-media">
+        <img src="${{esc(imgUrl)}}" alt="" loading="lazy">
       </div>
       <div class="ncard-body">
         <div class="ncard-meta">
@@ -4722,13 +4829,20 @@ function renderCards(articles){{
           <span class="ncard-read" style="color:${{nc.color}}">${{LN().readMore}} ${{_arrowSvg}}</span>
         </div>
       </div>`;
-    if(imgUrl){{
-      const img=card.querySelector('img');
-      img.addEventListener('error',()=>{{
+    // On image error: try gradient placeholder, then fallback image pool
+    const img=card.querySelector('img');
+    let _errCount=0;
+    img.addEventListener('error',()=>{{
+      _errCount++;
+      if(_errCount===1 && imgUrl!==_defaultImg(a)){{
+        // Try default img
+        img.src=_defaultImg(a);
+      }} else {{
+        // Final: gradient background + category label
         const m=img.parentNode;
-        m.innerHTML=`<div class="ncard-media-ph" style="background:${{nc.grad}}"><div style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.6">${{_phSvg}}<span style="font-size:.6em;color:#fff;font-weight:700;letter-spacing:.06em;text-transform:uppercase">${{esc(a.category||a.source||'')}}</span></div></div>`;
-      }});
-    }}
+        m.innerHTML=`<div class="ncard-media-ph" style="background:${{nc.grad}}"><span style="color:rgba(255,255,255,.7);font-size:.7em;font-weight:700;letter-spacing:.06em;text-transform:uppercase">${{esc(a.category||a.source||'')}}</span></div>`;
+      }}
+    }});
     g.appendChild(card);
   }});
 }}

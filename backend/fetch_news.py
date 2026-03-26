@@ -5,6 +5,7 @@ fetch_news.py — Fetch tech & software news from RSS feeds, store in SQLite.
 Usage:
     python3 fetch_news.py
     DB_PATH=/path/to/scanner.db python3 fetch_news.py
+    python3 fetch_news.py --backfill   # fill og:image for existing rows
 
 Crontab (runs at 03:00 every night):
     0 3 * * * cd /opt/ai-scanner && DB_PATH=/app/data/scanner.db python3 backend/fetch_news.py >> /var/log/fetch_news.log 2>&1
@@ -22,6 +23,9 @@ from datetime import datetime
 
 # ── Config ────────────────────────────────────────────────
 DB_PATH = os.getenv("DB_PATH", "/app/data/scanner.db")
+OG_TIMEOUT   = 7    # seconds per article og:image fetch
+OG_MAX_BYTES = 65536  # read at most 64 KB of article HTML
+OG_MAX_PER_FEED = 10  # max og:image fetches per feed (keep cron fast)
 
 FEEDS = [
     # Chinese tech & software
@@ -37,11 +41,24 @@ FEEDS = [
     {"url": "https://www.wired.com/feed/rss",                 "source": "Wired",        "category": "Tech"},
 ]
 
-_HTML_TAG  = re.compile(r"<[^>]+>")
+_HTML_TAG   = re.compile(r"<[^>]+>")
 _WHITESPACE = re.compile(r"\s+")
-_CDATA = re.compile(r"<!\[CDATA\[(.*?)\]\]>", re.DOTALL)
-ATOM_NS = "http://www.w3.org/2005/Atom"
+_CDATA      = re.compile(r"<!\[CDATA\[(.*?)\]\]>", re.DOTALL)
+ATOM_NS  = "http://www.w3.org/2005/Atom"
 MEDIA_NS = "http://search.yahoo.com/mrss/"
+
+# Patterns to extract og:image / twitter:image from HTML
+_OG_PATTERNS = [
+    re.compile(r'<meta[^>]+property=["\']og:image(?::secure_url)?["\'][^>]+content=["\']([^"\']{10,})["\']', re.I),
+    re.compile(r'<meta[^>]+content=["\']([^"\']{10,})["\'][^>]+property=["\']og:image["\']', re.I),
+    re.compile(r'<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']{10,})["\']', re.I),
+    re.compile(r'<meta[^>]+content=["\']([^"\']{10,})["\'][^>]+name=["\']twitter:image["\']', re.I),
+]
+
+_OG_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+)
 
 
 # ── Helpers ───────────────────────────────────────────────
@@ -51,6 +68,30 @@ def strip_html(text: str) -> str:
     text = _HTML_TAG.sub(" ", text)
     text = _WHITESPACE.sub(" ", text).strip()
     return text
+
+
+def _fetch_og_image(url: str) -> str:
+    """Scrape og:image / twitter:image meta tag from an article URL."""
+    if not url or not url.startswith("http"):
+        return ""
+    try:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": _OG_UA,
+            "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        })
+        with urllib.request.urlopen(req, timeout=OG_TIMEOUT) as resp:
+            raw = resp.read(OG_MAX_BYTES)
+        text = raw.decode("utf-8", errors="ignore")
+        for pat in _OG_PATTERNS:
+            m = pat.search(text)
+            if m:
+                img = m.group(1).strip()
+                if img.startswith("http") and len(img) > 10:
+                    return img[:500]
+    except Exception:
+        pass
+    return ""
 
 
 def _init_db(conn: sqlite3.Connection) -> None:
@@ -101,20 +142,25 @@ def _fetch(feed: dict) -> list[dict]:
 
     # ── RSS 2.0 ──────────────────────────────────────────
     for item in root.findall(".//item"):
-        title  = strip_html(item.findtext("title", ""))
-        link   = (item.findtext("link") or "").strip()
-        desc   = strip_html(item.findtext("description", ""))
-        pub    = (item.findtext("pubDate") or "").strip()
-        img    = ""
-        # media:thumbnail
+        title = strip_html(item.findtext("title", ""))
+        link  = (item.findtext("link") or "").strip()
+        desc  = strip_html(item.findtext("description", ""))
+        pub   = (item.findtext("pubDate") or "").strip()
+        img   = ""
+        # 1. media:thumbnail
         m = item.find(f"{{{MEDIA_NS}}}thumbnail")
         if m is not None:
             img = m.get("url", "")
-        # enclosure image
+        # 2. media:content with image type
+        if not img:
+            mc = item.find(f"{{{MEDIA_NS}}}content")
+            if mc is not None and "image" in (mc.get("type") or ""):
+                img = mc.get("url", "")
+        # 3. enclosure image
         enc = item.find("enclosure")
         if not img and enc is not None and "image" in (enc.get("type") or ""):
             img = enc.get("url", "")
-        # first <img> tag inside description HTML
+        # 4. first <img> tag in raw description HTML
         if not img:
             raw_desc = item.findtext("description", "")
             m2 = re.search(r'<img[^>]+src=["\']([^"\']{10,})["\']', raw_desc or "")
@@ -138,9 +184,25 @@ def _fetch(feed: dict) -> list[dict]:
             or entry.findtext(f"{{{ATOM_NS}}}published")
             or ""
         ).strip()
+        img = ""
+        # media:thumbnail in Atom entries
+        m = entry.find(f"{{{MEDIA_NS}}}thumbnail")
+        if m is not None:
+            img = m.get("url", "")
         if title and link:
             items.append({"title": title, "url": link,
-                          "summary": summary[:500], "published_at": pub, "image_url": ""})
+                          "summary": summary[:500], "published_at": pub, "image_url": img})
+
+    # ── og:image fallback for articles without images ─────
+    og_fetched = 0
+    for a in items:
+        if a["image_url"] or og_fetched >= OG_MAX_PER_FEED:
+            continue
+        img = _fetch_og_image(a["url"])
+        if img:
+            a["image_url"] = img
+            og_fetched += 1
+            time.sleep(0.4)   # be polite
 
     return items[:25]
 
@@ -163,7 +225,7 @@ def _save(conn: sqlite3.Connection, articles: list[dict], source: str, category:
                     a["url"][:600],
                     source,
                     category,
-                    a.get("image_url", "")[:300],
+                    a.get("image_url", "")[:500],
                     a.get("published_at", ""),
                 ),
             )
@@ -175,13 +237,41 @@ def _save(conn: sqlite3.Connection, articles: list[dict], source: str, category:
     return saved
 
 
+def _backfill_images(conn: sqlite3.Connection, limit: int = 50) -> None:
+    """Fill og:image for existing articles that have no image_url."""
+    rows = conn.execute(
+        "SELECT id, url FROM news_articles WHERE (image_url IS NULL OR image_url='') LIMIT ?",
+        (limit,)
+    ).fetchall()
+    print(f"  Backfill: {len(rows)} articles to process", flush=True)
+    updated = 0
+    for row in rows:
+        img = _fetch_og_image(row[0] if isinstance(row, (list, tuple)) else row["url"])
+        url_val = row[1] if isinstance(row, (list, tuple)) else row["url"]
+        id_val  = row[0] if isinstance(row, (list, tuple)) else row["id"]
+        img = _fetch_og_image(url_val)
+        if img:
+            conn.execute("UPDATE news_articles SET image_url=? WHERE id=?", (img[:500], id_val))
+            updated += 1
+        time.sleep(0.3)
+    conn.commit()
+    print(f"  Backfill done: {updated}/{len(rows)} images added", flush=True)
+
+
 # ── Main ──────────────────────────────────────────────────
 
 def main() -> None:
+    backfill_mode = "--backfill" in sys.argv
+
     print(f"[{datetime.now().isoformat(timespec='seconds')}] fetch_news start  db={DB_PATH}", flush=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     _init_db(conn)
+
+    if backfill_mode:
+        _backfill_images(conn, limit=100)
+        conn.close()
+        return
 
     total = 0
     for feed in FEEDS:
