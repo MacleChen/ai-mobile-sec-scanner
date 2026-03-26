@@ -398,7 +398,8 @@
 
     /* ── Toast ──────────────────────── */
     .toast {
-      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(8px);
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(.95);
       background: rgba(15,23,42,.92); border: 1px solid rgba(255,255,255,.1);
       color: #f1f5f9; backdrop-filter: blur(16px) saturate(180%);
       -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -408,9 +409,9 @@
       opacity: 0; transition: opacity .25s, transform .25s;
     }
     .toast:not(.hidden) {
-      opacity: 1; transform: translateX(-50%) translateY(0);
+      opacity: 1; transform: translate(-50%, -50%) scale(1);
     }
-    .toast.hidden { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    .toast.hidden { opacity: 0; transform: translate(-50%, -50%) scale(.95); }
     [data-theme=light] .toast {
       background: rgba(255,255,255,.92); border-color: rgba(0,0,0,.1);
       color: #0f172a; box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.07);
