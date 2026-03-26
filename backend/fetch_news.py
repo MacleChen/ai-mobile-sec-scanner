@@ -28,7 +28,7 @@ FEEDS = [
     {"url": "https://sspai.com/feed",                         "source": "少数派",   "category": "软件"},
     {"url": "https://www.ifanr.com/feed",                     "source": "爱范儿",   "category": "科技"},
     {"url": "https://www.oschina.net/news/rss",               "source": "开源中国", "category": "Dev"},
-    {"url": "https://www.infoq.cn/public/rss/channel/news",   "source": "InfoQ中文","category": "Dev"},
+    {"url": "https://36kr.com/feed",                          "source": "36氪",     "category": "科技"},
     # International tech
     {"url": "https://techcrunch.com/feed/",                   "source": "TechCrunch",   "category": "Tech"},
     {"url": "https://www.theverge.com/rss/index.xml",         "source": "The Verge",    "category": "Tech"},
