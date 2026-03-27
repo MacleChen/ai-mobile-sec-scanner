@@ -881,8 +881,8 @@ async def admin_list_apps(_: None = Depends(_require_admin)):
 
 
 @app.get("/admin/apps/{slug}/icon")
-async def admin_app_icon(slug: str, _: None = Depends(_require_admin)):
-    """Serve the full app icon image for admin panel."""
+async def admin_app_icon(slug: str):
+    """Serve the full app icon image (no auth — icons are public on dist pages)."""
     with _db() as c:
         row = c.execute(
             "SELECT icon_b64 FROM app_releases WHERE slug=? AND is_active=1", (slug,)
