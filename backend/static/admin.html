@@ -95,7 +95,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .stat-icon{float:right;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:-2px}
 
 /* ── Tables ── */
-.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--card-border)}
+.copy-hint:hover{background:rgba(59,130,246,.08);border-radius:4px}
+
 table{width:100%;border-collapse:collapse}
 th{background:#f8fafc;text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--text-sub);white-space:nowrap;border-bottom:1px solid var(--card-border)}
 [data-theme=dark] th{background:#0f172a}
@@ -871,15 +872,17 @@ function filterOrders() {
   const q = (document.getElementById('order-search').value || '').toLowerCase();
   const sf = document.getElementById('order-status-filter').value;
   const rows = allOrders.filter(o => {
-    const matchQ = !q || (o.order_id||'').toLowerCase().includes(q) || (o.email||'').toLowerCase().includes(q);
+    const matchQ = !q || (o.order_no||'').toLowerCase().includes(q) || (o.email||'').toLowerCase().includes(q);
     const matchS = !sf || o.status === sf;
     return matchQ && matchS;
   });
   renderTablePage(rows, _ordersPage, ORDERS_PER_PAGE, 'orders-tbody', 'orders-pagination',
     r => `<tr>
-      <td><code style="font-size:11px">${(r.order_id||'').slice(0,16)}…</code></td>
+      <td>
+        <code title="${r.order_no||''}" onclick="navigator.clipboard.writeText('${r.order_no||''}').then(()=>toast('✅ 已复制'))" style="font-size:11px;cursor:pointer;display:inline-block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle" class="copy-hint">${r.order_no||'—'}</code>
+      </td>
       <td>${r.email || '—'}</td>
-      <td><span class="badge badge-blue">${r.package || '—'}</span></td>
+      <td><span class="badge badge-blue">${r.pay_method || '—'}</span></td>
       <td>${parseFloat(r.amount||0).toFixed(2)}</td>
       <td>${r.credits || '—'}</td>
       <td>${orderBadge(r.status)}</td>
