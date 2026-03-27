@@ -871,18 +871,29 @@ async def admin_list_apps(_: None = Depends(_require_admin)):
     result = []
     for r in rows:
         d = dict(r)
-        # Build small icon data-URL (skip huge b64 strings; just flag presence)
+        # Use a dedicated icon endpoint so the full image is served
         raw_b64 = d.pop("icon_b64", "") or ""
-        if raw_b64:
-            ext = "png"
-            if raw_b64.startswith("/9j/"): ext = "jpeg"
-            d["icon_url"] = f"data:image/{ext};base64,{raw_b64[:4096]}"
-        else:
-            d["icon_url"] = ""
+        d["icon_url"] = f"/admin/apps/{d['slug']}/icon" if raw_b64 else ""
         name = d.get("display_name") or d.get("app_name") or ""
         d["name"] = name
         result.append(d)
     return {"apps": result}
+
+
+@app.get("/admin/apps/{slug}/icon")
+async def admin_app_icon(slug: str, _: None = Depends(_require_admin)):
+    """Serve the full app icon image for admin panel."""
+    with _db() as c:
+        row = c.execute(
+            "SELECT icon_b64 FROM app_releases WHERE slug=? AND is_active=1", (slug,)
+        ).fetchone()
+    if not row or not row["icon_b64"]:
+        raise HTTPException(status_code=404, detail="No icon")
+    b64 = row["icon_b64"]
+    img_bytes = base64.b64decode(b64)
+    content_type = "image/jpeg" if b64.startswith("/9j/") else "image/png"
+    return Response(content=img_bytes, media_type=content_type,
+                    headers={"Cache-Control": "max-age=86400"})
 
 
 @app.post("/admin/apps/{slug}/publish")
@@ -999,9 +1010,7 @@ async def admin_datastats(_: None = Depends(_require_admin)):
         """).fetchall()
     def _icon_url(row):
         b64 = row.get("icon_b64") or ""
-        if not b64: return ""
-        ext = "jpeg" if b64.startswith("/9j/") else "png"
-        return f"data:image/{ext};base64,{b64[:4096]}"
+        return f"/admin/apps/{row['slug']}/icon" if b64 else ""
     top = []
     for r in top_apps:
         d = dict(r)
