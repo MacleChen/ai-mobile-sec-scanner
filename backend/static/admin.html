@@ -923,7 +923,7 @@ function filterApps() {
     a => `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          ${a.icon_url ? `<img src="${a.icon_url}" style="width:28px;height:28px;border-radius:6px;object-fit:cover">` : '<div style="width:28px;height:28px;border-radius:6px;background:var(--input-bg)"></div>'}
+          ${a.icon_url ? `<img src="${a.icon_url}" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:var(--input-bg);flex-shrink:0">` : '<div style="width:40px;height:40px;border-radius:8px;background:var(--input-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">📱</div>'}
           <div>
             <div style="font-weight:600;font-size:13px">${a.name||'—'}</div>
             <div style="font-size:11px;color:var(--text-sub)">${a.slug||''}</div>
@@ -1341,7 +1341,7 @@ async function loadDataStats() {
         <td><span style="font-weight:700;color:${i<3?'#3b82f6':'var(--text-sub)'}">${i+1}</span></td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
-            ${a.icon_url ? `<img src="${a.icon_url}" style="width:24px;height:24px;border-radius:5px">` : ''}
+            ${a.icon_url ? `<img src="${a.icon_url}" style="width:32px;height:32px;border-radius:6px;object-fit:contain;background:var(--input-bg);flex-shrink:0">` : '<div style="width:32px;height:32px;border-radius:6px;background:var(--input-bg);flex-shrink:0"></div>'}
             <span style="font-weight:500">${a.name||'—'}</span>
           </div>
         </td>
