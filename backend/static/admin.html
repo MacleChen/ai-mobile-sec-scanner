@@ -765,8 +765,11 @@ async function doLogin() {
   if (!user || !pass) { err.textContent = '请填写用户名和密码'; return; }
   btn.disabled = true; btn.textContent = '登录中…';
   try {
-    const q = new URLSearchParams({ username: user, password: pass });
-    const d = await fetch(`/admin/login?${q}`, { method: 'POST' });
+    const d = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
     const data = await d.json();
     if (data.token) {
       adminToken = data.token; adminName = data.username || user;
